@@ -6,6 +6,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/labstack/echo"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
@@ -38,7 +41,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	driver, err := postgres.WithInstance(dbConn, &postgres.Config{})
+
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://migrations/",
+		"minijarvis", driver)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	m.Steps(2)
+	defer m.Close()
 	defer dbConn.Close()
+
 	e := echo.New()
 	e.Start(viper.GetString("server.address"))
 }
@@ -50,8 +66,7 @@ func getDBConn() string {
 	dbPass := viper.GetString(`database.pass`)
 	dbName := viper.GetString(`database.name`)
 
-	connection := fmt.Sprintf("host=%s port=%s user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		dbHost, dbPort, dbUser, dbPass, dbName)
+	connection := fmt.Sprintf("postgres://%s%s@%s%s/%s?sslmode=disable",
+		dbUser, dbPass, dbHost, dbPort, dbName)
 	return connection
 }

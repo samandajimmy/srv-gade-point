@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS authors (
+    id BIGSERIAL PRIMARY KEY NOT NULL,
+    name VARCHAR(200),
+    updated_at BIGINT DEFAULT NULL,
+    created_at BIGINT DEFAULT NULL
+);

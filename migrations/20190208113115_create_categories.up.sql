@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS categories (
+    id BIGSERIAL PRIMARY KEY NOT NULL,
+    name VARCHAR(45),
+    tag VARCHAR(45),
+    updated_at BIGINT DEFAULT NULL,
+    created_at BIGINT DEFAULT NULL
+);

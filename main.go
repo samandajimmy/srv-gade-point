@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -12,6 +13,13 @@ import (
 	"github.com/labstack/echo"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
+
+	_articleHttpDeliver "github.com/gade-dev/gade-srv-boilerplate-go/articles/delivery/http"
+	_articleRepo "github.com/gade-dev/gade-srv-boilerplate-go/articles/repository"
+	_articleUcase "github.com/gade-dev/gade-srv-boilerplate-go/articles/usecase"
+
+	// _authorRepo "github.com/gade-dev/gade-srv-boilerplate-go/authors/repository"
+	"github.com/gade-dev/gade-srv-boilerplate-go/middleware"
 )
 
 func init() {
@@ -56,6 +64,15 @@ func main() {
 	defer dbConn.Close()
 
 	e := echo.New()
+	middL := middleware.InitMiddleware()
+	e.Use(middL.CORS)
+	// authorRepo := _authorRepo.NewMysqlAuthorRepository(dbConn)
+
+	ar := _articleRepo.NewPsqlArticleRepository(dbConn)
+	timeoutContext := time.Duration(viper.GetInt("context.timeout")) * time.Second
+	au := _articleUcase.NewArticleUsecase(ar, timeoutContext)
+	_articleHttpDeliver.NewArticlesHandler(e, au)
+
 	e.Start(viper.GetString("server.address"))
 }
 

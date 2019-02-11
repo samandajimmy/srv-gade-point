@@ -1,4 +1,4 @@
-module github.com/gade-dev/srv-gade-point
+module gade/srv-gade-point
 
 require (
 	github.com/fsnotify/fsnotify v1.4.7

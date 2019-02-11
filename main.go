@@ -14,12 +14,12 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
 
-	_articleHttpDeliver "github.com/gade-dev/gade-srv-boilerplate-go/articles/delivery/http"
-	_articleRepo "github.com/gade-dev/gade-srv-boilerplate-go/articles/repository"
-	_articleUcase "github.com/gade-dev/gade-srv-boilerplate-go/articles/usecase"
+	_articleHttpDeliver "github.com/gade-dev/srv-gade-point/articles/delivery/http"
+	_articleRepo "github.com/gade-dev/srv-gade-point/articles/repository"
+	_articleUcase "github.com/gade-dev/srv-gade-point/articles/usecase"
 
-	// _authorRepo "github.com/gade-dev/gade-srv-boilerplate-go/authors/repository"
-	"github.com/gade-dev/gade-srv-boilerplate-go/middleware"
+	// _authorRepo "github.com/gade-dev/srv-gade-point/authors/repository"
+	"github.com/gade-dev/srv-gade-point/middleware"
 )
 
 func init() {

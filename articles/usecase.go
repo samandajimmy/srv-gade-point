@@ -3,7 +3,7 @@ package articles
 import (
 	"context"
 
-	"github.com/gade-dev/gade-srv-boilerplate-go/models"
+	"github.com/gade-dev/srv-gade-point/models"
 )
 
 // Usecase represent the article's usecases

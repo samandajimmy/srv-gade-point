@@ -20,6 +20,6 @@ This project has  4 Domain layer :
 
 #### The diagram:
 
-![golang clean architecture](https://github.com/gade-dev/gade-srv-boilerplate-go/raw/master/clean-arch.png)
+![golang clean architecture](https://github.com/gade-dev/srv-gade-point/raw/master/clean-arch.png)
 
 The explanation about this project's structure  can read from this medium's post : https://medium.com/@imantumorang/golang-clean-archithecture-efd6d7c43047

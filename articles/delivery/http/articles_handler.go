@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gade-dev/gade-srv-boilerplate-go/articles"
-	"github.com/gade-dev/gade-srv-boilerplate-go/models"
+	"github.com/gade-dev/srv-gade-point/articles"
+	"github.com/gade-dev/srv-gade-point/models"
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
 	validator "gopkg.in/go-playground/validator.v9"

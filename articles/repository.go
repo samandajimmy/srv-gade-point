@@ -3,7 +3,7 @@ package articles
 import (
 	"context"
 
-	"github.com/gade-dev/gade-srv-boilerplate-go/models"
+	"github.com/gade-dev/srv-gade-point/models"
 )
 
 // Repository represent the article's repository contract

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/gade-dev/gade-srv-boilerplate-go/middleware"
+	"github.com/gade-dev/srv-gade-point/middleware"
 	"github.com/labstack/echo"
 
 	test "net/http/httptest"

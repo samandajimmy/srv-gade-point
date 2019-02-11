@@ -1,12 +1,9 @@
-module github.com/gade-dev/gade-srv-boilerplate-go
+module github.com/gade-dev/srv-gade-point
 
 require (
-	github.com/bxcodec/faker v2.0.1+incompatible
-	github.com/bxcodec/go-clean-arch v2.0.0+incompatible
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/go-playground/locales v0.12.1 // indirect
 	github.com/go-playground/universal-translator v0.16.0 // indirect
-	github.com/go-sql-driver/mysql v1.4.1
 	github.com/golang-migrate/migrate v3.5.4+incompatible // indirect
 	github.com/golang-migrate/migrate/v4 v4.2.3
 	github.com/hashicorp/hcl v1.0.0

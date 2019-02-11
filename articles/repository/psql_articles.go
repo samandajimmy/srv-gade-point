@@ -9,8 +9,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/gade-dev/gade-srv-boilerplate-go/articles"
-	"github.com/gade-dev/gade-srv-boilerplate-go/models"
+	"github.com/gade-dev/srv-gade-point/articles"
+	"github.com/gade-dev/srv-gade-point/models"
 )
 
 const (

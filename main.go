@@ -34,15 +34,16 @@ func init() {
 
 func main() {
 	dbConn := getDBConn()
-	dataMigrations(dbConn)
+	migrate := dataMigrations(dbConn)
 
 	defer dbConn.Close()
+	defer migrate.Close()
 
 	e := echo.New()
 	middL := middleware.InitMiddleware()
 	e.Use(middL.CORS)
 
-	contextTimeout, err := strconv.Atoi(os.Getenv(`CONTEXT TIME`))
+	contextTimeout, err := strconv.Atoi(os.Getenv(`CONTEXT_TIMEOUT`))
 
 	if err != nil {
 		fmt.Println(err)
@@ -82,7 +83,7 @@ func getDBConn() *sql.DB {
 	return dbConn
 }
 
-func dataMigrations(dbConn *sql.DB) {
+func dataMigrations(dbConn *sql.DB) *migrate.Migrate {
 	driver, err := postgres.WithInstance(dbConn, &postgres.Config{})
 
 	migrations, err := migrate.NewWithDatabaseInstance(
@@ -94,5 +95,5 @@ func dataMigrations(dbConn *sql.DB) {
 	}
 
 	migrations.Up()
-	defer migrations.Close()
+	return migrations
 }

@@ -1,6 +1,6 @@
 
 -- Type: status
-CREATE TYPE IF NOT EXISTS status AS ENUM ('active', 'inactive');
+CREATE TYPE status AS ENUM ('active', 'inactive');
 
 -- Table: campaigns
 CREATE TABLE IF NOT EXISTS campaigns (

@@ -17,8 +17,6 @@ import (
 	_articleHttpDeliver "gade/srv-gade-point/articles/delivery/http"
 	_articleRepo "gade/srv-gade-point/articles/repository"
 	_articleUcase "gade/srv-gade-point/articles/usecase"
-
-	// _authorRepo "gade/srv-gade-point/authors/repository"
 	"gade/srv-gade-point/middleware"
 )
 
@@ -36,7 +34,35 @@ func init() {
 }
 
 func main() {
-	dbConn, err := sql.Open(`postgres`, getDBConn())
+	dbConn := getDBConn()
+
+	defer dbConn.Close()
+
+	dataMigrations(dbConn)
+
+	e := echo.New()
+	middL := middleware.InitMiddleware()
+	e.Use(middL.CORS)
+
+	ar := _articleRepo.NewPsqlArticleRepository(dbConn)
+	timeoutContext := time.Duration(viper.GetInt("context.timeout")) * time.Second
+	au := _articleUcase.NewArticleUsecase(ar, timeoutContext)
+	_articleHttpDeliver.NewArticlesHandler(e, au)
+
+	e.Start(viper.GetString("server.address"))
+}
+
+func getDBConn() *sql.DB {
+	dbHost := viper.GetString(`database.host`)
+	dbPort := viper.GetString(`database.port`)
+	dbUser := viper.GetString(`database.user`)
+	dbPass := viper.GetString(`database.pass`)
+	dbName := viper.GetString(`database.name`)
+
+	connection := fmt.Sprintf("postgres://%s%s@%s%s/%s?sslmode=disable",
+		dbUser, dbPass, dbHost, dbPort, dbName)
+
+	dbConn, err := sql.Open(`postgres`, connection)
 
 	if err != nil && viper.GetBool(`debug`) {
 		fmt.Println(err)
@@ -49,41 +75,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	return dbConn
+}
+
+func dataMigrations(dbConn *sql.DB) {
 	driver, err := postgres.WithInstance(dbConn, &postgres.Config{})
 
-	m, err := migrate.NewWithDatabaseInstance(
+	migrations, err := migrate.NewWithDatabaseInstance(
 		"file://migrations/",
-		"minijarvis", driver)
+		viper.GetString(`database.user`), driver)
 
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	m.Steps(2)
-	defer m.Close()
-	defer dbConn.Close()
-
-	e := echo.New()
-	middL := middleware.InitMiddleware()
-	e.Use(middL.CORS)
-	// authorRepo := _authorRepo.NewMysqlAuthorRepository(dbConn)
-
-	ar := _articleRepo.NewPsqlArticleRepository(dbConn)
-	timeoutContext := time.Duration(viper.GetInt("context.timeout")) * time.Second
-	au := _articleUcase.NewArticleUsecase(ar, timeoutContext)
-	_articleHttpDeliver.NewArticlesHandler(e, au)
-
-	e.Start(viper.GetString("server.address"))
-}
-
-func getDBConn() string {
-	dbHost := viper.GetString(`database.host`)
-	dbPort := viper.GetString(`database.port`)
-	dbUser := viper.GetString(`database.user`)
-	dbPass := viper.GetString(`database.pass`)
-	dbName := viper.GetString(`database.name`)
-
-	connection := fmt.Sprintf("postgres://%s%s@%s%s/%s?sslmode=disable",
-		dbUser, dbPass, dbHost, dbPort, dbName)
-	return connection
+	migrations.Up()
+	defer migrations.Close()
 }

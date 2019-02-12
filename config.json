@@ -9,9 +9,9 @@
     "database": {
         "host": "localhost",
         "port": ":5432",
-        "user": "minijarvis",
-        "pass": "",
-        "name": "article"
+        "user": "postgres",
+        "pass": ":postgres",
+        "name": "postgres"
     }
   
   }

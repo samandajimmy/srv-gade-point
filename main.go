@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -18,46 +19,48 @@ import (
 	_articleRepo "gade/srv-gade-point/articles/repository"
 	_articleUcase "gade/srv-gade-point/articles/usecase"
 	"gade/srv-gade-point/middleware"
+
+	"github.com/joho/godotenv"
 )
 
 func init() {
-	viper.SetConfigFile(`config.json`)
-	err := viper.ReadInConfig()
+	err := godotenv.Load()
 
 	if err != nil {
-		panic(err)
-	}
-
-	if viper.GetBool(`debug`) {
-		fmt.Println("Service RUN on DEBUG mode")
+		log.Fatal("Error loading .env file")
 	}
 }
 
 func main() {
 	dbConn := getDBConn()
+	dataMigrations(dbConn)
 
 	defer dbConn.Close()
-
-	dataMigrations(dbConn)
 
 	e := echo.New()
 	middL := middleware.InitMiddleware()
 	e.Use(middL.CORS)
 
+	contextTimeout, err := strconv.Atoi(os.Getenv(`CONTEXT TIME`))
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	timeoutContext := time.Duration(contextTimeout) * time.Second
+
 	ar := _articleRepo.NewPsqlArticleRepository(dbConn)
-	timeoutContext := time.Duration(viper.GetInt("context.timeout")) * time.Second
 	au := _articleUcase.NewArticleUsecase(ar, timeoutContext)
 	_articleHttpDeliver.NewArticlesHandler(e, au)
 
-	e.Start(viper.GetString("server.address"))
+	e.Start(os.Getenv(`SERVER_PORT`))
 }
 
 func getDBConn() *sql.DB {
-	dbHost := viper.GetString(`database.host`)
-	dbPort := viper.GetString(`database.port`)
-	dbUser := viper.GetString(`database.user`)
-	dbPass := viper.GetString(`database.pass`)
-	dbName := viper.GetString(`database.name`)
+	dbHost := os.Getenv(`DB_HOST`)
+	dbPort := os.Getenv(`DB_PORT`)
+	dbUser := os.Getenv(`DB_USER`)
+	dbPass := os.Getenv(`DB_PASS`)
+	dbName := os.Getenv(`DB_NAME`)
 
 	connection := fmt.Sprintf("postgres://%s%s@%s%s/%s?sslmode=disable",
 		dbUser, dbPass, dbHost, dbPort, dbName)
@@ -83,7 +86,7 @@ func dataMigrations(dbConn *sql.DB) {
 
 	migrations, err := migrate.NewWithDatabaseInstance(
 		"file://migrations/",
-		viper.GetString(`database.user`), driver)
+		os.Getenv(`DB_USER`), driver)
 
 	if err != nil {
 		fmt.Println(err)

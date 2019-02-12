@@ -8,6 +8,10 @@ import (
 	"strconv"
 	"time"
 
+	_campaignHttpDeliver "gade/srv-gade-point/campaigns/delivery/http"
+	_campaignRepo "gade/srv-gade-point/campaigns/repository"
+	_campaignUcase "gade/srv-gade-point/campaigns/usecase"
+
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -15,9 +19,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
 
-	_articleHttpDeliver "gade/srv-gade-point/articles/delivery/http"
-	_articleRepo "gade/srv-gade-point/articles/repository"
-	_articleUcase "gade/srv-gade-point/articles/usecase"
 	"gade/srv-gade-point/middleware"
 
 	"github.com/joho/godotenv"
@@ -48,9 +49,9 @@ func main() {
 	}
 	timeoutContext := time.Duration(contextTimeout) * time.Second
 
-	ar := _articleRepo.NewPsqlArticleRepository(dbConn)
-	au := _articleUcase.NewArticleUsecase(ar, timeoutContext)
-	_articleHttpDeliver.NewArticlesHandler(e, au)
+	ar := _campaignRepo.NewPsqlCampaignRepository(dbConn)
+	au := _campaignUcase.NewCampaignUsecase(ar, timeoutContext)
+	_campaignHttpDeliver.NewCampaignsHandler(e, au)
 
 	e.Start(os.Getenv(`SERVER_PORT`))
 }

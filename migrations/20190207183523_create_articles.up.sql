@@ -1,8 +1,0 @@
-CREATE TABLE IF NOT EXISTS articles (
-    id BIGSERIAL PRIMARY KEY NOT NULL,
-    title VARCHAR(45),
-    content TEXT,
-    author_id INTEGER DEFAULT 0,
-    updated_at TIMESTAMP DEFAULT NULL,
-    created_at TIMESTAMP DEFAULT NULL
-);

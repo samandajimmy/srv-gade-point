@@ -17,8 +17,12 @@ type Campaign struct {
 	Description string     `json:"description" validate:"required"`
 	StartDate   string     `json:"startDate" validate:"required"`
 	EndDate     string     `json:"endDate" validate:"required"`
-	Status      string     `json:"status"`
+	Status      int8       `json:"status"`
 	Validators  Validators `json:"validators"`
-	UpdatedAt   time.Time  `json:"updated_at"`
-	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updatedAt"`
+	CreatedAt   time.Time  `json:"createdAt"`
+}
+
+type UpdateCampaign struct {
+	Status int8 `json:"status"`
 }

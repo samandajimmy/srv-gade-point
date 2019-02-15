@@ -1,4 +1,2 @@
-DROP TYPE IF EXISTS status;
-
+DROP INDEX index_campaigns;
 DROP TABLE IF EXISTS campaigns:
-

@@ -8,14 +8,14 @@ import (
 	"gade/srv-gade-point/models"
 )
 
-type campaignUsecase struct {
+type campaignUseCase struct {
 	campaignRepo   campaigns.Repository
 	contextTimeout time.Duration
 }
 
-// NewCampaignUsecase will create new an campaignUsecase object representation of campaigns.Usecase interface
-func NewCampaignUsecase(a campaigns.Repository, timeout time.Duration) campaigns.Usecase {
-	return &campaignUsecase{
+// NewCampaignUseCase will create new an campaignUseCase object representation of campaigns.UseCase interface
+func NewCampaignUseCase(a campaigns.Repository, timeout time.Duration) campaigns.UseCase {
+	return &campaignUseCase{
 		campaignRepo:   a,
 		contextTimeout: timeout,
 	}
@@ -27,7 +27,7 @@ func NewCampaignUsecase(a campaigns.Repository, timeout time.Duration) campaigns
 * in godoc: https://godoc.org/golang.org/x/sync/errgroup#ex-Group--Pipeline
  */
 
-func (a *campaignUsecase) CreateCampaign(c context.Context, m *models.Campaign) error {
+func (a *campaignUseCase) CreateCampaign(c context.Context, m *models.Campaign) error {
 
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
 	defer cancel()
@@ -37,4 +37,38 @@ func (a *campaignUsecase) CreateCampaign(c context.Context, m *models.Campaign) 
 		return err
 	}
 	return nil
+}
+
+func (a *campaignUseCase) UpdateCampaign(c context.Context, id int64, updateCampaign *models.UpdateCampaign) (res *models.Response, err error) {
+
+	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
+	defer cancel()
+
+	err = a.campaignRepo.UpdateCampaign(ctx, id, updateCampaign)
+	if err != nil {
+		return &models.Response{
+			Status:  models.StatusSuccess,
+			Message: models.MassageUpdateSuccess,
+		}, err
+	}
+
+	res = &models.Response{
+		Status:  models.StatusSuccess,
+		Message: models.MassageUpdateSuccess,
+	}
+
+	return res, nil
+}
+
+func (a *campaignUseCase) GetCampaign(c context.Context, name string, status string, startDate string, endDate string) ([]*models.Campaign, error) {
+
+	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
+	defer cancel()
+
+	listCampaign, err := a.campaignRepo.GetCampaign(ctx, name, status, startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+
+	return listCampaign, nil
 }

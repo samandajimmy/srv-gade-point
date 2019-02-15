@@ -2,10 +2,10 @@ package http
 
 import (
 	"context"
-	"net/http"
-
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
+	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
@@ -19,16 +19,18 @@ type ResponseError struct {
 
 // CampaignsHandler represent the httphandler for campaigns
 type CampaignsHandler struct {
-	CUsecase campaigns.Usecase
+	CampaignUseCase campaigns.UseCase
 }
 
 // NewCampaignsHandler represent to register campaigns endpoint
-func NewCampaignsHandler(e *echo.Echo, us campaigns.Usecase) {
+func NewCampaignsHandler(e *echo.Echo, us campaigns.UseCase) {
 	handler := &CampaignsHandler{
-		CUsecase: us,
+		CampaignUseCase: us,
 	}
 
 	e.POST("/campaigns", handler.CreateCampaign)
+	e.PUT("/statusCampaign/:id", handler.UpdateStatusCampaign)
+	e.GET("/campaigns", handler.GetCampaigns)
 }
 
 func (a *CampaignsHandler) CreateCampaign(c echo.Context) error {
@@ -41,12 +43,13 @@ func (a *CampaignsHandler) CreateCampaign(c echo.Context) error {
 	if ok, err := isRequestValid(&campaign); !ok {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
+
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	err = a.CUsecase.CreateCampaign(ctx, &campaign)
+	err = a.CampaignUseCase.CreateCampaign(ctx, &campaign)
 
 	if err != nil {
 		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
@@ -54,7 +57,55 @@ func (a *CampaignsHandler) CreateCampaign(c echo.Context) error {
 	return c.JSON(http.StatusCreated, campaign)
 }
 
-func isRequestValid(m *models.Campaign) (bool, error) {
+func (a *CampaignsHandler) UpdateStatusCampaign(c echo.Context) error {
+
+	updateCampaign := new(models.UpdateCampaign)
+
+	if err := c.Bind(updateCampaign); err != nil {
+		return c.JSON(http.StatusUnprocessableEntity, err.Error())
+	}
+
+	if ok, err := isRequestValid(updateCampaign); !ok {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	res, err := a.CampaignUseCase.UpdateCampaign(ctx, int64(id), updateCampaign)
+
+	if err != nil {
+		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
+	}
+	return c.JSON(http.StatusOK, res)
+}
+
+func (a *CampaignsHandler) GetCampaigns(c echo.Context) error {
+
+	name := c.QueryParam("name")
+	status := c.QueryParam("status")
+	startDate := c.QueryParam("startDate")
+	endDate := c.QueryParam("endDate")
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	res, err := a.CampaignUseCase.GetCampaign(ctx, name, status, startDate, endDate)
+
+	if err != nil {
+		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
+	}
+	return c.JSON(http.StatusOK, res)
+
+}
+
+func isRequestValid(m interface{}) (bool, error) {
 
 	validate := validator.New()
 

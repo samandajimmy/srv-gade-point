@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"time"
 
@@ -21,6 +20,8 @@ type psqlCampaignRepository struct {
 	Conn *sql.DB
 }
 
+type JSONB []byte
+
 // NewPsqlCampaignRepository will create an object that represent the campaigns.Repository interface
 func NewPsqlCampaignRepository(Conn *sql.DB) campaigns.Repository {
 	return &psqlCampaignRepository{Conn}
@@ -35,7 +36,7 @@ func (m *psqlCampaignRepository) CreateCampaign(ctx context.Context, a *models.C
 		return err
 	}
 
-	logrus.Debug("Created At: ", a.CreatedAt)
+	logrus.Debug("Created At: ", time.Now())
 
 	var lastID int64
 
@@ -44,7 +45,7 @@ func (m *psqlCampaignRepository) CreateCampaign(ctx context.Context, a *models.C
 		return err
 	}
 
-	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate, a.Status, string(validator), a.CreatedAt).Scan(&lastID)
+	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate, a.Status, string(validator), time.Now()).Scan(&lastID)
 	if err != nil {
 		return err
 	}
@@ -53,20 +54,90 @@ func (m *psqlCampaignRepository) CreateCampaign(ctx context.Context, a *models.C
 	return nil
 }
 
-func DecodeCursor(encodedTime string) (time.Time, error) {
-	byt, err := base64.StdEncoding.DecodeString(encodedTime)
+func (m *psqlCampaignRepository) UpdateCampaign(ctx context.Context, id int64, updateCampaign *models.UpdateCampaign) error {
+
+	query := `UPDATE campaigns SET status = $1, updated_at = $2 WHERE id = $3 RETURNING id`
+	stmt, err := m.Conn.PrepareContext(ctx, query)
 	if err != nil {
-		return time.Time{}, err
+		return err
 	}
 
-	timeString := string(byt)
-	t, err := time.Parse(timeFormat, timeString)
+	logrus.Debug("Update At: ", time.Now())
 
-	return t, err
+	var lastID int64
+
+	err = stmt.QueryRowContext(ctx, updateCampaign.Status, time.Now(), id).Scan(&lastID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func EncodeCursor(t time.Time) string {
-	timeString := t.Format(timeFormat)
+func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, status string, startDate string, endDate string) ([]*models.Campaign, error) {
+	query := `SELECT * FROM campaigns WHERE id IS NOT NULL`
 
-	return base64.StdEncoding.EncodeToString([]byte(timeString))
+	where := ""
+
+	if name != "" {
+		where += " AND name LIKE '%" + name + "%'"
+	}
+
+	if status != "" {
+		where += " AND status='" + status + "'"
+	}
+
+	if startDate != "" {
+		where += " AND start_date >= '" + startDate + "'"
+	}
+
+	if endDate != "" {
+		where += " AND end_date <= '" + endDate + "'"
+	}
+
+	query += where
+
+	res, err := m.getCampaign(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, err
+
+}
+
+func (m *psqlCampaignRepository) getCampaign(ctx context.Context, query string) ([]*models.Campaign, error) {
+	var validator json.RawMessage
+	rows, err := m.Conn.QueryContext(ctx, query)
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]*models.Campaign, 0)
+	for rows.Next() {
+		t := new(models.Campaign)
+		err = rows.Scan(
+			&t.ID,
+			&t.Name,
+			&t.Description,
+			&t.StartDate,
+			&t.EndDate,
+			&t.Status,
+			&validator,
+			&t.UpdatedAt,
+			&t.CreatedAt,
+		)
+
+		err = json.Unmarshal([]byte(validator), &t.Validators)
+
+		if err != nil {
+			logrus.Error(err)
+			return nil, err
+		}
+		result = append(result, t)
+	}
+
+	return result, nil
 }

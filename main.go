@@ -8,6 +8,10 @@ import (
 	"strconv"
 	"time"
 
+	_campaignHttpDelivery "gade/srv-gade-point/campaigns/delivery/http"
+	_campaignRepository "gade/srv-gade-point/campaigns/repository"
+	_campaignUseCase "gade/srv-gade-point/campaigns/usecase"
+
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -15,9 +19,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
 
-	_articleHttpDeliver "gade/srv-gade-point/articles/delivery/http"
-	_articleRepo "gade/srv-gade-point/articles/repository"
-	_articleUcase "gade/srv-gade-point/articles/usecase"
 	"gade/srv-gade-point/middleware"
 
 	"github.com/joho/godotenv"
@@ -33,24 +34,25 @@ func init() {
 
 func main() {
 	dbConn := getDBConn()
-	dataMigrations(dbConn)
+	migrate := dataMigrations(dbConn)
 
 	defer dbConn.Close()
+	defer migrate.Close()
 
 	e := echo.New()
 	middL := middleware.InitMiddleware()
 	e.Use(middL.CORS)
 
-	contextTimeout, err := strconv.Atoi(os.Getenv(`CONTEXT TIME`))
+	contextTimeout, err := strconv.Atoi(os.Getenv(`CONTEXT_TIMEOUT`))
 
 	if err != nil {
 		fmt.Println(err)
 	}
 	timeoutContext := time.Duration(contextTimeout) * time.Second
 
-	ar := _articleRepo.NewPsqlArticleRepository(dbConn)
-	au := _articleUcase.NewArticleUsecase(ar, timeoutContext)
-	_articleHttpDeliver.NewArticlesHandler(e, au)
+	campaignRepository := _campaignRepository.NewPsqlCampaignRepository(dbConn)
+	campaignUseCase := _campaignUseCase.NewCampaignUseCase(campaignRepository, timeoutContext)
+	_campaignHttpDelivery.NewCampaignsHandler(e, campaignUseCase)
 
 	e.Start(os.Getenv(`SERVER_PORT`))
 }
@@ -81,7 +83,7 @@ func getDBConn() *sql.DB {
 	return dbConn
 }
 
-func dataMigrations(dbConn *sql.DB) {
+func dataMigrations(dbConn *sql.DB) *migrate.Migrate {
 	driver, err := postgres.WithInstance(dbConn, &postgres.Config{})
 
 	migrations, err := migrate.NewWithDatabaseInstance(
@@ -93,5 +95,5 @@ func dataMigrations(dbConn *sql.DB) {
 	}
 
 	migrations.Up()
-	defer migrations.Close()
+	return migrations
 }

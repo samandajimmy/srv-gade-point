@@ -15,7 +15,7 @@ More at https://8thlight.com/blog/uncle-bob/2012/08/13/the-clean-architecture.ht
 This project has  4 Domain layer :
  * Models Layer
  * Repository Layer
- * Usecase Layer  
+ * UseCase Layer  
  * Delivery Layer
 
 #### The diagram:

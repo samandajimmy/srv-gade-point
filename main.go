@@ -43,7 +43,7 @@ func main() {
 	e := echo.New()
 
 	//PUBLIC DIRECTORY
-	e.Static("/images/vouchers", "public/images/vouchers")
+	e.Static(os.Getenv(`VOUCHER_PATH`), os.Getenv(`VOUCHER_ROUTE_PATH`))
 
 	middL := middleware.InitMiddleware()
 	e.Use(middL.CORS)

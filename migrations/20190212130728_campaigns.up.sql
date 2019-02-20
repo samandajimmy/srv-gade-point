@@ -12,4 +12,4 @@
         created_at TIMESTAMP DEFAULT NULL
     );
 
-    CREATE INDEX index_campaigns ON campaigns (id, name, start_date, end_date, status);
+    CREATE INDEX index_campaigns ON campaigns (name, start_date, end_date, status);

@@ -76,7 +76,7 @@ func (m *psqlCampaignRepository) UpdateCampaign(ctx context.Context, id int64, u
 }
 
 func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, status string, startDate string, endDate string) ([]*models.Campaign, error) {
-	query := `SELECT * FROM campaigns WHERE id IS NOT NULL`
+	query := `SELECT id, name, description, start_date, end_date, status, validators, updated_at, created_at FROM campaigns WHERE id IS NOT NULL`
 
 	where := ""
 

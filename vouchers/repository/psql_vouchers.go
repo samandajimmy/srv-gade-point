@@ -75,7 +75,7 @@ func (m *psqlVoucherRepository) UpdateVoucher(ctx context.Context, id int64, upd
 }
 
 func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, name string, status string, startDate string, endDate string) ([]*models.Voucher, error) {
-	query := `SELECT * FROM vouchers WHERE id IS NOT NULL`
+	query := `SELECT id, name, description, start_date, end_date, point, journal_account, value, image_url, status, validators, updated_at, created_at FROM vouchers WHERE id IS NOT NULL`
 
 	where := ""
 

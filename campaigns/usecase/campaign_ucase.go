@@ -21,12 +21,6 @@ func NewCampaignUseCase(a campaigns.Repository, timeout time.Duration) campaigns
 	}
 }
 
-/*
-* In this function below, I'm using errgroup with the pipeline pattern
-* Look how this works in this package explanation
-* in godoc: https://godoc.org/golang.org/x/sync/errgroup#ex-Group--Pipeline
- */
-
 func (a *campaignUseCase) CreateCampaign(c context.Context, m *models.Campaign) error {
 
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
@@ -39,25 +33,17 @@ func (a *campaignUseCase) CreateCampaign(c context.Context, m *models.Campaign) 
 	return nil
 }
 
-func (a *campaignUseCase) UpdateCampaign(c context.Context, id int64, updateCampaign *models.UpdateCampaign) (res *models.Response, err error) {
+func (a *campaignUseCase) UpdateCampaign(c context.Context, id int64, updateCampaign *models.UpdateCampaign) error {
 
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
 	defer cancel()
 
-	err = a.campaignRepo.UpdateCampaign(ctx, id, updateCampaign)
+	err := a.campaignRepo.UpdateCampaign(ctx, id, updateCampaign)
 	if err != nil {
-		return &models.Response{
-			Status:  models.StatusSuccess,
-			Message: models.MassageUpdateSuccess,
-		}, err
+		return err
 	}
 
-	res = &models.Response{
-		Status:  models.StatusSuccess,
-		Message: models.MassageUpdateSuccess,
-	}
-
-	return res, nil
+	return nil
 }
 
 func (a *campaignUseCase) GetCampaign(c context.Context, name string, status string, startDate string, endDate string) ([]*models.Campaign, error) {

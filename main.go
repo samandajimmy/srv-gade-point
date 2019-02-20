@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"gade/srv-gade-point/middleware"
 	"log"
 	"os"
 	"strconv"
@@ -11,17 +12,17 @@ import (
 	_campaignHttpDelivery "gade/srv-gade-point/campaigns/delivery/http"
 	_campaignRepository "gade/srv-gade-point/campaigns/repository"
 	_campaignUseCase "gade/srv-gade-point/campaigns/usecase"
+	_voucherHttpDelivery "gade/srv-gade-point/vouchers/delivery/http"
+	_voucherRepository "gade/srv-gade-point/vouchers/repository"
+	_voucherUseCase "gade/srv-gade-point/vouchers/usecase"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
-
-	"gade/srv-gade-point/middleware"
-
-	"github.com/joho/godotenv"
 )
 
 func init() {
@@ -40,6 +41,10 @@ func main() {
 	defer migrate.Close()
 
 	e := echo.New()
+
+	//PUBLIC DIRECTORY
+	e.Static(os.Getenv(`VOUCHER_PATH`), os.Getenv(`VOUCHER_ROUTE_PATH`))
+
 	middL := middleware.InitMiddleware()
 	e.Use(middL.CORS)
 
@@ -50,9 +55,15 @@ func main() {
 	}
 	timeoutContext := time.Duration(contextTimeout) * time.Second
 
+	//CAMPAIGN
 	campaignRepository := _campaignRepository.NewPsqlCampaignRepository(dbConn)
 	campaignUseCase := _campaignUseCase.NewCampaignUseCase(campaignRepository, timeoutContext)
 	_campaignHttpDelivery.NewCampaignsHandler(e, campaignUseCase)
+
+	//VOUCHER
+	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn)
+	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, timeoutContext)
+	_voucherHttpDelivery.NewVouchersHandler(e, voucherUseCase)
 
 	e.Start(os.Getenv(`SERVER_PORT`))
 }

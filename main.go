@@ -11,6 +11,9 @@ import (
 	_campaignHttpDelivery "gade/srv-gade-point/campaigns/delivery/http"
 	_campaignRepository "gade/srv-gade-point/campaigns/repository"
 	_campaignUseCase "gade/srv-gade-point/campaigns/usecase"
+	_voucherHttpDelivery "gade/srv-gade-point/vouchers/delivery/http"
+	_voucherRepository "gade/srv-gade-point/vouchers/repository"
+	_voucherUseCase "gade/srv-gade-point/vouchers/usecase"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -40,6 +43,10 @@ func main() {
 	defer migrate.Close()
 
 	e := echo.New()
+
+	//PUBLIC DIRECTORY
+	e.Static("/images/vouchers", "public/images/vouchers")
+
 	middL := middleware.InitMiddleware()
 	e.Use(middL.CORS)
 
@@ -50,9 +57,15 @@ func main() {
 	}
 	timeoutContext := time.Duration(contextTimeout) * time.Second
 
+	//CAMPAIGN
 	campaignRepository := _campaignRepository.NewPsqlCampaignRepository(dbConn)
 	campaignUseCase := _campaignUseCase.NewCampaignUseCase(campaignRepository, timeoutContext)
 	_campaignHttpDelivery.NewCampaignsHandler(e, campaignUseCase)
+
+	//VOUCHER
+	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn)
+	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, timeoutContext)
+	_voucherHttpDelivery.NewVouchersHandler(e, voucherUseCase)
 
 	e.Start(os.Getenv(`SERVER_PORT`))
 }

@@ -23,3 +23,15 @@ This project has  4 Domain layer :
 ![golang clean architecture](https://gade/srv-gade-point/raw/master/clean-arch.png)
 
 The explanation about this project's structure  can read from this medium's post : https://medium.com/@imantumorang/golang-clean-archithecture-efd6d7c43047
+
+
+## Exposed Endpoint
+### Campaign
+> **POST** /campaigns
+> **PUT** /statusCampaign/:id
+> **GET** /campaigns/?name=nameCampaign&status=0&startDate=timestamp&endDate=timestamp
+
+### Voucher
+> **POST** /vouchers
+> **PUT** /statusVoucher/:id
+> **GET** /vouchers/?name=nameCampaign&status=0&startDate=timestamp&endDate=timestamp

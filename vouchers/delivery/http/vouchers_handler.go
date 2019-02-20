@@ -2,8 +2,8 @@ package http
 
 import (
 	"context"
-	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
+	"gade/srv-gade-point/vouchers"
 	"net/http"
 	"strconv"
 
@@ -15,25 +15,27 @@ import (
 // Response represent the response
 var response = models.Response{}
 
-// CampaignsHandler represent the httphandler for campaigns
-type CampaignsHandler struct {
-	CampaignUseCase campaigns.UseCase
+// VouchersHandler represent the httphandler for vouchers
+type VouchersHandler struct {
+	VoucherUseCase vouchers.UseCase
 }
 
-// NewCampaignsHandler represent to register campaigns endpoint
-func NewCampaignsHandler(e *echo.Echo, us campaigns.UseCase) {
-	handler := &CampaignsHandler{
-		CampaignUseCase: us,
+// NewVouchersHandler represent to register vouchers endpoint
+func NewVouchersHandler(e *echo.Echo, us vouchers.UseCase) {
+	handler := &VouchersHandler{
+		VoucherUseCase: us,
 	}
 
-	e.POST("/campaigns", handler.CreateCampaign)
-	e.PUT("/statusCampaign/:id", handler.UpdateStatusCampaign)
-	e.GET("/campaigns", handler.GetCampaigns)
+	e.POST("/vouchers", handler.CreateVoucher)
+	e.PUT("/statusVoucher/:id", handler.UpdateStatusVoucher)
+	e.POST("/uploadVoucherImages", handler.UploadVoucherImages)
+	e.GET("/vouchers", handler.GetVouchers)
+
 }
 
-func (a *CampaignsHandler) CreateCampaign(c echo.Context) error {
-	var campaign models.Campaign
-	err := c.Bind(&campaign)
+func (a *VouchersHandler) CreateVoucher(c echo.Context) error {
+	var voucher models.Voucher
+	err := c.Bind(&voucher)
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
@@ -41,7 +43,7 @@ func (a *CampaignsHandler) CreateCampaign(c echo.Context) error {
 		return c.JSON(http.StatusUnprocessableEntity, response)
 	}
 
-	if ok, err := isRequestValid(&campaign); !ok {
+	if ok, err := isRequestValid(&voucher); !ok {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		response.Data = ""
@@ -53,33 +55,33 @@ func (a *CampaignsHandler) CreateCampaign(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	err = a.CampaignUseCase.CreateCampaign(ctx, &campaign)
+	err = a.VoucherUseCase.CreateVoucher(ctx, &voucher)
 
 	if err != nil {
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		response.Data = ""
-		return c.JSON(getStatusCode(err), response)
-	}
-
-	response.Status = models.StatusSuccess
-	response.Message = models.MassageSaveSuccess
-	response.Data = campaign
-	return c.JSON(http.StatusCreated, response)
-}
-
-func (a *CampaignsHandler) UpdateStatusCampaign(c echo.Context) error {
-
-	updateCampaign := new(models.UpdateCampaign)
-
-	if err := c.Bind(updateCampaign); err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		response.Data = ""
 		return c.JSON(http.StatusUnprocessableEntity, response)
 	}
 
-	if ok, err := isRequestValid(updateCampaign); !ok {
+	response.Status = models.StatusSuccess
+	response.Message = models.MassageSaveSuccess
+	response.Data = voucher
+	return c.JSON(http.StatusCreated, response)
+}
+
+func (a *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
+
+	updateVoucher := new(models.UpdateVoucher)
+
+	if err := c.Bind(updateVoucher); err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		response.Data = ""
+		return c.JSON(http.StatusUnprocessableEntity, response)
+	}
+
+	if ok, err := isRequestValid(updateVoucher); !ok {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		response.Data = ""
@@ -93,7 +95,7 @@ func (a *CampaignsHandler) UpdateStatusCampaign(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	err := a.CampaignUseCase.UpdateCampaign(ctx, int64(id), updateCampaign)
+	err := a.VoucherUseCase.UpdateVoucher(ctx, int64(id), updateVoucher)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -108,7 +110,36 @@ func (a *CampaignsHandler) UpdateStatusCampaign(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-func (a *CampaignsHandler) GetCampaigns(c echo.Context) error {
+func (a *VouchersHandler) UploadVoucherImages(c echo.Context) error {
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		response.Data = ""
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	path, err := a.VoucherUseCase.UploadVoucherImages(file)
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		response.Data = ""
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MassageUploadSuccess
+	response.Data = models.PathVoucher{ImageUrl: path}
+	return c.JSON(http.StatusOK, response)
+}
+
+func (a *VouchersHandler) GetVouchers(c echo.Context) error {
 
 	name := c.QueryParam("name")
 	status := c.QueryParam("status")
@@ -120,7 +151,7 @@ func (a *CampaignsHandler) GetCampaigns(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	res, err := a.CampaignUseCase.GetCampaign(ctx, name, status, startDate, endDate)
+	res, err := a.VoucherUseCase.GetVoucher(ctx, name, status, startDate, endDate)
 
 	if err != nil {
 		response.Status = models.StatusError

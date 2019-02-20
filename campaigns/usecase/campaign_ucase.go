@@ -39,25 +39,17 @@ func (a *campaignUseCase) CreateCampaign(c context.Context, m *models.Campaign) 
 	return nil
 }
 
-func (a *campaignUseCase) UpdateCampaign(c context.Context, id int64, updateCampaign *models.UpdateCampaign) (res *models.Response, err error) {
+func (a *campaignUseCase) UpdateCampaign(c context.Context, id int64, updateCampaign *models.UpdateCampaign) error {
 
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
 	defer cancel()
 
-	err = a.campaignRepo.UpdateCampaign(ctx, id, updateCampaign)
+	err := a.campaignRepo.UpdateCampaign(ctx, id, updateCampaign)
 	if err != nil {
-		return &models.Response{
-			Status:  models.StatusSuccess,
-			Message: models.MassageUpdateSuccess,
-		}, err
+		return err
 	}
 
-	res = &models.Response{
-		Status:  models.StatusSuccess,
-		Message: models.MassageUpdateSuccess,
-	}
-
-	return res, nil
+	return nil
 }
 
 func (a *campaignUseCase) GetCampaign(c context.Context, name string, status string, startDate string, endDate string) ([]*models.Campaign, error) {

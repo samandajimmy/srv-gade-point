@@ -7,31 +7,32 @@ import (
 	"time"
 
 	"github.com/lib/pq"
+
 	"github.com/sirupsen/logrus"
 
-	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
+	"gade/srv-gade-point/vouchers"
 )
 
 const (
 	timeFormat = "2006-01-02T15:04:05.999Z07:00" // reduce precision from RFC3339Nano as date format
 )
 
-type psqlCampaignRepository struct {
+type psqlVoucherRepository struct {
 	Conn *sql.DB
 }
 
 type JSONB []byte
 
-// NewPsqlCampaignRepository will create an object that represent the campaigns.Repository interface
-func NewPsqlCampaignRepository(Conn *sql.DB) campaigns.Repository {
-	return &psqlCampaignRepository{Conn}
+// NewPsqlVoucherRepository will create an object that represent the vouchers.Repository interface
+func NewPsqlVoucherRepository(Conn *sql.DB) vouchers.Repository {
+	return &psqlVoucherRepository{Conn}
 }
 
-func (m *psqlCampaignRepository) CreateCampaign(ctx context.Context, a *models.Campaign) error {
+func (m *psqlVoucherRepository) CreateVoucher(ctx context.Context, a *models.Voucher) error {
 
-	query := `INSERT INTO campaigns (name, description, start_date, end_date, status, validators, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)  RETURNING id`
+	query := `INSERT INTO vouchers (name, description, start_date, end_date, point, journal_account, value, image_url, status, validators, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)  RETURNING id`
 	stmt, err := m.Conn.PrepareContext(ctx, query)
 	if err != nil {
 		return err
@@ -40,13 +41,12 @@ func (m *psqlCampaignRepository) CreateCampaign(ctx context.Context, a *models.C
 	logrus.Debug("Created At: ", time.Now())
 
 	var lastID int64
-
 	validator, err := json.Marshal(a.Validators)
 	if err != nil {
 		return err
 	}
 
-	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate, a.Status, string(validator), time.Now()).Scan(&lastID)
+	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate, a.Point, a.JournalAccount, a.Value, a.ImageUrl, a.Status, string(validator), time.Now()).Scan(&lastID)
 	if err != nil {
 		return err
 	}
@@ -56,9 +56,9 @@ func (m *psqlCampaignRepository) CreateCampaign(ctx context.Context, a *models.C
 	return nil
 }
 
-func (m *psqlCampaignRepository) UpdateCampaign(ctx context.Context, id int64, updateCampaign *models.UpdateCampaign) error {
+func (m *psqlVoucherRepository) UpdateVoucher(ctx context.Context, id int64, updateVoucher *models.UpdateVoucher) error {
 
-	query := `UPDATE campaigns SET status = $1, updated_at = $2 WHERE id = $3 RETURNING id`
+	query := `UPDATE vouchers SET status = $1, updated_at = $2 WHERE id = $3 RETURNING id`
 	stmt, err := m.Conn.PrepareContext(ctx, query)
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func (m *psqlCampaignRepository) UpdateCampaign(ctx context.Context, id int64, u
 
 	var lastID int64
 
-	err = stmt.QueryRowContext(ctx, updateCampaign.Status, time.Now(), id).Scan(&lastID)
+	err = stmt.QueryRowContext(ctx, updateVoucher.Status, time.Now(), id).Scan(&lastID)
 	if err != nil {
 		return err
 	}
@@ -76,8 +76,8 @@ func (m *psqlCampaignRepository) UpdateCampaign(ctx context.Context, id int64, u
 	return nil
 }
 
-func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, status string, startDate string, endDate string) ([]*models.Campaign, error) {
-	query := `SELECT * FROM campaigns WHERE id IS NOT NULL`
+func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, name string, status string, startDate string, endDate string) ([]*models.Voucher, error) {
+	query := `SELECT * FROM vouchers WHERE id IS NOT NULL`
 
 	where := ""
 
@@ -99,7 +99,7 @@ func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, s
 
 	query += where + " ORDER BY created_at DESC"
 
-	res, err := m.getCampaign(ctx, query)
+	res, err := m.getVoucher(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, s
 
 }
 
-func (m *psqlCampaignRepository) getCampaign(ctx context.Context, query string) ([]*models.Campaign, error) {
+func (m *psqlVoucherRepository) getVoucher(ctx context.Context, query string) ([]*models.Voucher, error) {
 	var validator json.RawMessage
 	rows, err := m.Conn.QueryContext(ctx, query)
 	if err != nil {
@@ -117,9 +117,9 @@ func (m *psqlCampaignRepository) getCampaign(ctx context.Context, query string) 
 	}
 	defer rows.Close()
 
-	result := make([]*models.Campaign, 0)
+	result := make([]*models.Voucher, 0)
 	for rows.Next() {
-		t := new(models.Campaign)
+		t := new(models.Voucher)
 		var createDate, updateDate pq.NullTime
 		err = rows.Scan(
 			&t.ID,
@@ -127,6 +127,10 @@ func (m *psqlCampaignRepository) getCampaign(ctx context.Context, query string) 
 			&t.Description,
 			&t.StartDate,
 			&t.EndDate,
+			&t.Point,
+			&t.JournalAccount,
+			&t.Value,
+			&t.ImageUrl,
 			&t.Status,
 			&validator,
 			&updateDate,

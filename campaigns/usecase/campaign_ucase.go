@@ -21,12 +21,6 @@ func NewCampaignUseCase(a campaigns.Repository, timeout time.Duration) campaigns
 	}
 }
 
-/*
-* In this function below, I'm using errgroup with the pipeline pattern
-* Look how this works in this package explanation
-* in godoc: https://godoc.org/golang.org/x/sync/errgroup#ex-Group--Pipeline
- */
-
 func (a *campaignUseCase) CreateCampaign(c context.Context, m *models.Campaign) error {
 
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)

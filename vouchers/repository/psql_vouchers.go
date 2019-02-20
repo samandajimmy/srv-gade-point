@@ -4,14 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"gade/srv-gade-point/models"
+	"gade/srv-gade-point/vouchers"
 	"time"
 
 	"github.com/lib/pq"
-
 	"github.com/sirupsen/logrus"
-
-	"gade/srv-gade-point/models"
-	"gade/srv-gade-point/vouchers"
 )
 
 const (
@@ -24,7 +22,7 @@ type psqlVoucherRepository struct {
 
 type JSONB []byte
 
-// NewPsqlVoucherRepository will create an object that represent the vouchers.Repository interface
+// NewPsqlVoucherRepository will create an object that represent the vouchers. Repository interface
 func NewPsqlVoucherRepository(Conn *sql.DB) vouchers.Repository {
 	return &psqlVoucherRepository{Conn}
 }

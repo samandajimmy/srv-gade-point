@@ -2,15 +2,14 @@ package usecase
 
 import (
 	"context"
+	"gade/srv-gade-point/models"
+	"gade/srv-gade-point/vouchers"
 	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
-
-	"gade/srv-gade-point/models"
-	"gade/srv-gade-point/vouchers"
 )
 
 type voucherUseCase struct {
@@ -25,12 +24,6 @@ func NewVoucherUseCase(a vouchers.Repository, timeout time.Duration) vouchers.Us
 		contextTimeout: timeout,
 	}
 }
-
-/*
-* In this function below, I'm using errgroup with the pipeline pattern
-* Look how this works in this package explanation
-* in godoc: https://godoc.org/golang.org/x/sync/errgroup#ex-Group--Pipeline
- */
 
 func (a *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) error {
 

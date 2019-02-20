@@ -28,10 +28,24 @@ The explanation about this project's structure  can read from this medium's post
 ## Exposed Endpoint
 ### Campaign
 > **POST** /campaigns
+
 > **PUT** /statusCampaign/:id
+
 > **GET** /campaigns/?name=nameCampaign&status=0&startDate=timestamp&endDate=timestamp
 
 ### Voucher
+Create directory for public images :
+
+    public/images/vouchers
+
+add .env :
+    VOUCHER_UPLOAD_PATH=./public/images/vouchers/
+    VOUCHER_PATH=/images/vouchers/
+  
 > **POST** /vouchers
+
 > **PUT** /statusVoucher/:id
+
 > **GET** /vouchers/?name=nameCampaign&status=0&startDate=timestamp&endDate=timestamp
+
+> **POST** /uploadVoucherImages

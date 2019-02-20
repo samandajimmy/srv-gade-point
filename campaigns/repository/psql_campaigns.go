@@ -4,13 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"gade/srv-gade-point/campaigns"
+	"gade/srv-gade-point/models"
 	"time"
 
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
-
-	"gade/srv-gade-point/campaigns"
-	"gade/srv-gade-point/models"
 )
 
 const (

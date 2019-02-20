@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"gade/srv-gade-point/middleware"
 	"log"
 	"os"
 	"strconv"
@@ -18,13 +19,10 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
-
-	"gade/srv-gade-point/middleware"
-
-	"github.com/joho/godotenv"
 )
 
 func init() {

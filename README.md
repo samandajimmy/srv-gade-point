@@ -40,6 +40,7 @@ Create directory for public images :
 
 add .env :
     VOUCHER_UPLOAD_PATH=./public/images/vouchers/
+    VOUCHER_ROUTE_PATH=public/images/vouchers/
     VOUCHER_PATH=/images/vouchers/
   
 > **POST** /vouchers

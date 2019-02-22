@@ -28,12 +28,12 @@ func NewCampaignsHandler(e *echo.Echo, us campaigns.UseCase) {
 
 	//End Point For CMS
 	e.POST("/campaigns", handler.CreateCampaign)
-	e.PUT("/statusCampaign/:id", handler.UpdateStatusCampaign)
+	e.PUT("/campaigns/status/:id", handler.UpdateStatusCampaign)
 	e.GET("/campaigns", handler.GetCampaigns)
 
 	//End Point For External
-	e.POST("/getCampaignValue", handler.GetCampaignValue)
-	e.GET("/getUserPoint", handler.GetUserPoint)
+	e.POST("/campaigns/value", handler.GetCampaignValue)
+	e.GET("/campaigns/point", handler.GetUserPoint)
 }
 
 func (a *CampaignsHandler) CreateCampaign(c echo.Context) error {

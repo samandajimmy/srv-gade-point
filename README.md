@@ -27,19 +27,70 @@ The explanation about this project's structure  can read from this medium's post
 
 ## Exposed Endpoint
 ### Campaign
-For Content Management System :
+End Point For Content Management System :
 
 > **POST** /campaigns
 
-> **PUT** /statusCampaign/:id
+    Purposes :
+    Create New Campaign
 
-> **GET** /campaigns/?name=nameCampaign&status=0&startDate=timestamp&endDate=timestamp
+    Http Header :
+    Content-Type: application/json
+
+    Sample Payload :
+    {
+        "name": "Open Tabungan Emas",                           // string
+        "description": "Open Tabungan Emas",                    // string
+        "startDate": "2019-03-11T11:13:52.958376536+07:00",     // Timestamp format RFC3339Nano
+        "endDate": "2019-04-15T11:13:52.958376536+07:00",       // Timestamp format RFC3339Nano
+        "status": 1,                                            // integer
+        "type": 0,                                              // integer
+        "validators": {
+            "channel": "01",                                    // string
+            "product": "01",                                    // string
+            "transactionType": "01",                            // string
+            "unit": "gram",                                     // string
+            "multiplier": 0.01,                                 // float
+            "value": 6,                                         // integer
+            "formula": "(transactionAmount/multiplier)*value"   // string
+        }
+    }
+
+    Success Response :
+    {
+        "status": "Success",
+        "message": "Successfully Saved",
+        "data": {
+            "id": 10,
+            "name": "Open Tabungan Emas",
+            "description": "Open Tabungan Emas",
+            "startDate": "2019-03-11T11:13:52.958376536+07:00",
+            "endDate": "2019-04-15T11:13:52.958376536+07:00",
+            "status": 1,
+            "type": 0,
+            "validators": {
+                "channel": "01",
+                "product": "01",
+                "transactionType": "01",
+                "unit": "gram",
+                "multiplier": 0.01,
+                "value": 6,
+                "formula": "(transactionAmount/multiplier)*value"
+            },
+            "updatedAt": "0001-01-01T00:00:00Z",
+            "createdAt": "2019-02-22T15:54:03.739922726+07:00"
+        }
+    }
+
+> **PUT** /campaigns/status/:id
+
+> **GET** /campaigns?name=nameCampaign&status=0&startDate=timestamp&endDate=timestamp
 
 For External End POint :
 
-> **POST** /getCampaignValue
+> **POST** /campaigns/value
 
-> **GET** /getUserPoint
+> **GET** /campaigns/point?userId=NoUserId
 
 ### Voucher
 Create directory for public images :

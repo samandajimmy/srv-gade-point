@@ -10,4 +10,7 @@ type Repository interface {
 	CreateCampaign(ctx context.Context, a *models.Campaign) error
 	UpdateCampaign(ctx context.Context, id int64, updateCampaign *models.UpdateCampaign) error
 	GetCampaign(ctx context.Context, name string, status string, startDate string, endDate string) ([]*models.Campaign, error)
+	GetValidatorCampaign(ctx context.Context, a *models.GetCampaignValue) (*models.Campaign, error)
+	SavePoint(ctx context.Context, a *models.SaveTransactionPoint) error
+	GetUserPoint(ctx context.Context, UserId string) (float64, error)
 }

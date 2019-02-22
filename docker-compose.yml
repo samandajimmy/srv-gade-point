@@ -16,3 +16,6 @@ services:
       - DB_SSLMODE=disable
       - SERVER_PORT=:8081
       - DEBUG_APP=true
+      - VOUCHER_UPLOAD_PATH=./public/images/vouchers/
+      - VOUCHER_ROUTE_PATH=public/images/vouchers/
+      - VOUCHER_PATH=/images/vouchers

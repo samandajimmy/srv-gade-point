@@ -27,11 +27,19 @@ The explanation about this project's structure  can read from this medium's post
 
 ## Exposed Endpoint
 ### Campaign
+For Content Management System :
+
 > **POST** /campaigns
 
 > **PUT** /statusCampaign/:id
 
 > **GET** /campaigns/?name=nameCampaign&status=0&startDate=timestamp&endDate=timestamp
+
+For External End POint :
+
+> **POST** /getCampaignValue
+
+> **GET** /getUserPoint
 
 ### Voucher
 Create directory for public images :
@@ -39,9 +47,12 @@ Create directory for public images :
     public/images/vouchers
 
 add .env :
+
     VOUCHER_UPLOAD_PATH=./public/images/vouchers/
+
     VOUCHER_ROUTE_PATH=public/images/vouchers/
-    VOUCHER_PATH=/images/vouchers/
+
+    VOUCHER_PATH=/images/vouchers
   
 > **POST** /vouchers
 

@@ -26,9 +26,14 @@ func NewCampaignsHandler(e *echo.Echo, us campaigns.UseCase) {
 		CampaignUseCase: us,
 	}
 
+	//End Point For CMS
 	e.POST("/campaigns", handler.CreateCampaign)
-	e.PUT("/statusCampaign/:id", handler.UpdateStatusCampaign)
+	e.PUT("/campaigns/status/:id", handler.UpdateStatusCampaign)
 	e.GET("/campaigns", handler.GetCampaigns)
+
+	//End Point For External
+	e.POST("/campaigns/value", handler.GetCampaignValue)
+	e.GET("/campaigns/point", handler.GetUserPoint)
 }
 
 func (a *CampaignsHandler) CreateCampaign(c echo.Context) error {
@@ -121,6 +126,68 @@ func (a *CampaignsHandler) GetCampaigns(c echo.Context) error {
 	}
 
 	res, err := a.CampaignUseCase.GetCampaign(ctx, name, status, startDate, endDate)
+
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		response.Data = ""
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.StatusSuccess
+	response.Data = res
+	return c.JSON(http.StatusOK, response)
+
+}
+
+func (a *CampaignsHandler) GetCampaignValue(c echo.Context) error {
+	var campaignValue models.GetCampaignValue
+	err := c.Bind(&campaignValue)
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		response.Data = ""
+		return c.JSON(http.StatusUnprocessableEntity, response)
+	}
+
+	if ok, err := isRequestValid(&campaignValue); !ok {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		response.Data = ""
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	userPoint, err := a.CampaignUseCase.GetCampaignValue(ctx, &campaignValue)
+
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		response.Data = ""
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MassagePointSuccess
+	response.Data = userPoint
+	return c.JSON(http.StatusOK, response)
+}
+
+func (a *CampaignsHandler) GetUserPoint(c echo.Context) error {
+
+	userId := c.QueryParam("userId")
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	res, err := a.CampaignUseCase.GetUserPoint(ctx, userId)
 
 	if err != nil {
 		response.Status = models.StatusError

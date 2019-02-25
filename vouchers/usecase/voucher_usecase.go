@@ -65,7 +65,7 @@ func (a *voucherUseCase) UploadVoucherImages(file *multipart.FileHeader) (string
 	fileName := strconv.FormatInt(nsec, 10) + ext
 
 	filePathUpload := os.Getenv(`VOUCHER_UPLOAD_PATH`) + fileName
-	filePathPublic := os.Getenv(`VOUCHER_PATH`) + fileName
+	filePathPublic := os.Getenv(`VOUCHER_PATH`) + "/" + fileName
 
 	dst, err := os.Create(filePathUpload)
 	if err != nil {

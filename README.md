@@ -27,11 +27,201 @@ The explanation about this project's structure  can read from this medium's post
 
 ## Exposed Endpoint
 ### Campaign
-> **POST** /campaigns
+End Point For Content Management System :
 
-> **PUT** /statusCampaign/:id
+> **POST**   ${apiUrl}/campaigns
 
-> **GET** /campaigns/?name=nameCampaign&status=0&startDate=timestamp&endDate=timestamp
+    Purposes :
+    Create new campaign
+
+    Http Header :
+    Content-Type: application/json
+
+    Sample Payload :
+    {
+        "name": "Open Tabungan Emas",                           // string
+        "description": "Open Tabungan Emas",                    // string
+        "startDate": "2019-03-11T11:13:52.958376536+07:00",     // Timestamp format RFC3339Nano
+        "endDate": "2019-04-15T11:13:52.958376536+07:00",       // Timestamp format RFC3339Nano
+        "status": 1,                                            // integer
+        "type": 0,                                              // integer
+        "validators": {
+            "channel": "01",                                    // string
+            "product": "01",                                    // string
+            "transactionType": "01",                            // string
+            "unit": "gram",                                     // string
+            "multiplier": 0.01,                                 // float
+            "value": 6,                                         // integer
+            "formula": "(transactionAmount/multiplier)*value"   // string
+        }
+    }
+
+    Success Response :
+    {
+        "status": "Success",
+        "message": "Successfully Saved",
+        "data": {
+            "id": 10,
+            "name": "Open Tabungan Emas",
+            "description": "Open Tabungan Emas",
+            "startDate": "2019-03-11T11:13:52.958376536+07:00",
+            "endDate": "2019-04-15T11:13:52.958376536+07:00",
+            "status": 1,
+            "type": 0,
+            "validators": {
+                "channel": "01",
+                "product": "01",
+                "transactionType": "01",
+                "unit": "gram",
+                "multiplier": 0.01,
+                "value": 6,
+                "formula": "(transactionAmount/multiplier)*value"
+            },
+            "updatedAt": "0001-01-01T00:00:00Z",
+            "createdAt": "2019-02-22T15:54:03.739922726+07:00"
+        }
+    }
+
+> **PUT**   ${apiUrl}/campaigns/status/:id
+
+    Purposes :
+    Update status campaign
+    0 --> INACTIVE
+    1 --> ACTIVE
+
+    Http Header :
+    Content-Type: application/json
+
+    Sample Payload :
+    ${apiUrl}/campaigns/status/${campaign.id}
+
+    {
+	    "status" : 1        //integer
+    }
+
+    Success Response :
+    {
+        "status": "Success",
+        "message": "Successfully Updated",
+        "data": ""
+    }
+
+> **GET**   ${apiUrl}/campaigns
+
+    Purposes :
+    Get all campaign
+
+    Http Header :
+    Content-Type: application/json
+
+    Sample:
+
+    with params :
+    name = Open                                 // name campaign
+    status = 1                                  // status campaign
+    startDate = 2019-03-11T11:13:52.958377Z     // start date campaign
+    endDate = 2019-12-11T11:13:52.958377Z       // end date campaign
+
+    ${apiUrl}/campaigns?name=Tabungan&startDate=2019-03-11T11:13:52.958377Z&endDate=2019-12-11T11:13:52.958377Z&status=1
+
+    Success Response :
+    {
+        "status": "Success",
+        "message": "Success",
+        "data": [
+            {
+                "id": 10,
+                "name": "Open Tabungan Emas",
+                "description": "Open Tabungan Emas",
+                "startDate": "2019-03-11T11:13:52.958377Z",
+                "endDate": "2019-04-15T11:13:52.958377Z",
+                "status": 1,
+                "type": 0,
+                "validators": {
+                    "channel": "01",
+                    "product": "01",
+                    "transactionType": "01",
+                    "unit": "gram",
+                    "multiplier": 0.01,
+                    "value": 6,
+                    "formula": "(transactionAmount/multiplier)*value"
+                },
+                "updatedAt": "2019-02-22T16:08:19.298535Z",
+                "createdAt": "2019-02-22T15:54:03.721114Z"
+            },
+            {
+                "id": 9,
+                "name": "Open Tabungan Emas",
+                "description": "Open Tabungan Emas",
+                "startDate": "2019-03-11T11:13:52.958377Z",
+                "endDate": "2019-04-15T11:13:52.958377Z",
+                "status": 1,
+                "type": 0,
+                "validators": {
+                    "channel": "01",
+                    "product": "01",
+                    "transactionType": "01",
+                    "unit": "gram",
+                    "multiplier": 0.01,
+                    "value": 6,
+                    "formula": "(transactionAmount/multiplier)*value"
+                },
+                "updatedAt": "0001-01-01T00:00:00Z",
+                "createdAt": "2019-02-22T15:53:41.900267Z"
+            }
+        ]
+    }
+
+For External End Point :
+
+> **POST** ${apiUrl}/campaigns/value
+
+    Purposes :
+    Get value point campaign result user point
+
+    Http Header :
+    Content-Type: application/json
+
+    Sample Payload :
+    {
+        "userId": "001",            // string
+        "channel": "01",            // string
+        "product": "01",            // string
+        "transactionType": "01",    // string
+        "unit": "gram",             // string
+        "transactionAmount": 1.80   // float
+    }
+
+    Success Response :
+    {
+        "status": "Success",
+        "message": "Data Successfully Sent",
+        "data": {
+            "userPoint": 720
+        }
+    }
+
+> **GET**   ${apiUrl}/campaigns/point?userId=NoUserId
+
+    Purposes :
+    Get value point amount user point
+
+    Http Header :
+    Content-Type: application/json
+
+    Sample:
+
+    with params :
+    userId = 001                                 // No User Id
+
+    Success Response :
+    {
+        "status": "Success",
+        "message": "Success",
+        "data": {
+            "userPoint": 720
+        }
+    }
 
 ### Voucher
 Create directory for public images :
@@ -39,14 +229,174 @@ Create directory for public images :
     public/images/vouchers
 
 add .env :
+
     VOUCHER_UPLOAD_PATH=./public/images/vouchers/
+
     VOUCHER_ROUTE_PATH=public/images/vouchers/
-    VOUCHER_PATH=/images/vouchers/
+
+    VOUCHER_PATH=/images/vouchers
   
-> **POST** /vouchers
+> **POST**   ${apiUrl}/vouchers
 
-> **PUT** /statusVoucher/:id
+    Purposes :
+    Create new voucher
 
-> **GET** /vouchers/?name=nameCampaign&status=0&startDate=timestamp&endDate=timestamp
+    Http Header :
+    Content-Type: application/json
 
-> **POST** /uploadVoucherImages
+    Sample Payload :
+    {
+        "name": "voucher name",
+        "description": "voucher description",
+        "startDate": "2019-02-10T22:08:41Z",
+        "endDate": "2019-04-30T22:08:41Z",
+        "point": 100,
+        "journalAccount": "000025130101360",
+        "value": 20000,
+        "imageUrl": "public/images/test.png",
+        "status": 1,
+        "validators": {
+            "channel": "001",
+            "product": "002",
+            "transactionType": "003",
+            "unit": "gram"
+        }
+    }
+
+    Success Response :
+    {
+        "status": "Success",
+        "message": "Successfully Saved",
+        "data": {
+            "id": 1,
+            "name": "voucher name",
+            "description": "voucher description",
+            "startDate": "2019-02-10T22:08:41Z",
+            "endDate": "2019-04-30T22:08:41Z",
+            "point": 100,
+            "journalAccount": "000025130101360",
+            "value": 20000,
+            "imageUrl": "public/images/test.png",
+            "status": 1,
+            "validators": {
+                "channel": "001",
+                "product": "002",
+                "transactionType": "003",
+                "unit": "gram"
+            },
+            "updatedAt": "0001-01-01T00:00:00Z",
+            "createdAt": "2019-02-25T10:56:35.644681847+07:00"
+        }
+    }
+
+> **PUT**   ${apiUrl}/vouchers/status/:id
+
+    Purposes :
+    Update status voucher
+    0 --> INACTIVE
+    1 --> ACTIVE
+
+    Http Header :
+    Content-Type: application/json
+
+    Sample Payload :
+    ${apiUrl}/vouchers/status/${voucher.id}
+
+    {
+	    "status" : 1        //integer
+    }
+
+    Success Response :
+    {
+        "status": "Success",
+        "message": "Successfully Updated",
+        "data": ""
+    }
+
+> **GET**   ${apiUrl}/vouchers
+
+    Purposes :
+    Get all vouchers
+
+    Http Header :
+    Content-Type: application/json
+
+    Sample:
+
+    with params :
+    name = Voucher                              // name vouchers
+    status = 1                                  // status vouchers
+    startDate = 2019-02-11T11:13:52.958377Z     // start date vouchers
+    endDate = 2019-12-11T11:13:52.958377Z       // end date vouchers
+
+    ${apiUrl}/vouchers?name=Voucher&startDate=2019-02-11T11:13:52.958377Z&endDate=2019-12-11T11:13:52.958377Z&status=1
+
+    Success Response :
+    {
+        "status": "Success",
+        "message": "Success",
+        "data": [
+            {
+                "id": 2,
+                "name": "voucher name",
+                "description": "voucher description",
+                "startDate": "2019-02-10T22:08:41Z",
+                "endDate": "2019-04-30T22:08:41Z",
+                "point": 100,
+                "journalAccount": "000025130101360     ",
+                "value": 20000,
+                "imageUrl": "public/images/test.png",
+                "status": 1,
+                "validators": {
+                    "channel": "001",
+                    "product": "002",
+                    "transactionType": "003",
+                    "unit": "gram"
+                },
+                "updatedAt": "0001-01-01T00:00:00Z",
+                "createdAt": "2019-02-25T11:12:48.366314Z"
+            },
+            {
+                "id": 1,
+                "name": "voucher name",
+                "description": "voucher description",
+                "startDate": "2019-02-10T22:08:41Z",
+                "endDate": "2019-04-30T22:08:41Z",
+                "point": 100,
+                "journalAccount": "000025130101360     ",
+                "value": 20000,
+                "imageUrl": "public/images/test.png",
+                "status": 1,
+                "validators": {
+                    "channel": "001",
+                    "product": "002",
+                    "transactionType": "003",
+                    "unit": "gram"
+                },
+                "updatedAt": "2019-02-25T11:00:41.986737Z",
+                "createdAt": "2019-02-25T10:56:35.534745Z"
+            }
+        ]
+    }
+
+> **POST**   ${apiUrl}/vouchers/uploadImage
+
+    Purposes :
+    Upload image voucher
+
+    Http Header :
+    Content-Type: multipart/form-data
+
+    Sample :
+    body : 
+    form-data
+    - key = file value = namaFile
+
+    Success Response :
+    {
+        "status": "Success",
+        "message": "Successfully Upload",
+        "data": {
+            "imageUrl": "/images/vouchers/1551068264320753609.png"
+        }
+    }

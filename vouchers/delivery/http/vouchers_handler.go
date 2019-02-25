@@ -27,10 +27,9 @@ func NewVouchersHandler(e *echo.Echo, us vouchers.UseCase) {
 	}
 
 	e.POST("/vouchers", handler.CreateVoucher)
-	e.PUT("/statusVoucher/:id", handler.UpdateStatusVoucher)
-	e.POST("/uploadVoucherImages", handler.UploadVoucherImages)
+	e.PUT("/vouchers/status/:id", handler.UpdateStatusVoucher)
+	e.POST("/vouchers/uploadImage", handler.UploadVoucherImages)
 	e.GET("/vouchers", handler.GetVouchers)
-
 }
 
 func (a *VouchersHandler) CreateVoucher(c echo.Context) error {
@@ -164,7 +163,6 @@ func (a *VouchersHandler) GetVouchers(c echo.Context) error {
 	response.Message = models.StatusSuccess
 	response.Data = res
 	return c.JSON(http.StatusOK, response)
-
 }
 
 func isRequestValid(m interface{}) (bool, error) {

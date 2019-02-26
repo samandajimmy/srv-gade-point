@@ -51,10 +51,12 @@ type VoucherDetail struct {
 }
 
 type PromoCode struct {
-	PromoCode string    `json:"promoCode" validate:"required"`
-	Status    int8      `json:"status"`
-	UserId    string    `json:"userId" validate:"required"`
-	VoucherId int64     `json:"voucherId" validate:"required"`
-	UpdatedAt time.Time `json:"updatedAt"`
-	CreatedAt time.Time `json:"createdAt"`
+	PromoCode    string    `json:"promoCode" validate:"required"`
+	Status       int8      `json:"status"`
+	UserId       string    `json:"userId" validate:"required"`
+	VoucherId    int64     `json:"voucherId" validate:"required"`
+	RedeemedDate time.Time `json:"redeemedDate"`
+	UsedDate     time.Time `json:"UsedDate"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+	CreatedAt    time.Time `json:"createdAt"`
 }

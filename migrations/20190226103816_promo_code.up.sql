@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS promo_codes (
     status SMALLINT DEFAULT 0,
     user_id VARCHAR(50),
     voucher_id SMALLINT REFERENCES vouchers(id) NOT NULL,
+    redeemed_date TIMESTAMP DEFAULT NULL,
+    used_date TIMESTAMP DEFAULT NULL,
     updated_at TIMESTAMP DEFAULT NULL,
     created_at TIMESTAMP DEFAULT NULL
 );

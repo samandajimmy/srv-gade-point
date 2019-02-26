@@ -13,7 +13,10 @@ import (
 	"time"
 )
 
-const letterBytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const (
+	letterBytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	lengthCode  = 5
+)
 
 type voucherUseCase struct {
 	voucherRepo    vouchers.Repository
@@ -36,7 +39,7 @@ func (a *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) err
 	defer cancel()
 
 	err := a.voucherRepo.CreateVoucher(ctx, m)
-	code, err := GeneratePromoCode(m.Stock, 5)
+	code, err := generatePromoCode(m.Stock)
 	if err != nil {
 		return err
 	}
@@ -117,17 +120,17 @@ func (a *voucherUseCase) GetVoucher(c context.Context, name string, status strin
 	return listVoucher, nil
 }
 
-func GeneratePromoCode(stock int32, lengthCode int) (code []string, err error) {
+func generatePromoCode(stock int32) (code []string, err error) {
 
 	var arr = make([]string, stock)
 	for i := range arr {
-		arr[i] = RandStringBytes(lengthCode)
+		arr[i] = randStringBytes(lengthCode)
 	}
 
 	return arr, nil
 }
 
-func RandStringBytes(n int) string {
+func randStringBytes(n int) string {
 	b := make([]byte, n)
 	for i := range b {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]

@@ -15,7 +15,12 @@ import (
 )
 
 const (
-	timeFormat = "2006-01-02T15:04:05.999Z07:00" // reduce precision from RFC3339Nano as date format
+	timeFormat           = "2006-01-02T15:04:05.999Z07:00" // reduce precision from RFC3339Nano as date format
+	fieldInsertPromoCode = 4
+)
+
+var (
+	count = []int{1, 2, 3, 4}
 )
 
 type psqlVoucherRepository struct {
@@ -155,11 +160,12 @@ func (m *psqlVoucherRepository) getVoucher(ctx context.Context, query string) ([
 
 func (m *psqlVoucherRepository) CreatePromoCode(ctx context.Context, promoCode []*models.PromoCode) error {
 
-	valueStrings := make([]string, 0, len(promoCode))
-	valueArgs := make([]interface{}, 0, len(promoCode)*4)
+	var valueStrings []string
+	var valueArgs []interface{}
+	fmt.Println(promoCode)
 	i := 0
 	for _, post := range promoCode {
-		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d)", i*4+1, i*4+2, i*4+3, i*4+4))
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d)", i*fieldInsertPromoCode+count[0], i*fieldInsertPromoCode+count[1], i*fieldInsertPromoCode+count[2], i*fieldInsertPromoCode+count[3]))
 		valueArgs = append(valueArgs, post.PromoCode)
 		valueArgs = append(valueArgs, post.Status)
 		valueArgs = append(valueArgs, post.VoucherId)

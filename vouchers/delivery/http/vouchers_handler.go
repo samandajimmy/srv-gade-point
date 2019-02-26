@@ -32,6 +32,7 @@ func NewVouchersHandler(e *echo.Echo, us vouchers.UseCase) {
 	e.GET("/vouchers", handler.GetVouchers)
 }
 
+//Create new voucher and generate promo code by stock
 func (a *VouchersHandler) CreateVoucher(c echo.Context) error {
 	var voucher models.Voucher
 	err := c.Bind(&voucher)
@@ -69,6 +70,7 @@ func (a *VouchersHandler) CreateVoucher(c echo.Context) error {
 	return c.JSON(http.StatusCreated, response)
 }
 
+//Update status voucher ACTIVE or INACTIVE
 func (a *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 
 	updateVoucher := new(models.UpdateVoucher)
@@ -109,6 +111,7 @@ func (a *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
+//Upload image voucher
 func (a *VouchersHandler) UploadVoucherImages(c echo.Context) error {
 
 	ctx := c.Request().Context()
@@ -138,6 +141,7 @@ func (a *VouchersHandler) UploadVoucherImages(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
+//Get all voucher by param name, status, start date and end date
 func (a *VouchersHandler) GetVouchers(c echo.Context) error {
 
 	name := c.QueryParam("name")

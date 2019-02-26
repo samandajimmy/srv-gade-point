@@ -10,4 +10,5 @@ type Repository interface {
 	CreateVoucher(ctx context.Context, a *models.Voucher) error
 	UpdateVoucher(ctx context.Context, id int64, updateVoucher *models.UpdateVoucher) error
 	GetVoucher(ctx context.Context, name string, status string, startDate string, endDate string) ([]*models.Voucher, error)
+	CreatePromoCode(ctx context.Context, promoCode []*models.PromoCode) error
 }

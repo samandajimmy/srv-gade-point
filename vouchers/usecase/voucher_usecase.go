@@ -5,12 +5,15 @@ import (
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/vouchers"
 	"io"
+	"math/rand"
 	"mime/multipart"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
 )
+
+const letterBytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 type voucherUseCase struct {
 	voucherRepo    vouchers.Repository
@@ -27,14 +30,34 @@ func NewVoucherUseCase(a vouchers.Repository, timeout time.Duration) vouchers.Us
 
 func (a *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) error {
 
+	promoCode := make([]*models.PromoCode, 0)
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
 
 	defer cancel()
 
 	err := a.voucherRepo.CreateVoucher(ctx, m)
+	code, err := GeneratePromoCode(m.Stock, 5)
 	if err != nil {
 		return err
 	}
+
+	for i := 0; i < len(code); i++ {
+		ap := new(models.PromoCode)
+
+		ap = &models.PromoCode{
+			PromoCode: m.PrefixPromoCode + code[i],
+			Status:    0,
+			VoucherId: m.ID,
+			CreatedAt: time.Now(),
+		}
+		promoCode = append(promoCode, ap)
+	}
+
+	err = a.voucherRepo.CreatePromoCode(ctx, promoCode)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -92,4 +115,22 @@ func (a *voucherUseCase) GetVoucher(c context.Context, name string, status strin
 	}
 
 	return listVoucher, nil
+}
+
+func GeneratePromoCode(stock int32, lengthCode int) (code []string, err error) {
+
+	var arr = make([]string, stock)
+	for i := range arr {
+		arr[i] = RandStringBytes(lengthCode)
+	}
+
+	return arr, nil
+}
+
+func RandStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }

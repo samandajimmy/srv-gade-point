@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/vouchers"
+	"strings"
 	"time"
 
 	"github.com/lib/pq"
@@ -29,8 +31,8 @@ func NewPsqlVoucherRepository(Conn *sql.DB) vouchers.Repository {
 
 func (m *psqlVoucherRepository) CreateVoucher(ctx context.Context, a *models.Voucher) error {
 
-	query := `INSERT INTO vouchers (name, description, start_date, end_date, point, journal_account, value, image_url, status, validators, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)  RETURNING id`
+	query := `INSERT INTO vouchers (name, description, start_date, end_date, point, journal_account, value, image_url, status, stock, prefix_promo_code, validators, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)  RETURNING id`
 	stmt, err := m.Conn.PrepareContext(ctx, query)
 	if err != nil {
 		return err
@@ -44,7 +46,7 @@ func (m *psqlVoucherRepository) CreateVoucher(ctx context.Context, a *models.Vou
 		return err
 	}
 
-	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate, a.Point, a.JournalAccount, a.Value, a.ImageUrl, a.Status, string(validator), time.Now()).Scan(&lastID)
+	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate, a.Point, a.JournalAccount, a.Value, a.ImageUrl, a.Status, a.Stock, a.PrefixPromoCode, string(validator), time.Now()).Scan(&lastID)
 	if err != nil {
 		return err
 	}
@@ -75,7 +77,7 @@ func (m *psqlVoucherRepository) UpdateVoucher(ctx context.Context, id int64, upd
 }
 
 func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, name string, status string, startDate string, endDate string) ([]*models.Voucher, error) {
-	query := `SELECT id, name, description, start_date, end_date, point, journal_account, value, image_url, status, validators, updated_at, created_at FROM vouchers WHERE id IS NOT NULL`
+	query := `SELECT id, name, description, start_date, end_date, point, journal_account, value, image_url, status, stock, prefix_promo_code, validators, updated_at, created_at FROM vouchers WHERE id IS NOT NULL`
 
 	where := ""
 
@@ -116,6 +118,7 @@ func (m *psqlVoucherRepository) getVoucher(ctx context.Context, query string) ([
 	defer rows.Close()
 
 	result := make([]*models.Voucher, 0)
+
 	for rows.Next() {
 		t := new(models.Voucher)
 		var createDate, updateDate pq.NullTime
@@ -130,6 +133,8 @@ func (m *psqlVoucherRepository) getVoucher(ctx context.Context, query string) ([
 			&t.Value,
 			&t.ImageUrl,
 			&t.Status,
+			&t.Stock,
+			&t.PrefixPromoCode,
 			&validator,
 			&updateDate,
 			&createDate,
@@ -146,4 +151,35 @@ func (m *psqlVoucherRepository) getVoucher(ctx context.Context, query string) ([
 	}
 
 	return result, nil
+}
+
+func (m *psqlVoucherRepository) CreatePromoCode(ctx context.Context, promoCode []*models.PromoCode) error {
+
+	valueStrings := make([]string, 0, len(promoCode))
+	valueArgs := make([]interface{}, 0, len(promoCode)*4)
+	i := 0
+	for _, post := range promoCode {
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d)", i*4+1, i*4+2, i*4+3, i*4+4))
+		valueArgs = append(valueArgs, post.PromoCode)
+		valueArgs = append(valueArgs, post.Status)
+		valueArgs = append(valueArgs, post.VoucherId)
+		valueArgs = append(valueArgs, post.CreatedAt)
+		i++
+	}
+
+	query := fmt.Sprintf("INSERT INTO promo_codes (promo_code, status, voucher_id, created_at) VALUES %s", strings.Join(valueStrings, ","))
+
+	stmt, err := m.Conn.PrepareContext(ctx, query)
+	if err != nil {
+		return err
+	}
+
+	result, err := stmt.QueryContext(ctx, valueArgs...)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(result)
+
+	return nil
 }

@@ -34,6 +34,7 @@ func NewPsqlVoucherRepository(Conn *sql.DB) vouchers.Repository {
 	return &psqlVoucherRepository{Conn}
 }
 
+// Insert new voucher to database table vouchers
 func (m *psqlVoucherRepository) CreateVoucher(ctx context.Context, a *models.Voucher) error {
 
 	query := `INSERT INTO vouchers (name, description, start_date, end_date, point, journal_account, value, image_url, status, stock, prefix_promo_code, validators, created_at)
@@ -61,6 +62,7 @@ func (m *psqlVoucherRepository) CreateVoucher(ctx context.Context, a *models.Vou
 	return nil
 }
 
+// Update status voucher to database table vouchers
 func (m *psqlVoucherRepository) UpdateVoucher(ctx context.Context, id int64, updateVoucher *models.UpdateVoucher) error {
 
 	query := `UPDATE vouchers SET status = $1, updated_at = $2 WHERE id = $3 RETURNING id`
@@ -81,7 +83,8 @@ func (m *psqlVoucherRepository) UpdateVoucher(ctx context.Context, id int64, upd
 	return nil
 }
 
-func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, name string, status string, startDate string, endDate string) ([]*models.Voucher, error) {
+// Get data all voucher
+func (m *psqlVoucherRepository) GetVouchers(ctx context.Context, name string, status string, startDate string, endDate string) ([]*models.Voucher, error) {
 	query := `SELECT id, name, description, start_date, end_date, point, journal_account, value, image_url, status, stock, prefix_promo_code, validators, updated_at, created_at FROM vouchers WHERE id IS NOT NULL`
 
 	where := ""
@@ -113,6 +116,7 @@ func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, name string, sta
 
 }
 
+// Execute query select from func GetVouchers return all data voucher
 func (m *psqlVoucherRepository) getVoucher(ctx context.Context, query string) ([]*models.Voucher, error) {
 	var validator json.RawMessage
 	rows, err := m.Conn.QueryContext(ctx, query)
@@ -158,18 +162,19 @@ func (m *psqlVoucherRepository) getVoucher(ctx context.Context, query string) ([
 	return result, nil
 }
 
-func (m *psqlVoucherRepository) CreatePromoCode(ctx context.Context, promoCode []*models.PromoCode) error {
+// Insert data promo code from result generate promo code
+func (m *psqlVoucherRepository) CreatePromoCode(ctx context.Context, promoCodes []*models.PromoCode) error {
 
 	var valueStrings []string
 	var valueArgs []interface{}
-	fmt.Println(promoCode)
+	fmt.Println(promoCodes)
 	i := 0
-	for _, post := range promoCode {
+	for _, promoCode := range promoCodes {
 		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d)", i*fieldInsertPromoCode+count[0], i*fieldInsertPromoCode+count[1], i*fieldInsertPromoCode+count[2], i*fieldInsertPromoCode+count[3]))
-		valueArgs = append(valueArgs, post.PromoCode)
-		valueArgs = append(valueArgs, post.Status)
-		valueArgs = append(valueArgs, post.VoucherId)
-		valueArgs = append(valueArgs, post.CreatedAt)
+		valueArgs = append(valueArgs, promoCode.PromoCode)
+		valueArgs = append(valueArgs, promoCode.Status)
+		valueArgs = append(valueArgs, promoCode.VoucherId)
+		valueArgs = append(valueArgs, promoCode.CreatedAt)
 		i++
 	}
 

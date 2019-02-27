@@ -154,7 +154,7 @@ func (a *VouchersHandler) GetVouchers(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	res, err := a.VoucherUseCase.GetVoucher(ctx, name, status, startDate, endDate)
+	res, err := a.VoucherUseCase.GetVouchers(ctx, name, status, startDate, endDate)
 
 	if err != nil {
 		response.Status = models.StatusError

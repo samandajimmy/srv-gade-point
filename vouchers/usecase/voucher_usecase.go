@@ -31,6 +31,7 @@ func NewVoucherUseCase(a vouchers.Repository, timeout time.Duration) vouchers.Us
 	}
 }
 
+// create new voucher and generate promo code
 func (a *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) error {
 
 	promoCode := make([]*models.PromoCode, 0)
@@ -64,6 +65,7 @@ func (a *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) err
 	return nil
 }
 
+// Update status voucher by id
 func (a *voucherUseCase) UpdateVoucher(c context.Context, id int64, updateVoucher *models.UpdateVoucher) error {
 
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
@@ -77,6 +79,7 @@ func (a *voucherUseCase) UpdateVoucher(c context.Context, id int64, updateVouche
 	return nil
 }
 
+// Upload file image voucher
 func (a *voucherUseCase) UploadVoucherImages(file *multipart.FileHeader) (string, error) {
 
 	src, err := file.Open()
@@ -107,12 +110,13 @@ func (a *voucherUseCase) UploadVoucherImages(file *multipart.FileHeader) (string
 	return filePathPublic, nil
 }
 
-func (a *voucherUseCase) GetVoucher(c context.Context, name string, status string, startDate string, endDate string) (res interface{}, err error) {
+//Get all voucher by param name, status, start date and end date
+func (a *voucherUseCase) GetVouchers(c context.Context, name string, status string, startDate string, endDate string) (res interface{}, err error) {
 
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
 	defer cancel()
 
-	listVoucher, err := a.voucherRepo.GetVoucher(ctx, name, status, startDate, endDate)
+	listVoucher, err := a.voucherRepo.GetVouchers(ctx, name, status, startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -120,6 +124,7 @@ func (a *voucherUseCase) GetVoucher(c context.Context, name string, status strin
 	return listVoucher, nil
 }
 
+// Generate promo code by stock, prefix code and length character code from data voucher
 func generatePromoCode(stock int32) (code []string, err error) {
 
 	var arr = make([]string, stock)
@@ -130,6 +135,7 @@ func generatePromoCode(stock int32) (code []string, err error) {
 	return arr, nil
 }
 
+// Rand String from letter bytes constant
 func randStringBytes(n int) string {
 	b := make([]byte, n)
 	for i := range b {

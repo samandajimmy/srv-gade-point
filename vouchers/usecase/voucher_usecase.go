@@ -5,11 +5,17 @@ import (
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/vouchers"
 	"io"
+	"math/rand"
 	"mime/multipart"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+)
+
+const (
+	letterBytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	lengthCode  = 5
 )
 
 type voucherUseCase struct {
@@ -25,19 +31,41 @@ func NewVoucherUseCase(a vouchers.Repository, timeout time.Duration) vouchers.Us
 	}
 }
 
+// create new voucher and generate promo code
 func (a *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) error {
 
+	promoCode := make([]*models.PromoCode, 0)
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
 
 	defer cancel()
 
 	err := a.voucherRepo.CreateVoucher(ctx, m)
+	code, err := generatePromoCode(m.Stock)
 	if err != nil {
 		return err
 	}
+
+	for i := 0; i < len(code); i++ {
+		ap := new(models.PromoCode)
+
+		ap = &models.PromoCode{
+			PromoCode: m.PrefixPromoCode + code[i],
+			Status:    0,
+			VoucherId: m.ID,
+			CreatedAt: time.Now(),
+		}
+		promoCode = append(promoCode, ap)
+	}
+
+	err = a.voucherRepo.CreatePromoCode(ctx, promoCode)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
+// Update status voucher by id
 func (a *voucherUseCase) UpdateVoucher(c context.Context, id int64, updateVoucher *models.UpdateVoucher) error {
 
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
@@ -51,6 +79,7 @@ func (a *voucherUseCase) UpdateVoucher(c context.Context, id int64, updateVouche
 	return nil
 }
 
+// Upload file image voucher
 func (a *voucherUseCase) UploadVoucherImages(file *multipart.FileHeader) (string, error) {
 
 	src, err := file.Open()
@@ -81,15 +110,36 @@ func (a *voucherUseCase) UploadVoucherImages(file *multipart.FileHeader) (string
 	return filePathPublic, nil
 }
 
-func (a *voucherUseCase) GetVoucher(c context.Context, name string, status string, startDate string, endDate string) (res interface{}, err error) {
+//Get all voucher by param name, status, start date and end date
+func (a *voucherUseCase) GetVouchers(c context.Context, name string, status string, startDate string, endDate string) (res interface{}, err error) {
 
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
 	defer cancel()
 
-	listVoucher, err := a.voucherRepo.GetVoucher(ctx, name, status, startDate, endDate)
+	listVoucher, err := a.voucherRepo.GetVouchers(ctx, name, status, startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
 
 	return listVoucher, nil
+}
+
+// Generate promo code by stock, prefix code and length character code from data voucher
+func generatePromoCode(stock int32) (code []string, err error) {
+
+	var arr = make([]string, stock)
+	for i := range arr {
+		arr[i] = randStringBytes(lengthCode)
+	}
+
+	return arr, nil
+}
+
+// Rand String from letter bytes constant
+func randStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }

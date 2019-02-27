@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS vouchers (
     value DECIMAL NOT NULL,
     image_url VARCHAR(255) NOT NULL, 
     status SMALLINT DEFAULT 0,
+    stock SMALLINT NOT NULL,
+    prefix_promo_code CHAR(5) NOT NULL,
     validators JSONB NOT NULL, 
     updated_at TIMESTAMP DEFAULT NULL,
     created_at TIMESTAMP DEFAULT NULL

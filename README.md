@@ -246,20 +246,22 @@ add .env :
 
     Sample Payload :
     {
-        "name": "voucher name",
-        "description": "voucher description",
-        "startDate": "2019-02-10T22:08:41Z",
-        "endDate": "2019-04-30T22:08:41Z",
-        "point": 100,
-        "journalAccount": "000025130101360",
-        "value": 20000,
-        "imageUrl": "public/images/test.png",
-        "status": 1,
+        "name": "voucher emas",                             // string
+        "description": "voucher emas potongan harga",       // string
+        "startDate": "2019-02-10T22:08:41Z",                // Timestamp format RFC3339Nano
+        "endDate": "2019-04-30T22:08:41Z",                  // Timestamp format RFC3339Nano
+        "point": 100,                                       // integer
+        "journalAccount": "000025130101360",                // string
+        "value": 20000,                                     // float
+        "imageUrl": "public/images/test.png",               // string
+        "status": 1,                                        // integer
+        "stock": 20,                                        // integer
+        "prefixPromoCode": "EM",                            // string
         "validators": {
-            "channel": "001",
-            "product": "002",
-            "transactionType": "003",
-            "unit": "gram"
+            "channel": "001",                               // string
+            "product": "002",                               // string
+            "transactionType": "003",                       // string
+            "unit": "gram"                                  // string
         }
     }
 
@@ -269,8 +271,8 @@ add .env :
         "message": "Successfully Saved",
         "data": {
             "id": 1,
-            "name": "voucher name",
-            "description": "voucher description",
+            "name": "voucher emas",
+            "description": "voucher emas potongan harga",
             "startDate": "2019-02-10T22:08:41Z",
             "endDate": "2019-04-30T22:08:41Z",
             "point": 100,
@@ -278,6 +280,8 @@ add .env :
             "value": 20000,
             "imageUrl": "public/images/test.png",
             "status": 1,
+            "stock": 20,
+            "prefixPromoCode": "EM",
             "validators": {
                 "channel": "001",
                 "product": "002",
@@ -285,7 +289,7 @@ add .env :
                 "unit": "gram"
             },
             "updatedAt": "0001-01-01T00:00:00Z",
-            "createdAt": "2019-02-25T10:56:35.644681847+07:00"
+            "createdAt": "2019-02-26T08:18:28.092667717+07:00"
         }
     }
 

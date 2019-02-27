@@ -5,7 +5,8 @@
     3 -> expired*/
 
 CREATE TABLE IF NOT EXISTS promo_codes (
-    promo_code VARCHAR(10) PRIMARY KEY NOT NULL,
+    id SERIAL PRIMARY KEY NOT NULL,
+    promo_code VARCHAR(10) UNIQUE,
     status SMALLINT DEFAULT 0,
     user_id VARCHAR(50),
     voucher_id SMALLINT REFERENCES vouchers(id) NOT NULL,
@@ -15,4 +16,4 @@ CREATE TABLE IF NOT EXISTS promo_codes (
     created_at TIMESTAMP DEFAULT NULL
 );
 
-CREATE INDEX index_promo_codes ON promo_codes (promo_code, status, user_id);
+CREATE INDEX index_promo_codes ON promo_codes (id, promo_code, status, user_id);

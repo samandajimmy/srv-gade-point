@@ -51,6 +51,7 @@ type VoucherDetail struct {
 }
 
 type PromoCode struct {
+	ID           int64     `json:"id"`
 	PromoCode    string    `json:"promoCode" validate:"required"`
 	Status       int8      `json:"status"`
 	UserId       string    `json:"userId" validate:"required"`

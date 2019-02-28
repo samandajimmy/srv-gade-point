@@ -135,25 +135,6 @@ func (a *voucherUseCase) GetVouchers(c context.Context, name string, status stri
 	return listVoucher, strconv.Itoa(totalCount), nil
 }
 
-//Get monitoring voucher stock amount, stock avaliable, stock bought, stock redeemed, stock expired
-func (a *voucherUseCase) GetVouchersMonitoring(c context.Context, page int32, limit int32) (interface{}, string, error) {
-
-	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
-	defer cancel()
-
-	listVoucher, err := a.voucherRepo.GetVouchersMonitoring(ctx, page, limit)
-	if err != nil {
-		return nil, "", err
-	}
-
-	totalCount, err := a.voucherRepo.CountVouchers(ctx, "")
-	if err != nil {
-		return nil, "", err
-	}
-
-	return listVoucher, strconv.Itoa(totalCount), nil
-}
-
 // Generate promo code by stock, prefix code and length character code from data voucher
 func generatePromoCode(stock int32) (code []string, err error) {
 

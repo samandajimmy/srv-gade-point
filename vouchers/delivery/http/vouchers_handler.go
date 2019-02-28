@@ -31,7 +31,6 @@ func NewVouchersHandler(e *echo.Echo, us vouchers.UseCase) {
 	e.PUT("/vouchers/status/:id", handler.UpdateStatusVoucher)
 	e.POST("/vouchers/upload", handler.UploadVoucherImages)
 	e.GET("/vouchers", handler.GetVouchers)
-	e.GET("/vouchers/monitor", handler.GetVouchersMonitoring)
 }
 
 //Create new voucher and generate promo code by stock
@@ -171,32 +170,6 @@ func (a *VouchersHandler) GetVouchers(c echo.Context) error {
 
 	res, totalCount, err := a.VoucherUseCase.GetVouchers(ctx, name, status, startDate, endDate, int32(page), int32(limit))
 
-	if err != nil {
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		response.Data = ""
-		response.TotalCount = ""
-		return c.JSON(getStatusCode(err), response)
-	}
-
-	response.Status = models.StatusSuccess
-	response.Message = models.StatusSuccess
-	response.Data = res
-	response.TotalCount = totalCount
-	return c.JSON(http.StatusOK, response)
-}
-
-//Get monitoring voucher stock amount, stock avaliable, stock bought,stock redeemed, expired
-func (a *VouchersHandler) GetVouchersMonitoring(c echo.Context) error {
-	page, _ := strconv.Atoi(c.QueryParam("page"))
-	limit, _ := strconv.Atoi(c.QueryParam("limit"))
-
-	ctx := c.Request().Context()
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	res, totalCount, err := a.VoucherUseCase.GetVouchersMonitoring(ctx, int32(page), int32(limit))
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()

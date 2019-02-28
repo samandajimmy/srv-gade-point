@@ -24,6 +24,11 @@ type Voucher struct {
 	Status          int8       `json:"status"`
 	Stock           int32      `json:"stock" validate:"required"`
 	PrefixPromoCode string     `json:"prefixPromoCode" validate:"required"`
+	Amount          int32      `json:"amount"`
+	Avaliable       int32      `json:"avaliable", omitempty`
+	Bought          int32      `json:"bought", omitempty`
+	Redeemed        int32      `json:"redeemed", omitempty`
+	Expired         int32      `json:"expired", omitempty`
 	Validators      Validators `json:"validators"`
 	UpdatedAt       time.Time  `json:"updatedAt"`
 	CreatedAt       time.Time  `json:"createdAt"`
@@ -60,16 +65,4 @@ type PromoCode struct {
 	UsedDate     time.Time `json:"UsedDate"`
 	UpdatedAt    time.Time `json:"updatedAt"`
 	CreatedAt    time.Time `json:"createdAt"`
-}
-
-type VouchersMonitoring struct {
-	ID        int64  `json:"id"`
-	Name      string `json:"name"`
-	StartDate string `json:"startDate"`
-	EndDate   string `json:"endDate"`
-	Amount    int32  `json:"amount"`
-	Avaliable int32  `json:"avaliable"`
-	Bought    int32  `json:"bought"`
-	Redeemed  int32  `json:"redeemed"`
-	Expired   int32  `json:"expired"`
 }

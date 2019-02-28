@@ -83,11 +83,11 @@ func (m *psqlVoucherRepository) UpdateVoucher(ctx context.Context, id int64, upd
 	return nil
 }
 
-// Get data all voucher
+// Get data all voucher with detail monitoring promo code
 func (m *psqlVoucherRepository) GetVouchers(ctx context.Context, name string, status string, startDate string, endDate string, page int32, limit int32) ([]*models.Voucher, error) {
 
 	paging := fmt.Sprintf(" LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
-	query := `SELECT id, name, description, start_date, end_date, point, journal_account, value, image_url, status, stock, prefix_promo_code, validators, updated_at, created_at FROM vouchers WHERE id IS NOT NULL`
+	query := `SELECT d.id, d.name, d.description, d.start_date, d.end_date, d.point, d.journal_account, d.value, d.image_url, d.status, d.stock, d.prefix_promo_code, d.amount, CASE WHEN d.end_date::date < now()::date THEN 0 ELSE coalesce(e.avaliable,0) END AS avaliable, coalesce(f.bought,0) bought , coalesce(g.reedem,0) reedem, CASE WHEN coalesce(h.expired,0)-coalesce(g.reedem,0) < 0 THEN 0 ELSE coalesce(h.expired,0)-coalesce(g.reedem,0) END AS expired, d.validators, d.updated_at, d.created_at FROM (SELECT b.id, b.name, b.description, b.start_date, b.end_date, b.point, b.journal_account, b.value, b.image_url, b.status, b.stock, b.prefix_promo_code, count(a.id) as amount, b.validators, b.updated_at, b.created_at FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id	GROUP BY b.id, b.name, b.description, b.start_date, b.end_date, b.point, b.journal_account, b.value, b.image_url, b.status, b.stock, b.prefix_promo_code, b.validators, b.updated_at, b.created_at) as d LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as avaliable FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 0	GROUP BY b.id) as e ON e.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as bought FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 1 GROUP BY b.id) as f ON f.id = d.id	LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as reedem FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 2 GROUP BY b.id) as g ON g.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as expired FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE end_date::date < now()::date GROUP BY b.id) as h ON h.id = d.id	WHERE d.id IS NOT NULL`
 
 	where := ""
 
@@ -118,7 +118,7 @@ func (m *psqlVoucherRepository) GetVouchers(ctx context.Context, name string, st
 
 }
 
-// Execute query select from func GetVouchers return all data voucher
+// Execute query select from func GetVouchers return all data voucher with detail monitoring promo code
 func (m *psqlVoucherRepository) getVoucher(ctx context.Context, query string) ([]*models.Voucher, error) {
 	var validator json.RawMessage
 	rows, err := m.Conn.QueryContext(ctx, query)
@@ -146,6 +146,11 @@ func (m *psqlVoucherRepository) getVoucher(ctx context.Context, query string) ([
 			&t.Status,
 			&t.Stock,
 			&t.PrefixPromoCode,
+			&t.Amount,
+			&t.Avaliable,
+			&t.Bought,
+			&t.Redeemed,
+			&t.Expired,
 			&validator,
 			&updateDate,
 			&createDate,
@@ -196,49 +201,6 @@ func (m *psqlVoucherRepository) CreatePromoCode(ctx context.Context, promoCodes 
 	return nil
 }
 
-// Get data all monitoring voucher
-func (m *psqlVoucherRepository) GetVouchersMonitoring(ctx context.Context, page int32, limit int32) ([]*models.VouchersMonitoring, error) {
-
-	query := `SELECT d.id, d.name, d.start_date, d.end_date, d.amount, CASE WHEN d.end_date::date < now()::date THEN 0 ELSE coalesce(e.avaliable,0) END AS avaliable, coalesce(f.bought,0) bought , coalesce(g.reedem,0) reedem, CASE WHEN coalesce(h.expired,0)-coalesce(g.reedem,0) < 0 THEN 0 ELSE coalesce(h.expired,0)-coalesce(g.reedem,0) END AS expired FROM (SELECT b.id, b.name, b.start_date, b.end_date, count(a.id) as amount FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id	GROUP BY b.id, b.name, b.start_date, b.end_date) as d LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as avaliable FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 0	GROUP BY b.id) as e ON e.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as bought FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 1 GROUP BY b.id) as f ON f.id = d.id	LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as reedem FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 2 GROUP BY b.id) as g ON g.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as expired FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE end_date::date < now()::date GROUP BY b.id) as h ON h.id = d.id	ORDER BY d.id ASC LIMIT $1 OFFSET $2`
-
-	stmt, err := m.Conn.PrepareContext(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := stmt.QueryContext(ctx, limit, ((page - 1) * limit))
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	result := make([]*models.VouchersMonitoring, 0)
-
-	for rows.Next() {
-		t := new(models.VouchersMonitoring)
-		err = rows.Scan(
-			&t.ID,
-			&t.Name,
-			&t.StartDate,
-			&t.EndDate,
-			&t.Amount,
-			&t.Avaliable,
-			&t.Bought,
-			&t.Redeemed,
-			&t.Expired,
-		)
-
-		if err != nil {
-			logrus.Error(err)
-			return nil, err
-		}
-		result = append(result, t)
-	}
-
-	return result, nil
-}
-
 // For count all data voucher by id
 func (m *psqlVoucherRepository) CountVouchers(ctx context.Context, status string) (int, error) {
 
@@ -265,7 +227,7 @@ func (m *psqlVoucherRepository) CountVouchers(ctx context.Context, status string
 // Delete voucher when failed generate promocode
 func (m *psqlVoucherRepository) DeleteVoucher(ctx context.Context, id int64) error {
 
-	query := `DELETE FROM vouchers WHERE id = $1`
+	query := `DELETE FROM vouchers WHERE ID = $1`
 
 	stmt, err := m.Conn.PrepareContext(ctx, query)
 	if err != nil {

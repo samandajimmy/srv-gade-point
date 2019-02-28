@@ -60,3 +60,13 @@ type SaveTransactionPoint struct {
 type UserPoint struct {
 	UserPoint float64 `json:"userPoint"`
 }
+
+// DataPointHistory is a struct to store all historical user point data
+type DataPointHistory struct {
+	ID              int64     `json:"id,omitempty"`
+	PointAmount     float64   `json:"pointAmount,omitempty"`
+	TransactionType string    `json:"transactionType,omitempty"`
+	TransactionDate time.Time `json:"transactionDate,omitempty"`
+	CampaignID      int64     `json:"campaignId,omitempty"`
+	VoucherID       int64     `json:"voucherId,omitempty"`
+}

@@ -20,31 +20,31 @@ type campaignUseCase struct {
 }
 
 // NewCampaignUseCase will create new an campaignUseCase object representation of campaigns.UseCase interface
-func NewCampaignUseCase(a campaigns.Repository, timeout time.Duration) campaigns.UseCase {
+func NewCampaignUseCase(cmpgn campaigns.Repository, timeout time.Duration) campaigns.UseCase {
 	return &campaignUseCase{
-		campaignRepo:   a,
+		campaignRepo:   cmpgn,
 		contextTimeout: timeout,
 	}
 }
 
-func (a *campaignUseCase) CreateCampaign(c context.Context, m *models.Campaign) error {
+func (cmpgn *campaignUseCase) CreateCampaign(c context.Context, m *models.Campaign) error {
 
-	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
+	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
 
-	err := a.campaignRepo.CreateCampaign(ctx, m)
+	err := cmpgn.campaignRepo.CreateCampaign(ctx, m)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (a *campaignUseCase) UpdateCampaign(c context.Context, id int64, updateCampaign *models.UpdateCampaign) error {
+func (cmpgn *campaignUseCase) UpdateCampaign(c context.Context, id int64, updateCampaign *models.UpdateCampaign) error {
 
-	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
+	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
 
-	err := a.campaignRepo.UpdateCampaign(ctx, id, updateCampaign)
+	err := cmpgn.campaignRepo.UpdateCampaign(ctx, id, updateCampaign)
 	if err != nil {
 		return err
 	}
@@ -52,12 +52,12 @@ func (a *campaignUseCase) UpdateCampaign(c context.Context, id int64, updateCamp
 	return nil
 }
 
-func (a *campaignUseCase) GetCampaign(c context.Context, name string, status string, startDate string, endDate string) ([]*models.Campaign, error) {
+func (cmpgn *campaignUseCase) GetCampaign(c context.Context, name string, status string, startDate string, endDate string) ([]*models.Campaign, error) {
 
-	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
+	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
 
-	listCampaign, err := a.campaignRepo.GetCampaign(ctx, name, status, startDate, endDate)
+	listCampaign, err := cmpgn.campaignRepo.GetCampaign(ctx, name, status, startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -65,11 +65,11 @@ func (a *campaignUseCase) GetCampaign(c context.Context, name string, status str
 	return listCampaign, nil
 }
 
-func (a *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetCampaignValue) (*models.UserPoint, error) {
-	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
+func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetCampaignValue) (*models.UserPoint, error) {
+	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
 
-	dataCampaign, err := a.campaignRepo.GetValidatorCampaign(ctx, m)
+	dataCampaign, err := cmpgn.campaignRepo.GetValidatorCampaign(ctx, m)
 	if err != nil {
 		return nil, models.ErrNoCampaign
 	}
@@ -95,7 +95,7 @@ func (a *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetCampa
 		CreatedAt:       time.Now(),
 	}
 
-	err = a.campaignRepo.SavePoint(ctx, saveTransactionPoint)
+	err = cmpgn.campaignRepo.SavePoint(ctx, saveTransactionPoint)
 	if err != nil {
 		return nil, err
 	}
@@ -106,11 +106,11 @@ func (a *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetCampa
 	return p, nil
 }
 
-func (a *campaignUseCase) GetUserPoint(c context.Context, userId string) (*models.UserPoint, error) {
-	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
+func (cmpgn *campaignUseCase) GetUserPoint(c context.Context, userId string) (*models.UserPoint, error) {
+	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
 
-	pointAmount, err := a.campaignRepo.GetUserPoint(ctx, userId)
+	pointAmount, err := cmpgn.campaignRepo.GetUserPoint(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -119,6 +119,23 @@ func (a *campaignUseCase) GetUserPoint(c context.Context, userId string) (*model
 	p.UserPoint = pointAmount
 
 	return p, nil
+}
+
+func (cmpgn *campaignUseCase) GetUserPointHistory(c context.Context, userID string) (*models.DataPointHistory, error) {
+	var dataHistory *models.DataPointHistory
+	var err error
+
+	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
+	defer cancel()
+
+	fmt.Println(ctx)
+	//cmpgn.campaignRepo.GetUserPoint(ctx, userID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return dataHistory, nil
 }
 
 func getFloat(unk interface{}) (float64, error) {

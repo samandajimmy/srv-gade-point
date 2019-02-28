@@ -25,12 +25,19 @@ import (
 	"github.com/spf13/viper"
 )
 
+var ech *echo.Echo
+
 func init() {
 	err := godotenv.Load()
 
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
+	ech = echo.New()
+
+	// setup PUBLIC DIRECTORY
+	ech.Static(os.Getenv(`VOUCHER_PATH`), os.Getenv(`VOUCHER_ROUTE_PATH`))
 }
 
 func main() {
@@ -40,32 +47,27 @@ func main() {
 	defer dbConn.Close()
 	defer migrate.Close()
 
-	e := echo.New()
-
-	//PUBLIC DIRECTORY
-	e.Static(os.Getenv(`VOUCHER_PATH`), os.Getenv(`VOUCHER_ROUTE_PATH`))
-
 	middL := middleware.InitMiddleware()
-	e.Use(middL.CORS)
-
+	ech.Use(middL.CORS)
 	contextTimeout, err := strconv.Atoi(os.Getenv(`CONTEXT_TIMEOUT`))
 
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	timeoutContext := time.Duration(contextTimeout) * time.Second
 
 	//CAMPAIGN
 	campaignRepository := _campaignRepository.NewPsqlCampaignRepository(dbConn)
 	campaignUseCase := _campaignUseCase.NewCampaignUseCase(campaignRepository, timeoutContext)
-	_campaignHttpDelivery.NewCampaignsHandler(e, campaignUseCase)
+	_campaignHttpDelivery.NewCampaignsHandler(ech, campaignUseCase)
 
 	//VOUCHER
 	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn)
 	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, timeoutContext)
-	_voucherHttpDelivery.NewVouchersHandler(e, voucherUseCase)
+	_voucherHttpDelivery.NewVouchersHandler(ech, voucherUseCase)
 
-	e.Start(os.Getenv(`SERVER_PORT`))
+	ech.Start(os.Getenv(`SERVER_PORT`))
 }
 
 func getDBConn() *sql.DB {
@@ -105,6 +107,9 @@ func dataMigrations(dbConn *sql.DB) *migrate.Migrate {
 		fmt.Println(err)
 	}
 
-	migrations.Up()
+	if err := migrations.Up(); err != nil {
+		fmt.Println(err)
+	}
+
 	return migrations
 }

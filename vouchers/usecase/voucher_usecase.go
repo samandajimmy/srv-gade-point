@@ -59,6 +59,12 @@ func (a *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) err
 
 	err = a.voucherRepo.CreatePromoCode(ctx, promoCode)
 	if err != nil {
+		//Delete voucher when failed generate promo code
+		err = a.voucherRepo.DeleteVoucher(ctx, m.ID)
+		if err != nil {
+			err = a.voucherRepo.DeleteVoucher(ctx, m.ID)
+			return err
+		}
 		return err
 	}
 
@@ -111,17 +117,41 @@ func (a *voucherUseCase) UploadVoucherImages(file *multipart.FileHeader) (string
 }
 
 //Get all voucher by param name, status, start date and end date
-func (a *voucherUseCase) GetVouchers(c context.Context, name string, status string, startDate string, endDate string) (res interface{}, err error) {
+func (a *voucherUseCase) GetVouchers(c context.Context, name string, status string, startDate string, endDate string, page int32, limit int32) (interface{}, string, error) {
 
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
 	defer cancel()
 
-	listVoucher, err := a.voucherRepo.GetVouchers(ctx, name, status, startDate, endDate)
+	listVoucher, err := a.voucherRepo.GetVouchers(ctx, name, status, startDate, endDate, page, limit)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return listVoucher, nil
+	totalCount, err := a.voucherRepo.CountVouchers(ctx, "")
+	if err != nil {
+		return nil, "", err
+	}
+
+	return listVoucher, strconv.Itoa(totalCount), nil
+}
+
+//Get monitoring voucher stock amount, stock avaliable, stock bought, stock redeemed, stock expired
+func (a *voucherUseCase) GetVouchersMonitoring(c context.Context, page int32, limit int32) (interface{}, string, error) {
+
+	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
+	defer cancel()
+
+	listVoucher, err := a.voucherRepo.GetVouchersMonitoring(ctx, page, limit)
+	if err != nil {
+		return nil, "", err
+	}
+
+	totalCount, err := a.voucherRepo.CountVouchers(ctx, "")
+	if err != nil {
+		return nil, "", err
+	}
+
+	return listVoucher, strconv.Itoa(totalCount), nil
 }
 
 // Generate promo code by stock, prefix code and length character code from data voucher

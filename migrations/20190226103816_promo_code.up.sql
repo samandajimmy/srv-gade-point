@@ -1,8 +1,8 @@
 -- Table: promo_codes
-/* 0 -> available
-    1 -> redeemed
-    2 -> used
-    3 -> expired*/
+/*  Generated  by admin                 = 0 -> available
+    user bought a voucher with points   = 1 -> bought
+    Sudah digunakan                     = 2 -> redeemed
+    Sudah lewat tanggal                 = 3 -> expired*/
 
 CREATE TABLE IF NOT EXISTS promo_codes (
     id SERIAL PRIMARY KEY NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS promo_codes (
     user_id VARCHAR(50),
     voucher_id SMALLINT REFERENCES vouchers(id) NOT NULL,
     redeemed_date TIMESTAMP DEFAULT NULL,
-    used_date TIMESTAMP DEFAULT NULL,
+    bought_date TIMESTAMP DEFAULT NULL,
     updated_at TIMESTAMP DEFAULT NULL,
     created_at TIMESTAMP DEFAULT NULL
 );

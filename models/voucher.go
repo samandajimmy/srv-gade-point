@@ -61,3 +61,15 @@ type PromoCode struct {
 	UpdatedAt    time.Time `json:"updatedAt"`
 	CreatedAt    time.Time `json:"createdAt"`
 }
+
+type VouchersMonitoring struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	StartDate string `json:"startDate"`
+	EndDate   string `json:"endDate"`
+	Amount    int32  `json:"amount"`
+	Avaliable int32  `json:"avaliable"`
+	Bought    int32  `json:"bought"`
+	Redeemed  int32  `json:"redeemed"`
+	Expired   int32  `json:"expired"`
+}

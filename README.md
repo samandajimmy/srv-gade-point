@@ -332,8 +332,10 @@ add .env :
     status = 1                                  // status vouchers
     startDate = 2019-02-11T11:13:52.958377Z     // start date vouchers
     endDate = 2019-12-11T11:13:52.958377Z       // end date vouchers
+    page = 1                                    // page required
+    limit = 5                                   // limit required
 
-    ${apiUrl}/vouchers?name=Voucher&startDate=2019-02-11T11:13:52.958377Z&endDate=2019-12-11T11:13:52.958377Z&status=1
+    ${apiUrl}/vouchers?name=Voucher&startDate=2019-02-11T11:13:52.958377Z&endDate=2019-12-11T11:13:52.958377Z&status=1&page=1&limit=5
 
     Success Response :
     {
@@ -380,10 +382,11 @@ add .env :
                 "updatedAt": "2019-02-25T11:00:41.986737Z",
                 "createdAt": "2019-02-25T10:56:35.534745Z"
             }
-        ]
+        ],
+        "totalCount": "2"
     }
 
-> **POST**   ${apiUrl}/vouchers/uploadImage
+> **POST**   ${apiUrl}/vouchers/upload
 
     Purposes :
     Upload image voucher
@@ -403,4 +406,51 @@ add .env :
         "data": {
             "imageUrl": "/images/vouchers/1551068264320753609.png"
         }
+    }
+
+> **GET**   ${apiUrl}/vouchers/monitor
+
+    Purposes :
+    Get all vouchers
+
+    Http Header :
+    Content-Type: application/json
+
+    Sample:
+
+    with params :
+    page = 1                                    // page required
+    limit = 5                                   // limit required
+
+    ${apiUrl}/vouchers/monitor?page=1&limit=5
+
+    Success Response :
+    {
+        "status": "Success",
+        "message": "Success",
+        "data": [
+            {
+                "id": 1,
+                "name": "voucher emas",
+                "startDate": "2019-02-10T22:08:41Z",
+                "endDate": "2019-04-30T22:08:41Z",
+                "amount": 10,
+                "avaliable": 4,
+                "bought": 3,
+                "redeemed": 3,
+                "expired": 0
+            },
+            {
+                "id": 2,
+                "name": "voucher emas",
+                "startDate": "2019-02-10T22:08:41Z",
+                "endDate": "2019-04-30T22:08:41Z",
+                "amount": 10,
+                "avaliable": 4,
+                "bought": 3,
+                "redeemed": 3,
+                "expired": 0
+            }
+        ],
+        "totalCount": "2"
     }

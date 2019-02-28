@@ -84,7 +84,9 @@ func (m *psqlVoucherRepository) UpdateVoucher(ctx context.Context, id int64, upd
 }
 
 // Get data all voucher
-func (m *psqlVoucherRepository) GetVouchers(ctx context.Context, name string, status string, startDate string, endDate string) ([]*models.Voucher, error) {
+func (m *psqlVoucherRepository) GetVouchers(ctx context.Context, name string, status string, startDate string, endDate string, page int32, limit int32) ([]*models.Voucher, error) {
+
+	paging := fmt.Sprintf(" LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
 	query := `SELECT id, name, description, start_date, end_date, point, journal_account, value, image_url, status, stock, prefix_promo_code, validators, updated_at, created_at FROM vouchers WHERE id IS NOT NULL`
 
 	where := ""
@@ -105,7 +107,7 @@ func (m *psqlVoucherRepository) GetVouchers(ctx context.Context, name string, st
 		where += " AND end_date <= '" + endDate + "'"
 	}
 
-	query += where + " ORDER BY created_at DESC"
+	query += where + " ORDER BY created_at DESC " + paging
 
 	res, err := m.getVoucher(ctx, query)
 	if err != nil {
@@ -167,7 +169,6 @@ func (m *psqlVoucherRepository) CreatePromoCode(ctx context.Context, promoCodes 
 
 	var valueStrings []string
 	var valueArgs []interface{}
-	fmt.Println(promoCodes)
 	i := 0
 	for _, promoCode := range promoCodes {
 		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d)", i*fieldInsertPromoCode+count[0], i*fieldInsertPromoCode+count[1], i*fieldInsertPromoCode+count[2], i*fieldInsertPromoCode+count[3]))
@@ -186,6 +187,92 @@ func (m *psqlVoucherRepository) CreatePromoCode(ctx context.Context, promoCodes 
 	}
 
 	result, err := stmt.QueryContext(ctx, valueArgs...)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(result)
+
+	return nil
+}
+
+// Get data all monitoring voucher
+func (m *psqlVoucherRepository) GetVouchersMonitoring(ctx context.Context, page int32, limit int32) ([]*models.VouchersMonitoring, error) {
+
+	query := `SELECT d.id, d.name, d.start_date, d.end_date, d.amount, CASE WHEN d.end_date::date < now()::date THEN 0 ELSE coalesce(e.avaliable,0) END AS avaliable, coalesce(f.bought,0) bought , coalesce(g.reedem,0) reedem, CASE WHEN coalesce(h.expired,0)-coalesce(g.reedem,0) < 0 THEN 0 ELSE coalesce(h.expired,0)-coalesce(g.reedem,0) END AS expired FROM (SELECT b.id, b.name, b.start_date, b.end_date, count(a.id) as amount FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id	GROUP BY b.id, b.name, b.start_date, b.end_date) as d LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as avaliable FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 0	GROUP BY b.id) as e ON e.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as bought FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 1 GROUP BY b.id) as f ON f.id = d.id	LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as reedem FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 2 GROUP BY b.id) as g ON g.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as expired FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE end_date::date < now()::date GROUP BY b.id) as h ON h.id = d.id	ORDER BY d.id ASC LIMIT $1 OFFSET $2`
+
+	stmt, err := m.Conn.PrepareContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.QueryContext(ctx, limit, ((page - 1) * limit))
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	result := make([]*models.VouchersMonitoring, 0)
+
+	for rows.Next() {
+		t := new(models.VouchersMonitoring)
+		err = rows.Scan(
+			&t.ID,
+			&t.Name,
+			&t.StartDate,
+			&t.EndDate,
+			&t.Amount,
+			&t.Avaliable,
+			&t.Bought,
+			&t.Redeemed,
+			&t.Expired,
+		)
+
+		if err != nil {
+			logrus.Error(err)
+			return nil, err
+		}
+		result = append(result, t)
+	}
+
+	return result, nil
+}
+
+// For count all data voucher by id
+func (m *psqlVoucherRepository) CountVouchers(ctx context.Context, status string) (int, error) {
+
+	query := `SELECT coalesce(COUNT(id), 0) FROM vouchers WHERE id IS NOT NULL`
+
+	where := ""
+
+	if status != "" {
+		where += " AND status='" + status + "'"
+	}
+
+	query += where
+
+	var total int
+
+	err := m.Conn.QueryRowContext(ctx, query).Scan(&total)
+	if err != nil {
+		return 0, err
+	}
+
+	return total, nil
+}
+
+// Delete voucher when failed generate promocode
+func (m *psqlVoucherRepository) DeleteVoucher(ctx context.Context, id int64) error {
+
+	query := `DELETE FROM vouchers WHERE id = $1`
+
+	stmt, err := m.Conn.PrepareContext(ctx, query)
+	if err != nil {
+		return err
+	}
+
+	result, err := stmt.QueryContext(ctx, id)
 	if err != nil {
 		return err
 	}

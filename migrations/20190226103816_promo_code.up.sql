@@ -1,8 +1,8 @@
 -- Table: promo_codes
 /*  Generated  by admin                 = 0 -> available
     user bought a voucher with points   = 1 -> bought
-    Sudah digunakan                     = 2 -> redeemed
-    Sudah lewat tanggal                 = 3 -> expired*/
+    the voucher has been used           = 2 -> redeemed
+    voucher expired                     = 3 -> expired*/
 
 CREATE TABLE IF NOT EXISTS promo_codes (
     id SERIAL PRIMARY KEY NOT NULL,

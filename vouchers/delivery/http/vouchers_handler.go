@@ -73,7 +73,6 @@ func (a *VouchersHandler) CreateVoucher(c echo.Context) error {
 	response.Message = models.MassageSaveSuccess
 	response.Data = voucher
 	response.TotalCount = ""
-	response.TotalCount = ""
 	return c.JSON(http.StatusCreated, response)
 }
 

@@ -13,4 +13,5 @@ type Repository interface {
 	GetValidatorCampaign(ctx context.Context, a *models.GetCampaignValue) (*models.Campaign, error)
 	SavePoint(ctx context.Context, a *models.SaveTransactionPoint) error
 	GetUserPoint(ctx context.Context, UserId string) (float64, error)
+	GetUserPointHistory(ctx context.Context, UserID string) ([]*models.DataPointHistory, error)
 }

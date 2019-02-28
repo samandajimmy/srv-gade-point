@@ -210,3 +210,17 @@ func (m *psqlCampaignRepository) GetUserPoint(ctx context.Context, UserId string
 
 	return pointAmount, nil
 }
+
+func (m *psqlCampaignRepository) GetUserPointHistory(ctx context.Context, userID string) ([]*models.DataPointHistory, error) {
+	var dataHistory []*models.DataPointHistory
+
+	query := `SELECT coalesce(sum(point_amount), 0) as debet FROM public.campaign_transactions WHERE user_id = $1 AND transaction_type = 'D' AND to_char(transaction_date, 'YYYY') = to_char(NOW(), 'YYYY')`
+
+	err := m.Conn.QueryRowContext(ctx, query, userID).Scan(&dataHistory)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return dataHistory, nil
+}

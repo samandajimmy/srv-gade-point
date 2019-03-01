@@ -12,8 +12,9 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
-// Response represent the response
-var response = models.Response{}
+var (
+	response = models.Response{} // Response represent the response
+)
 
 // VouchersHandler represent the httphandler for vouchers
 type VouchersHandler struct {
@@ -28,7 +29,7 @@ func NewVouchersHandler(e *echo.Echo, us vouchers.UseCase) {
 
 	e.POST("/vouchers", handler.CreateVoucher)
 	e.PUT("/vouchers/status/:id", handler.UpdateStatusVoucher)
-	e.POST("/vouchers/uploadImage", handler.UploadVoucherImages)
+	e.POST("/vouchers/upload", handler.UploadVoucherImages)
 	e.GET("/vouchers", handler.GetVouchers)
 }
 
@@ -40,6 +41,7 @@ func (a *VouchersHandler) CreateVoucher(c echo.Context) error {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		response.Data = ""
+		response.TotalCount = ""
 		return c.JSON(http.StatusUnprocessableEntity, response)
 	}
 
@@ -47,6 +49,7 @@ func (a *VouchersHandler) CreateVoucher(c echo.Context) error {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		response.Data = ""
+		response.TotalCount = ""
 		return c.JSON(http.StatusBadRequest, response)
 	}
 
@@ -61,12 +64,14 @@ func (a *VouchersHandler) CreateVoucher(c echo.Context) error {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		response.Data = ""
+		response.TotalCount = ""
 		return c.JSON(http.StatusUnprocessableEntity, response)
 	}
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MassageSaveSuccess
 	response.Data = voucher
+	response.TotalCount = ""
 	return c.JSON(http.StatusCreated, response)
 }
 
@@ -79,6 +84,7 @@ func (a *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		response.Data = ""
+		response.TotalCount = ""
 		return c.JSON(http.StatusUnprocessableEntity, response)
 	}
 
@@ -86,6 +92,7 @@ func (a *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		response.Data = ""
+		response.TotalCount = ""
 		return c.JSON(http.StatusBadRequest, response)
 	}
 
@@ -102,12 +109,14 @@ func (a *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		response.Data = ""
+		response.TotalCount = ""
 		return c.JSON(getStatusCode(err), response)
 	}
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MassageUpdateSuccess
 	response.Data = ""
+	response.TotalCount = ""
 	return c.JSON(http.StatusOK, response)
 }
 
@@ -124,6 +133,7 @@ func (a *VouchersHandler) UploadVoucherImages(c echo.Context) error {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		response.Data = ""
+		response.TotalCount = ""
 		return c.JSON(getStatusCode(err), response)
 	}
 
@@ -132,12 +142,14 @@ func (a *VouchersHandler) UploadVoucherImages(c echo.Context) error {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		response.Data = ""
+		response.TotalCount = ""
 		return c.JSON(getStatusCode(err), response)
 	}
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MassageUploadSuccess
 	response.Data = models.PathVoucher{ImageUrl: path}
+	response.TotalCount = ""
 	return c.JSON(http.StatusOK, response)
 }
 
@@ -148,24 +160,28 @@ func (a *VouchersHandler) GetVouchers(c echo.Context) error {
 	status := c.QueryParam("status")
 	startDate := c.QueryParam("startDate")
 	endDate := c.QueryParam("endDate")
+	page, _ := strconv.Atoi(c.QueryParam("page"))
+	limit, _ := strconv.Atoi(c.QueryParam("limit"))
 
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	res, err := a.VoucherUseCase.GetVouchers(ctx, name, status, startDate, endDate)
+	res, totalCount, err := a.VoucherUseCase.GetVouchers(ctx, name, status, startDate, endDate, int32(page), int32(limit))
 
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		response.Data = ""
+		response.TotalCount = ""
 		return c.JSON(getStatusCode(err), response)
 	}
 
 	response.Status = models.StatusSuccess
 	response.Message = models.StatusSuccess
 	response.Data = res
+	response.TotalCount = totalCount
 	return c.JSON(http.StatusOK, response)
 }
 

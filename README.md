@@ -332,8 +332,10 @@ add .env :
     status = 1                                  // status vouchers
     startDate = 2019-02-11T11:13:52.958377Z     // start date vouchers
     endDate = 2019-12-11T11:13:52.958377Z       // end date vouchers
+    page = 1                                    // page required
+    limit = 5                                   // limit required
 
-    ${apiUrl}/vouchers?name=Voucher&startDate=2019-02-11T11:13:52.958377Z&endDate=2019-12-11T11:13:52.958377Z&status=1
+    ${apiUrl}/vouchers?name=Voucher&startDate=2019-02-11T11:13:52.958377Z&endDate=2019-12-11T11:13:52.958377Z&status=1&page=1&limit=5
 
     Success Response :
     {
@@ -380,10 +382,11 @@ add .env :
                 "updatedAt": "2019-02-25T11:00:41.986737Z",
                 "createdAt": "2019-02-25T10:56:35.534745Z"
             }
-        ]
+        ],
+        "totalCount": "2"
     }
 
-> **POST**   ${apiUrl}/vouchers/uploadImage
+> **POST**   ${apiUrl}/vouchers/upload
 
     Purposes :
     Upload image voucher
@@ -404,3 +407,4 @@ add .env :
             "imageUrl": "/images/vouchers/1551068264320753609.png"
         }
     }
+

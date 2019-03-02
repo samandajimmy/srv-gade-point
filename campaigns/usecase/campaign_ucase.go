@@ -86,16 +86,16 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetC
 	parseFloat, err := getFloat(result)
 	pointAmount := math.Floor(parseFloat)
 
-	saveTransactionPoint := &models.SaveTransactionPoint{
-		UserId:          m.UserId,
+	campaignTrx := &models.CampaignTrx{
+		UserID:          m.UserId,
 		PointAmount:     pointAmount,
 		TransactionType: models.TransactionPointTypeDebet,
-		TransactionDate: time.Now(),
-		CampaingId:      dataCampaign.ID,
-		CreatedAt:       time.Now(),
+		TransactionDate: &models.TimeNow,
+		Campaign:        dataCampaign,
+		CreatedAt:       &models.TimeNow,
 	}
 
-	err = cmpgn.campaignRepo.SavePoint(ctx, saveTransactionPoint)
+	err = cmpgn.campaignRepo.SavePoint(ctx, campaignTrx)
 	if err != nil {
 		return nil, err
 	}
@@ -121,15 +121,11 @@ func (cmpgn *campaignUseCase) GetUserPoint(c context.Context, userId string) (*m
 	return p, nil
 }
 
-func (cmpgn *campaignUseCase) GetUserPointHistory(c context.Context, userID string) (*models.DataPointHistory, error) {
-	var dataHistory *models.DataPointHistory
-	var err error
-
+func (cmpgn *campaignUseCase) GetUserPointHistory(c context.Context, userID string) ([]models.CampaignTrx, error) {
 	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
 
-	fmt.Println(ctx)
-	//cmpgn.campaignRepo.GetUserPoint(ctx, userID)
+	dataHistory, err := cmpgn.campaignRepo.GetUserPointHistory(ctx, userID)
 
 	if err != nil {
 		return nil, err

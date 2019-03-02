@@ -10,6 +10,21 @@ var (
 	CampaignTypePoint          = 0
 )
 
+// Campaign is represent a campaigns model
+type Campaign struct {
+	ID          int64               `json:"id,omitempty"`
+	Name        string              `json:"name,omitempty"`
+	Description string              `json:"description,omitempty"`
+	StartDate   string              `json:"startDate,omitempty"`
+	EndDate     string              `json:"endDate,omitempty"`
+	Status      int8                `json:"status,omitempty"`
+	Type        int8                `json:"type,omitempty"`
+	Validators  *ValidatorsCampaign `json:"validators,omitempty"`
+	UpdatedAt   *time.Time          `json:"updatedAt,omitempty"`
+	CreatedAt   *time.Time          `json:"createdAt,omitempty"`
+}
+
+// ValidatorsCampaign is represent a validators inside campaign
 type ValidatorsCampaign struct {
 	Channel         string  `json:"channel" validate:"required"`
 	Product         string  `json:"product" validate:"required"`
@@ -20,17 +35,17 @@ type ValidatorsCampaign struct {
 	Formula         string  `json:"formula" validate:"required"`
 }
 
-type Campaign struct {
-	ID          int64              `json:"id"`
-	Name        string             `json:"name" validate:"required"`
-	Description string             `json:"description" validate:"required"`
-	StartDate   string             `json:"startDate" validate:"required"`
-	EndDate     string             `json:"endDate" validate:"required"`
-	Status      int8               `json:"status"`
-	Type        int8               `json:"type"`
-	Validators  ValidatorsCampaign `json:"validators"`
-	UpdatedAt   time.Time          `json:"updatedAt"`
-	CreatedAt   time.Time          `json:"createdAt"`
+// CampaignTrx is represent a campaign_transactions model
+type CampaignTrx struct {
+	ID              int64      `json:"id"`
+	UserID          string     `json:"userId" validate:"required"`
+	PointAmount     float64    `json:"pointAmount" validate:"required"`
+	TransactionType string     `json:"transactionType" validate:"required"`
+	TransactionDate *time.Time `json:"transactionDate" validate:"required"`
+	Campaign        *Campaign  `json:"campaign,omitempty"`
+	Voucher         *Voucher   `json:"voucher,omitempty"`
+	UpdatedAt       *time.Time `json:"updatedAt,omitempty"`
+	CreatedAt       *time.Time `json:"createdAt,omitempty"`
 }
 
 type UpdateCampaign struct {
@@ -46,27 +61,6 @@ type GetCampaignValue struct {
 	TransactionAmount float64 `json:"transactionAmount" validate:"required"`
 }
 
-type SaveTransactionPoint struct {
-	ID              int64     `json:"id"`
-	UserId          string    `json:"userId" validate:"required"`
-	PointAmount     float64   `json:"pointAmount" validate:"required"`
-	TransactionType string    `json:"transactionType" validate:"required"`
-	TransactionDate time.Time `json:"transactionDate" validate:"required"`
-	CampaingId      int64     `json:"campaignId" validate:"required"`
-	UpdatedAt       time.Time `json:"updatedAt"`
-	CreatedAt       time.Time `json:"createdAt"`
-}
-
 type UserPoint struct {
 	UserPoint float64 `json:"userPoint"`
-}
-
-// DataPointHistory is a struct to store all historical user point data
-type DataPointHistory struct {
-	ID              int64     `json:"id,omitempty"`
-	PointAmount     float64   `json:"pointAmount,omitempty"`
-	TransactionType string    `json:"transactionType,omitempty"`
-	TransactionDate time.Time `json:"transactionDate,omitempty"`
-	CampaignID      int64     `json:"campaignId,omitempty"`
-	VoucherID       int64     `json:"voucherId,omitempty"`
 }

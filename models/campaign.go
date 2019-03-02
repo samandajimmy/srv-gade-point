@@ -17,8 +17,8 @@ type Campaign struct {
 	Description string              `json:"description,omitempty"`
 	StartDate   string              `json:"startDate,omitempty"`
 	EndDate     string              `json:"endDate,omitempty"`
-	Status      int8                `json:"status,omitempty"`
-	Type        int8                `json:"type,omitempty"`
+	Status      *int8               `json:"status,omitempty"`
+	Type        *int8               `json:"type,omitempty"`
 	Validators  *ValidatorsCampaign `json:"validators,omitempty"`
 	UpdatedAt   *time.Time          `json:"updatedAt,omitempty"`
 	CreatedAt   *time.Time          `json:"createdAt,omitempty"`
@@ -39,7 +39,7 @@ type ValidatorsCampaign struct {
 type CampaignTrx struct {
 	ID              int64      `json:"id"`
 	UserID          string     `json:"userId" validate:"required"`
-	PointAmount     float64    `json:"pointAmount" validate:"required"`
+	PointAmount     *float64   `json:"pointAmount" validate:"required"`
 	TransactionType string     `json:"transactionType" validate:"required"`
 	TransactionDate *time.Time `json:"transactionDate" validate:"required"`
 	Campaign        *Campaign  `json:"campaign,omitempty"`

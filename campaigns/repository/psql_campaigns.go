@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
 	"time"
@@ -255,7 +254,6 @@ func (m *psqlCampaignRepository) GetUserPointHistory(ctx context.Context, userID
 
 		dataHistory = append(dataHistory, ct)
 	}
-	fmt.Println("cacing")
 
 	return dataHistory, nil
 }

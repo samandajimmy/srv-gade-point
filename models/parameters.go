@@ -1,5 +1,9 @@
 package models
 
+import (
+	"time"
+)
+
 var (
 	StatusSuccess          = "Success"
 	StatusError            = "Error"
@@ -10,4 +14,5 @@ var (
 	MassageUpdateError     = "Update Error"
 	MassageUploadError     = "Upload Failed"
 	MassageValidationError = "Field validation"
+	TimeNow                = time.Now()
 )

@@ -88,7 +88,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetC
 
 	campaignTrx := &models.CampaignTrx{
 		UserID:          m.UserId,
-		PointAmount:     pointAmount,
+		PointAmount:     &pointAmount,
 		TransactionType: models.TransactionPointTypeDebet,
 		TransactionDate: &models.TimeNow,
 		Campaign:        dataCampaign,

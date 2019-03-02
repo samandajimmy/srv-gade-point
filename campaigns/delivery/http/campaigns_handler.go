@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
 	"net/http"
@@ -213,7 +212,6 @@ func (cmpgn *CampaignsHandler) GetUserPointHistory(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	fmt.Println("cacing1")
 
 	data, err := cmpgn.CampaignUseCase.GetUserPointHistory(ctx, userID)
 
@@ -228,9 +226,6 @@ func (cmpgn *CampaignsHandler) GetUserPointHistory(c echo.Context) error {
 	response.Message = models.StatusSuccess
 	response.Data = data
 
-	// b, _ := json.Marshal(response)
-	// fmt.Println(string(b))
-	// err = json.UnmarshalJSON(b, &response)
 	return c.JSON(http.StatusOK, response)
 }
 

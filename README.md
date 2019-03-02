@@ -1,7 +1,4 @@
-# gade-srv-boileplate-go
-
 ## Description
-This is an example of implementation of Clean Architecture in Go (Golang) projects.
 
 Rule of Clean Architecture by Uncle Bob
  * Independent of Frameworks. The architecture does not depend on the existence of some library of feature laden software. This allows you to use such frameworks as tools, rather than having to cram your system into their limited constraints.
@@ -17,10 +14,6 @@ This project has  4 Domain layer :
  * Repository Layer
  * UseCase Layer  
  * Delivery Layer
-
-#### The diagram:
-
-![golang clean architecture](https://gade/srv-gade-point/raw/master/clean-arch.png)
 
 The explanation about this project's structure  can read from this medium's post : https://medium.com/@imantumorang/golang-clean-archithecture-efd6d7c43047
 
@@ -221,6 +214,51 @@ For External End Point :
         "data": {
             "userPoint": 720
         }
+    }
+
+> **GET**   ${apiUrl}/campaigns/point/history?userId=NoUserId
+
+    Purposes :
+    Get point history of a user
+
+    Http Header :
+    Content-Type: application/json
+
+    Sample:
+
+    with params :
+    userId = 001                                 // No User Id
+
+    Success Response :
+    {
+        "status": "Success",
+        "message": "Success",
+        "data": [
+            {
+                "id": 1,
+                "userId": "001",
+                "pointAmount": 200,
+                "transactionType": "D ",
+                "transactionDate": "2019-03-02T22:44:42.596933Z",
+                "campaign": {
+                    "id": 1,
+                    "name": "Open Tabungan Emas",
+                    "description": "Open Tabungan Emas"
+                }
+            },
+            {
+                "id": 2,
+                "userId": "001",
+                "pointAmount": 100,
+                "transactionType": "D ",
+                "transactionDate": "2019-03-02T22:44:42.596933Z",
+                "campaign": {
+                    "id": 1,
+                    "name": "Open Tabungan Emas",
+                    "description": "Open Tabungan Emas"
+                }
+            }
+        ]
     }
 
 ### Voucher

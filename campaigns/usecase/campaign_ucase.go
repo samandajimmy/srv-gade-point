@@ -59,6 +59,7 @@ func (cmpgn *campaignUseCase) GetCampaign(c context.Context, name string, status
 	defer cancel()
 
 	listCampaign, err := cmpgn.campaignRepo.GetCampaign(ctx, name, status, startDate, endDate, page, limit)
+
 	if err != nil {
 		return "", nil, err
 	}

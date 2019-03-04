@@ -372,7 +372,6 @@ add .env :
     endDate = 2019-12-11T11:13:52.958377Z       // end date vouchers
     page = 1                                    // page required
     limit = 5                                   // limit required
-    source = admin                              // access end point admin or external client
 
     ${apiUrl}/vouchers?name=Voucher&startDate=2019-02-11T11:13:52.958377Z&endDate=2019-12-11T11:13:52.958377Z&status=1&page=1&limit=5
 

@@ -75,10 +75,13 @@ func (m *psqlCampaignRepository) UpdateCampaign(ctx context.Context, id int64, u
 }
 
 func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, status string, startDate string, endDate string, page int, limit int) ([]*models.Campaign, error) {
-	paging := fmt.Sprintf(" LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
+	paging := ""
+	where := ""
 	query := `SELECT id, name, description, start_date, end_date, status, type, validators, updated_at, created_at FROM campaigns WHERE id IS NOT NULL`
 
-	where := ""
+	if page > 0 || limit > 0 {
+		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
+	}
 
 	if name != "" {
 		where += " AND name LIKE '%" + name + "%'"
@@ -99,6 +102,7 @@ func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, s
 	query += where + " ORDER BY created_at DESC" + paging
 
 	res, err := m.getCampaign(ctx, query)
+
 	if err != nil {
 		return nil, err
 	}
@@ -109,14 +113,15 @@ func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, s
 
 func (m *psqlCampaignRepository) getCampaign(ctx context.Context, query string) ([]*models.Campaign, error) {
 	var validator json.RawMessage
+	result := make([]*models.Campaign, 0)
 	rows, err := m.Conn.QueryContext(ctx, query)
+	defer rows.Close()
+
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
 	}
-	defer rows.Close()
 
-	result := make([]*models.Campaign, 0)
 	for rows.Next() {
 		t := new(models.Campaign)
 		var createDate, updateDate pq.NullTime

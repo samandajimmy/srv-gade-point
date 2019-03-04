@@ -1,3 +1,0 @@
-source:
-  whitelisted:
-    external: [admin, pds]

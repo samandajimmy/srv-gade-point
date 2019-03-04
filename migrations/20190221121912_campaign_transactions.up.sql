@@ -6,8 +6,7 @@
         point_amount SMALLINT NOT NULL,
         transaction_type CHAR(2) NOT NULL,
         transaction_date TIMESTAMP NOT NULL,
-        campaign_id SMALLINT,
-        promo_code_id SMALLINT,
+        campaign_id SMALLINT REFERENCES campaigns(id) NOT NULL,
         updated_at TIMESTAMP DEFAULT NULL,
         created_at TIMESTAMP DEFAULT NULL
     );

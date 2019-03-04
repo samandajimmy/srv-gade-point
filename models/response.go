@@ -1,8 +1,9 @@
 package models
 
+// Response struct is represent a data for output payload
 type Response struct {
-	Status     string      `json:"status"`
-	Message    string      `json:"message"`
-	Data       interface{} `json:"data"`
-	TotalCount string      `json:"totalCount, omitempty"`
+	Status     string      `json:"status,omitempty"`
+	Message    string      `json:"message,omitempty"`
+	Data       interface{} `json:"data,omitempty"`
+	TotalCount string      `json:"totalCount,omitempty"`
 }

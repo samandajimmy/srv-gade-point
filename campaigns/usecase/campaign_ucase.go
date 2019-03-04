@@ -92,6 +92,7 @@ func (a *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetCampa
 		TransactionType: models.TransactionPointTypeDebet,
 		TransactionDate: time.Now(),
 		CampaingId:      dataCampaign.ID,
+		PromoCodeId:     0,
 		CreatedAt:       time.Now(),
 	}
 

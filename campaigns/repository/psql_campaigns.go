@@ -168,8 +168,8 @@ func (m *psqlCampaignRepository) GetValidatorCampaign(ctx context.Context, a *mo
 }
 
 func (m *psqlCampaignRepository) SavePoint(ctx context.Context, a *models.SaveTransactionPoint) error {
-	query := `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, campaign_id, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6)  RETURNING id`
+	query := `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, campaign_id, promo_code_id, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)  RETURNING id`
 	stmt, err := m.Conn.PrepareContext(ctx, query)
 	if err != nil {
 		return err
@@ -179,7 +179,7 @@ func (m *psqlCampaignRepository) SavePoint(ctx context.Context, a *models.SaveTr
 
 	var lastID int64
 
-	err = stmt.QueryRowContext(ctx, a.UserId, a.PointAmount, a.TransactionType, a.TransactionDate, a.CampaingId, a.CreatedAt).Scan(&lastID)
+	err = stmt.QueryRowContext(ctx, a.UserId, a.PointAmount, a.TransactionType, a.TransactionDate, a.CampaingId, a.PromoCodeId, a.CreatedAt).Scan(&lastID)
 	if err != nil {
 		return err
 	}

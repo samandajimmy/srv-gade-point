@@ -52,7 +52,8 @@ type SaveTransactionPoint struct {
 	PointAmount     float64   `json:"pointAmount" validate:"required"`
 	TransactionType string    `json:"transactionType" validate:"required"`
 	TransactionDate time.Time `json:"transactionDate" validate:"required"`
-	CampaingId      int64     `json:"campaignId" validate:"required"`
+	CampaingId      int64     `json:"campaignId"`
+	PromoCodeId     int64     `json:"promoCodeId"`
 	UpdatedAt       time.Time `json:"updatedAt"`
 	CreatedAt       time.Time `json:"createdAt"`
 }

@@ -10,4 +10,6 @@ var (
 	MassageUpdateError     = "Update Error"
 	MassageUploadError     = "Upload Failed"
 	MassageValidationError = "Field validation"
+	MassageForBiddenError  = "For bidden access"
+	MessageDataNotFound    = "Data Not Found"
 )

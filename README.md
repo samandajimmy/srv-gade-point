@@ -334,56 +334,65 @@ add .env :
     endDate = 2019-12-11T11:13:52.958377Z       // end date vouchers
     page = 1                                    // page required
     limit = 5                                   // limit required
+    source = admin                              // access end point admin or external client
 
     ${apiUrl}/vouchers?name=Voucher&startDate=2019-02-11T11:13:52.958377Z&endDate=2019-12-11T11:13:52.958377Z&status=1&page=1&limit=5
 
-    Success Response :
+    Success Response Source Admin:
     {
         "status": "Success",
         "message": "Success",
         "data": [
             {
-                "id": 2,
-                "name": "voucher name",
-                "description": "voucher description",
-                "startDate": "2019-02-10T22:08:41Z",
+                "id": 1,
+                "name": "Voucher diskon 15.000 Sell tabungan emas",
+                "description": "Voucher diskon 15.000 Sell tabungan emas",
+                "startDate": "2019-02-01T22:08:41Z",
                 "endDate": "2019-04-30T22:08:41Z",
-                "point": 100,
-                "journalAccount": "000025130101360     ",
-                "value": 20000,
+                "point": 80,
+                "journalAccount": "000025130101361     ",
+                "value": 15000,
                 "imageUrl": "public/images/test.png",
                 "status": 1,
+                "stock": 10,
+                "prefixPromoCode": "STE  ",
+                "amount": 10,
+                "available": 9,
+                "bought": 1,
+                "redeemed": 0,
+                "expired": 0,
                 "validators": {
-                    "channel": "001",
-                    "product": "002",
-                    "transactionType": "003",
+                    "channel": "01",
+                    "product": "01",
+                    "transactionType": "02",
                     "unit": "gram"
                 },
                 "updatedAt": "0001-01-01T00:00:00Z",
-                "createdAt": "2019-02-25T11:12:48.366314Z"
-            },
-            {
-                "id": 1,
-                "name": "voucher name",
-                "description": "voucher description",
-                "startDate": "2019-02-10T22:08:41Z",
-                "endDate": "2019-04-30T22:08:41Z",
-                "point": 100,
-                "journalAccount": "000025130101360     ",
-                "value": 20000,
-                "imageUrl": "public/images/test.png",
-                "status": 1,
-                "validators": {
-                    "channel": "001",
-                    "product": "002",
-                    "transactionType": "003",
-                    "unit": "gram"
-                },
-                "updatedAt": "2019-02-25T11:00:41.986737Z",
-                "createdAt": "2019-02-25T10:56:35.534745Z"
+                "createdAt": "2019-03-03T13:45:27.80088Z"
             }
         ],
-        "totalCount": "2"
+        "totalCount": "1"
+    }
+
+    Success Response Source external client:
+    {
+        "status": "Success",
+        "message": "Success",
+        "data": [
+            {
+                "id": 1,
+                "name": "Voucher diskon 15.000 Sell tabungan emas",
+                "description": "Voucher diskon 15.000 Sell tabungan emas",
+                "startDate": "2019-02-01T22:08:41Z",
+                "endDate": "2019-04-30T22:08:41Z",
+                "point": 80,
+                "value": 15000,
+                "imageUrl": "public/images/test.png",
+                "stok": 10,
+                "available": 9
+            }
+        ],
+        "totalCount": "1"
     }
 
 > **POST**   ${apiUrl}/vouchers/upload
@@ -408,3 +417,83 @@ add .env :
         }
     }
 
+> **POST**   ${apiUrl}/voucher/buy
+
+    Purposes :
+    Buy voucher with user point
+
+    Http Header :
+    Content-Type: application/json
+
+    Sample Payload :
+    {
+        "voucherId": "1",   //string
+        "userId": "001",    //string
+        "source": "pds"     //string
+    }
+
+    Success Response :
+    {
+        "status": "Success",
+        "message": "Data successfully sent",
+        "data": {
+            "promoCode": "STE182TV",
+            "boughtDate": "2019-03-04T09:52:04.362761Z",
+            "name": "Voucher diskon 15.000 Sell tabungan emas",
+            "description": "Voucher diskon 15.000 Sell tabungan emas",
+            "value": 15000,
+            "startDate": "2019-02-01T22:08:41Z",
+            "endDate": "2019-04-30T22:08:41Z",
+            "imageUrl": "public/images/test.png"
+        },
+        "totalCount": ""
+    }
+
+**GET**   ${apiUrl}/vouchers/user
+
+    Purposes :
+    Get all vouchers by user
+
+    Http Header :
+    Content-Type: application/json
+
+    Sample:
+
+    with params :
+    userId = 001                              // name vouchers
+    status = 1                                // status vouchers
+    page = 1                                  // page required
+    limit = 5                                 // limit required
+    source = pds                              // access end point admin or external client
+
+    ${apiUrl}/vouchers/user?userId=001&status=1&page=1&limit=5&source=pds
+
+    Success Response:
+    
+    {
+        "status": "Success",
+        "message": "Data Successfully Sent",
+        "data": [
+            {
+                "promoCode": "STE182TV",
+                "boughtDate": "2019-03-04T09:52:04.362761Z",
+                "name": "Voucher diskon 15.000 Sell tabungan emas",
+                "description": "Voucher diskon 15.000 Sell tabungan emas",
+                "value": 15000,
+                "startDate": "2019-02-01T22:08:41Z",
+                "endDate": "2019-04-30T22:08:41Z",
+                "imageUrl": "public/images/test.png"
+            },
+            {
+                "promoCode": "STE0133O",
+                "boughtDate": "2019-03-03T13:46:53.022865Z",
+                "name": "Voucher diskon 15.000 Sell tabungan emas",
+                "description": "Voucher diskon 15.000 Sell tabungan emas",
+                "value": 15000,
+                "startDate": "2019-02-01T22:08:41Z",
+                "endDate": "2019-04-30T22:08:41Z",
+                "imageUrl": "public/images/test.png"
+            }
+        ],
+        "totalCount": "2"
+    }

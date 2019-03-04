@@ -31,6 +31,14 @@ func init() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
+	viper.SetConfigType("yaml")
+	viper.SetConfigFile(`source.yaml`)
+	err = viper.ReadInConfig()
+	if err != nil {
+		log.Fatal("Error loading .yaml file")
+	}
+
 }
 
 func main() {
@@ -62,7 +70,7 @@ func main() {
 
 	//VOUCHER
 	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn)
-	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, timeoutContext)
+	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, campaignRepository, timeoutContext)
 	_voucherHttpDelivery.NewVouchersHandler(e, voucherUseCase)
 
 	e.Start(os.Getenv(`SERVER_PORT`))

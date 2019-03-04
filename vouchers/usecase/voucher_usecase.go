@@ -125,7 +125,7 @@ func (vchr *voucherUseCase) UploadVoucherImages(file *multipart.FileHeader) (str
 	return filePathPublic, nil
 }
 
-//Get all voucher by param name, status, start date and end date
+// Get all voucher by param name, status, start date and end date
 func (vchr *voucherUseCase) GetVouchers(c context.Context, name string, status string, startDate string, endDate string, page int32, limit int32, source string) (interface{}, string, error) {
 	var listVoucher interface{}
 	var err error
@@ -159,7 +159,7 @@ func (vchr *voucherUseCase) GetVouchers(c context.Context, name string, status s
 	return listVoucher, strconv.Itoa(totalCount), nil
 }
 
-//Get detail voucher
+// Get detail voucher
 func (vchr *voucherUseCase) GetVoucher(c context.Context, voucherId string, source string) (interface{}, error) {
 	var voucherDetail interface{}
 	var err error
@@ -182,7 +182,7 @@ func (vchr *voucherUseCase) GetVoucher(c context.Context, voucherId string, sour
 	return voucherDetail, nil
 }
 
-//Get vouchers user
+// Get vouchers user
 func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userId string, status string, page int32, limit int32, source string) ([]*models.VoucherUser, string, error) {
 	var err error
 	var totalCount int
@@ -202,7 +202,7 @@ func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userId string, st
 	return vouchersUser, strconv.Itoa(totalCount), nil
 }
 
-//Buy voucher
+// Buy voucher
 func (vchr *voucherUseCase) CreateVoucherBuy(c context.Context, m *models.PayloadVoucherBuy) (*models.VoucherUser, error) {
 	var err error
 
@@ -290,10 +290,10 @@ func validateBuy(endDate time.Time, voucherPoint int64, userPoint int64, avaliab
 		return false, models.ErrVoucherExpired
 	}
 	if avaliable <= 0 {
-		return false, models.ErrVoucherNotAvailable
+		return false, models.ErrVoucherUnavailable
 	}
 	if userPoint < voucherPoint {
-		return false, models.ErrPointNotEnough
+		return false, models.ErrPointDeficit
 	}
 
 	return true, nil

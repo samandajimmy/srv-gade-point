@@ -1,5 +1,9 @@
 package models
 
+import (
+	"time"
+)
+
 var (
 	StatusSuccess          = "Success"
 	StatusError            = "Error"
@@ -10,6 +14,7 @@ var (
 	MassageUpdateError     = "Update Error"
 	MassageUploadError     = "Upload Failed"
 	MassageValidationError = "Field validation"
-	MassageForBiddenError  = "For bidden access"
+	MassageForbiddenError  = "Forbidden access"
 	MessageDataNotFound    = "Data Not Found"
+	TimeNow                = time.Now()
 )

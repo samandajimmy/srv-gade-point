@@ -20,8 +20,6 @@ type psqlCampaignRepository struct {
 	Conn *sql.DB
 }
 
-type JSONB []byte
-
 // NewPsqlCampaignRepository will create an object that represent the campaigns.Repository interface
 func NewPsqlCampaignRepository(Conn *sql.DB) campaigns.Repository {
 	return &psqlCampaignRepository{Conn}
@@ -51,7 +49,7 @@ func (m *psqlCampaignRepository) CreateCampaign(ctx context.Context, a *models.C
 	}
 
 	a.ID = lastID
-	a.CreatedAt = time.Now()
+	a.CreatedAt = &models.TimeNow
 	return nil
 }
 
@@ -132,8 +130,8 @@ func (m *psqlCampaignRepository) getCampaign(ctx context.Context, query string) 
 			&updateDate,
 			&createDate,
 		)
-		t.CreatedAt = createDate.Time
-		t.UpdatedAt = updateDate.Time
+		t.CreatedAt = &createDate.Time
+		t.UpdatedAt = &updateDate.Time
 		err = json.Unmarshal([]byte(validator), &t.Validators)
 
 		if err != nil {
@@ -167,9 +165,9 @@ func (m *psqlCampaignRepository) GetValidatorCampaign(ctx context.Context, a *mo
 
 }
 
-func (m *psqlCampaignRepository) SavePoint(ctx context.Context, a *models.SaveTransactionPoint) error {
-	query := `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, campaign_id, promo_code_id, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)  RETURNING id`
+func (m *psqlCampaignRepository) SavePoint(ctx context.Context, a *models.CampaignTrx) error {
+	query := `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, campaign_id, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6)  RETURNING id`
 	stmt, err := m.Conn.PrepareContext(ctx, query)
 	if err != nil {
 		return err
@@ -179,7 +177,7 @@ func (m *psqlCampaignRepository) SavePoint(ctx context.Context, a *models.SaveTr
 
 	var lastID int64
 
-	err = stmt.QueryRowContext(ctx, a.UserId, a.PointAmount, a.TransactionType, a.TransactionDate, a.CampaingId, a.PromoCodeId, a.CreatedAt).Scan(&lastID)
+	err = stmt.QueryRowContext(ctx, a.UserID, a.PointAmount, a.TransactionType, a.TransactionDate, a.Campaign.ID, a.CreatedAt).Scan(&lastID)
 	if err != nil {
 		return err
 	}
@@ -209,4 +207,53 @@ func (m *psqlCampaignRepository) GetUserPoint(ctx context.Context, UserId string
 	pointAmount := pointDebet - pointKredit
 
 	return pointAmount, nil
+}
+
+func (m *psqlCampaignRepository) GetUserPointHistory(ctx context.Context, userID string) ([]models.CampaignTrx, error) {
+	var dataHistory []models.CampaignTrx
+
+	query := `SELECT ct.id, ct.user_id, ct.point_amount, ct.transaction_type, ct.transaction_date,
+		COALESCE(ct.campaign_id, 0), COALESCE(ct.voucher_id, 0), 
+		COALESCE(c.name, ''), COALESCE(c.description, ''), COALESCE(v.name, ''), COALESCE(v.description, '')
+		FROM campaign_transactions ct
+		LEFT JOIN campaigns c ON ct.campaign_id = c.id
+		LEFT JOIN vouchers v ON ct.voucher_id = v.id
+		WHERE ct.user_id = $1
+		ORDER BY ct.transaction_date DESC;`
+
+	rows, err := m.Conn.QueryContext(ctx, query, userID)
+
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+
+	for rows.Next() {
+		var ct models.CampaignTrx
+		var campaign models.Campaign
+		var voucher models.Voucher
+
+		err = rows.Scan(
+			&ct.ID, &ct.UserID, &ct.PointAmount, &ct.TransactionType, &ct.TransactionDate,
+			&campaign.ID, &voucher.ID,
+			&campaign.Name, &campaign.Description, &voucher.Name, &voucher.Description,
+		)
+
+		if err != nil {
+			logrus.Error(err)
+			return nil, err
+		}
+
+		if campaign.ID != 0 {
+			ct.Campaign = &campaign
+		}
+
+		if voucher.ID != 0 {
+			ct.Voucher = &voucher
+		}
+
+		dataHistory = append(dataHistory, ct)
+	}
+
+	return dataHistory, nil
 }

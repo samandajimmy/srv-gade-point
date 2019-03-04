@@ -40,7 +40,7 @@ func NewVouchersHandler(e *echo.Echo, us vouchers.UseCase) {
 
 }
 
-//Create new voucher and generate promo code by stock
+// Create new voucher and generate promo code by stock
 func (vchr *VouchersHandler) CreateVoucher(c echo.Context) error {
 	var voucher models.Voucher
 	response.Data = ""
@@ -78,7 +78,7 @@ func (vchr *VouchersHandler) CreateVoucher(c echo.Context) error {
 	return c.JSON(http.StatusCreated, response)
 }
 
-//Update status voucher ACTIVE or INACTIVE
+// Update status voucher ACTIVE or INACTIVE
 func (vchr *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 
 	updateVoucher := new(models.UpdateVoucher)
@@ -123,7 +123,7 @@ func (vchr *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-//Upload image voucher
+// Upload image voucher
 func (vchr *VouchersHandler) UploadVoucherImages(c echo.Context) error {
 
 	ctx := c.Request().Context()
@@ -156,7 +156,7 @@ func (vchr *VouchersHandler) UploadVoucherImages(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-//Get all voucher by param name, status, start date and end date
+// Get all voucher by param name, status, start date and end date
 func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 	totalCount := ""
 	response.Data = ""
@@ -186,7 +186,7 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 		}
 	} else {
 		response.Status = models.StatusError
-		response.Message = models.MassageForBiddenError
+		response.Message = models.MassageForbiddenError
 		return c.JSON(http.StatusForbidden, response)
 	}
 
@@ -197,7 +197,7 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-//Get detail voucher by voucherId
+// Get detail voucher by voucherId
 func (vchr *VouchersHandler) GetVoucher(c echo.Context) error {
 	totalCount := ""
 	response.Data = ""
@@ -222,7 +222,7 @@ func (vchr *VouchersHandler) GetVoucher(c echo.Context) error {
 		}
 	} else {
 		response.Status = models.StatusError
-		response.Message = models.MassageForBiddenError
+		response.Message = models.MassageForbiddenError
 		return c.JSON(http.StatusForbidden, response)
 	}
 
@@ -233,7 +233,7 @@ func (vchr *VouchersHandler) GetVoucher(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-//Get all promo code voucher by user id and status bought
+// Get all promo code voucher by user id and status bought
 func (vchr *VouchersHandler) GetVouchersUser(c echo.Context) error {
 	totalCount := ""
 	response.Data = ""
@@ -261,7 +261,7 @@ func (vchr *VouchersHandler) GetVouchersUser(c echo.Context) error {
 		}
 	} else {
 		response.Status = models.StatusError
-		response.Message = models.MassageForBiddenError
+		response.Message = models.MassageForbiddenError
 		return c.JSON(http.StatusForbidden, response)
 	}
 
@@ -307,7 +307,7 @@ func (vchr *VouchersHandler) CreateVoucherBuy(c echo.Context) error {
 		}
 	} else {
 		response.Status = models.StatusError
-		response.Message = models.MassageForBiddenError
+		response.Message = models.MassageForbiddenError
 		return c.JSON(http.StatusForbidden, response)
 	}
 

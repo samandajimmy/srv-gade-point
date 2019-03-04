@@ -8,4 +8,7 @@ var (
 	ErrConflict            = errors.New("Your Item already exist")
 	ErrBadParamInput       = errors.New("Given Param is not valid")
 	ErrNoCampaign          = errors.New("No campaign avaliable")
+	ErrPointDeficit        = errors.New("Point deficit")
+	ErrVoucherExpired      = errors.New("Voucher has been expired")
+	ErrVoucherUnavailable  = errors.New("Voucher Unavailable")
 )

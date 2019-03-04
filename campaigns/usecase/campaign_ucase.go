@@ -7,6 +7,7 @@ import (
 	"gade/srv-gade-point/models"
 	"math"
 	"reflect"
+	"strconv"
 	"time"
 
 	govaluate "gopkg.in/Knetic/govaluate.v2"
@@ -52,17 +53,23 @@ func (cmpgn *campaignUseCase) UpdateCampaign(c context.Context, id int64, update
 	return nil
 }
 
-func (cmpgn *campaignUseCase) GetCampaign(c context.Context, name string, status string, startDate string, endDate string) ([]*models.Campaign, error) {
+func (cmpgn *campaignUseCase) GetCampaign(c context.Context, name string, status string, startDate string, endDate string, page int, limit int) (string, []*models.Campaign, error) {
 
 	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
 
-	listCampaign, err := cmpgn.campaignRepo.GetCampaign(ctx, name, status, startDate, endDate)
+	listCampaign, err := cmpgn.campaignRepo.GetCampaign(ctx, name, status, startDate, endDate, page, limit)
+
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
-	return listCampaign, nil
+	countCampaign, err := cmpgn.campaignRepo.CountCampaign(ctx, name, status, startDate, endDate)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return strconv.Itoa(countCampaign), listCampaign, nil
 }
 
 func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetCampaignValue) (*models.UserPoint, error) {
@@ -74,7 +81,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetC
 		return nil, models.ErrNoCampaign
 	}
 
-	//Calculate point
+	// Calculate point
 	expression, err := govaluate.NewEvaluableExpression(dataCampaign.Validators.Formula)
 	parameters := make(map[string]interface{}, 8)
 	parameters["transactionAmount"] = m.TransactionAmount
@@ -82,7 +89,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetC
 	parameters["value"] = dataCampaign.Validators.Value
 	result, err := expression.Evaluate(parameters)
 
-	//Parse interface to float
+	// Parse interface to float
 	parseFloat, err := getFloat(result)
 	pointAmount := math.Floor(parseFloat)
 

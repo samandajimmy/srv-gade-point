@@ -14,5 +14,7 @@ var (
 	MassageUpdateError     = "Update Error"
 	MassageUploadError     = "Upload Failed"
 	MassageValidationError = "Field validation"
+	MassageForbiddenError  = "Forbidden access"
+	MessageDataNotFound    = "Data Not Found"
 	TimeNow                = time.Now()
 )

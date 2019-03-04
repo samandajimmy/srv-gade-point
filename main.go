@@ -22,22 +22,21 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo"
 	_ "github.com/lib/pq"
-	"github.com/spf13/viper"
 )
 
 var ech *echo.Echo
 
 func init() {
+	ech = echo.New()
 	err := godotenv.Load()
 
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	ech = echo.New()
-
 	// setup PUBLIC DIRECTORY
 	ech.Static(os.Getenv(`VOUCHER_PATH`), os.Getenv(`VOUCHER_ROUTE_PATH`))
+
 }
 
 func main() {
@@ -64,7 +63,7 @@ func main() {
 
 	//VOUCHER
 	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn)
-	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, timeoutContext)
+	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, campaignRepository, timeoutContext)
 	_voucherHttpDelivery.NewVouchersHandler(ech, voucherUseCase)
 
 	ech.Start(os.Getenv(`SERVER_PORT`))
@@ -82,7 +81,7 @@ func getDBConn() *sql.DB {
 
 	dbConn, err := sql.Open(`postgres`, connection)
 
-	if err != nil && viper.GetBool(`debug`) {
+	if err != nil {
 		fmt.Println(err)
 	}
 

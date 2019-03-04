@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
 	"time"
@@ -73,10 +74,14 @@ func (m *psqlCampaignRepository) UpdateCampaign(ctx context.Context, id int64, u
 	return nil
 }
 
-func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, status string, startDate string, endDate string) ([]*models.Campaign, error) {
+func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, status string, startDate string, endDate string, page int, limit int) ([]*models.Campaign, error) {
+	paging := ""
+	where := ""
 	query := `SELECT id, name, description, start_date, end_date, status, type, validators, updated_at, created_at FROM campaigns WHERE id IS NOT NULL`
 
-	where := ""
+	if page > 0 || limit > 0 {
+		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
+	}
 
 	if name != "" {
 		where += " AND name LIKE '%" + name + "%'"
@@ -94,9 +99,10 @@ func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, s
 		where += " AND end_date <= '" + endDate + "'"
 	}
 
-	query += where + " ORDER BY created_at DESC"
+	query += where + " ORDER BY created_at DESC" + paging
 
 	res, err := m.getCampaign(ctx, query)
+
 	if err != nil {
 		return nil, err
 	}
@@ -107,14 +113,15 @@ func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, s
 
 func (m *psqlCampaignRepository) getCampaign(ctx context.Context, query string) ([]*models.Campaign, error) {
 	var validator json.RawMessage
+	result := make([]*models.Campaign, 0)
 	rows, err := m.Conn.QueryContext(ctx, query)
+	defer rows.Close()
+
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
 	}
-	defer rows.Close()
 
-	result := make([]*models.Campaign, 0)
 	for rows.Next() {
 		t := new(models.Campaign)
 		var createDate, updateDate pq.NullTime
@@ -212,17 +219,33 @@ func (m *psqlCampaignRepository) GetUserPoint(ctx context.Context, UserId string
 func (m *psqlCampaignRepository) GetUserPointHistory(ctx context.Context, userID string) ([]models.CampaignTrx, error) {
 	var dataHistory []models.CampaignTrx
 
-	query := `SELECT ct.id, ct.user_id, ct.point_amount, ct.transaction_type, ct.transaction_date,
-		COALESCE(ct.campaign_id, 0), COALESCE(ct.voucher_id, 0), 
-		COALESCE(c.name, ''), COALESCE(c.description, ''), COALESCE(v.name, ''), COALESCE(v.description, '')
-		FROM campaign_transactions ct
-		LEFT JOIN campaigns c ON ct.campaign_id = c.id
-		LEFT JOIN vouchers v ON ct.voucher_id = v.id
-		WHERE ct.user_id = $1
-		ORDER BY ct.transaction_date DESC;`
+	query := `select
+				ct.id,
+				ct.user_id,
+				ct.point_amount,
+				ct.transaction_type,
+				ct.transaction_date,
+				coalesce(ct.campaign_id, 0) campaign_id,
+				coalesce(c.name, '') campaign_name,
+				coalesce(c.description, '') campaign_description,
+				coalesce(ct.promo_code_id, 0) promo_code_id,
+				coalesce(pc.promo_code, '') promo_code,
+				coalesce(v.name, '') voucher_name,
+				coalesce(v.description, '') voucher_description
+			from
+				campaign_transactions ct
+			left join campaigns c on
+				ct.campaign_id = c.id
+			left join promo_codes pc on
+				pc.id = ct.promo_code_id
+			left join vouchers v on
+				pc.voucher_id = v.id
+			where
+				ct.user_id = $1
+			order by
+				ct.transaction_date desc;`
 
 	rows, err := m.Conn.QueryContext(ctx, query, userID)
-
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
@@ -231,12 +254,22 @@ func (m *psqlCampaignRepository) GetUserPointHistory(ctx context.Context, userID
 	for rows.Next() {
 		var ct models.CampaignTrx
 		var campaign models.Campaign
+		var promoCodes models.PromoCode
 		var voucher models.Voucher
 
 		err = rows.Scan(
-			&ct.ID, &ct.UserID, &ct.PointAmount, &ct.TransactionType, &ct.TransactionDate,
-			&campaign.ID, &voucher.ID,
-			&campaign.Name, &campaign.Description, &voucher.Name, &voucher.Description,
+			&ct.ID,
+			&ct.UserID,
+			&ct.PointAmount,
+			&ct.TransactionType,
+			&ct.TransactionDate,
+			&campaign.ID,
+			&campaign.Name,
+			&campaign.Description,
+			&promoCodes.ID,
+			&promoCodes.PromoCode,
+			&voucher.Name,
+			&voucher.Description,
 		)
 
 		if err != nil {
@@ -248,12 +281,47 @@ func (m *psqlCampaignRepository) GetUserPointHistory(ctx context.Context, userID
 			ct.Campaign = &campaign
 		}
 
-		if voucher.ID != 0 {
-			ct.Voucher = &voucher
+		if promoCodes.ID != 0 {
+			ct.PromoCode = &promoCodes
 		}
 
 		dataHistory = append(dataHistory, ct)
 	}
 
 	return dataHistory, nil
+}
+
+// Count data campaign
+func (m *psqlCampaignRepository) CountCampaign(ctx context.Context, name string, status string, startDate string, endDate string) (int, error) {
+
+	query := `SELECT coalesce(COUNT(id), 0) FROM campaigns WHERE id IS NOT NULL`
+
+	where := ""
+
+	if name != "" {
+		where += " AND name LIKE '%" + name + "%'"
+	}
+
+	if status != "" {
+		where += " AND status='" + status + "'"
+	}
+
+	if startDate != "" {
+		where += " AND start_date >= '" + startDate + "'"
+	}
+
+	if endDate != "" {
+		where += " AND end_date <= '" + endDate + "'"
+	}
+
+	query += where
+
+	var total int
+
+	err := m.Conn.QueryRowContext(ctx, query).Scan(&total)
+	if err != nil {
+		return 0, err
+	}
+
+	return total, nil
 }

@@ -11,5 +11,8 @@ type UseCase interface {
 	CreateVoucher(context.Context, *models.Voucher) error
 	UpdateVoucher(ctx context.Context, id int64, updateVoucher *models.UpdateVoucher) error
 	UploadVoucherImages(*multipart.FileHeader) (string, error)
-	GetVouchers(ctx context.Context, name string, status string, startDate string, endDate string, page int32, limit int32) (interface{}, string, error)
+	GetVouchers(ctx context.Context, name string, status string, startDate string, endDate string, page int32, limit int32, source string) (interface{}, string, error)
+	GetVoucher(ctx context.Context, voucherId string, source string) (interface{}, error)
+	GetVouchersUser(ctx context.Context, userId string, status string, page int32, limit int32, source string) ([]*models.VoucherUser, string, error)
+	CreateVoucherBuy(ctx context.Context, m *models.PayloadVoucherBuy) (*models.VoucherUser, error)
 }

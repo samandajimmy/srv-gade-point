@@ -27,36 +27,35 @@ func NewCampaignsHandler(e *echo.Echo, us campaigns.UseCase) {
 	}
 
 	//End Point For CMS
-	e.POST("/campaigns", handler.CreateCampaign)
-	e.PUT("/campaigns/status/:id", handler.UpdateStatusCampaign)
-	e.GET("/campaigns", handler.GetCampaigns)
+	e.POST("/admin/campaigns", handler.CreateCampaign)
+	e.PUT("/admin/campaigns/status/:id", handler.UpdateStatusCampaign)
+	e.GET("/admin/campaigns", handler.GetCampaigns)
 
 	//End Point For External
-	e.POST("/campaigns/value", handler.GetCampaignValue)
-	e.GET("/campaigns/point", handler.GetUserPoint)
-	e.GET("/campaigns/point/history", handler.GetUserPointHistory)
+	e.POST("/api/campaigns/value", handler.GetCampaignValue)
+	e.GET("/api/campaigns/point", handler.GetUserPoint)
+	e.GET("/api/campaigns/point/history", handler.GetUserPointHistory)
 }
 
 func (cmpgn *CampaignsHandler) CreateCampaign(c echo.Context) error {
 	var campaign models.Campaign
 	err := c.Bind(&campaign)
+	ctx := c.Request().Context()
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		response.Data = ""
 		return c.JSON(http.StatusUnprocessableEntity, response)
 	}
 
 	if ok, err := isRequestValid(&campaign); !ok {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		response.Data = ""
 		return c.JSON(http.StatusBadRequest, response)
-	}
-
-	ctx := c.Request().Context()
-	if ctx == nil {
-		ctx = context.Background()
 	}
 
 	err = cmpgn.CampaignUseCase.CreateCampaign(ctx, &campaign)
@@ -64,7 +63,6 @@ func (cmpgn *CampaignsHandler) CreateCampaign(c echo.Context) error {
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		response.Data = ""
 		return c.JSON(getStatusCode(err), response)
 	}
 
@@ -75,7 +73,6 @@ func (cmpgn *CampaignsHandler) CreateCampaign(c echo.Context) error {
 }
 
 func (cmpgn *CampaignsHandler) UpdateStatusCampaign(c echo.Context) error {
-
 	updateCampaign := new(models.UpdateCampaign)
 
 	if err := c.Bind(updateCampaign); err != nil {
@@ -93,8 +90,8 @@ func (cmpgn *CampaignsHandler) UpdateStatusCampaign(c echo.Context) error {
 	}
 
 	id, _ := strconv.Atoi(c.Param("id"))
-
 	ctx := c.Request().Context()
+
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -115,53 +112,53 @@ func (cmpgn *CampaignsHandler) UpdateStatusCampaign(c echo.Context) error {
 }
 
 func (cmpgn *CampaignsHandler) GetCampaigns(c echo.Context) error {
-
 	name := c.QueryParam("name")
 	status := c.QueryParam("status")
 	startDate := c.QueryParam("startDate")
 	endDate := c.QueryParam("endDate")
-
+	page, _ := strconv.Atoi(c.QueryParam("page"))
+	limit, _ := strconv.Atoi(c.QueryParam("limit"))
 	ctx := c.Request().Context()
+
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	res, err := cmpgn.CampaignUseCase.GetCampaign(ctx, name, status, startDate, endDate)
+	countCampaign, res, err := cmpgn.CampaignUseCase.GetCampaign(ctx, name, status, startDate, endDate, int(page), int(limit))
 
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		response.Data = ""
 		return c.JSON(getStatusCode(err), response)
 	}
 
 	response.Status = models.StatusSuccess
 	response.Message = models.StatusSuccess
 	response.Data = res
+	response.TotalCount = countCampaign
 	return c.JSON(http.StatusOK, response)
 
 }
 
 func (cmpgn *CampaignsHandler) GetCampaignValue(c echo.Context) error {
 	var campaignValue models.GetCampaignValue
+	ctx := c.Request().Context()
 	err := c.Bind(&campaignValue)
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		response.Data = ""
 		return c.JSON(http.StatusUnprocessableEntity, response)
 	}
 
 	if ok, err := isRequestValid(&campaignValue); !ok {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		response.Data = ""
 		return c.JSON(http.StatusBadRequest, response)
-	}
-
-	ctx := c.Request().Context()
-	if ctx == nil {
-		ctx = context.Background()
 	}
 
 	userPoint, err := cmpgn.CampaignUseCase.GetCampaignValue(ctx, &campaignValue)
@@ -169,7 +166,6 @@ func (cmpgn *CampaignsHandler) GetCampaignValue(c echo.Context) error {
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		response.Data = ""
 		return c.JSON(getStatusCode(err), response)
 	}
 
@@ -180,10 +176,9 @@ func (cmpgn *CampaignsHandler) GetCampaignValue(c echo.Context) error {
 }
 
 func (cmpgn *CampaignsHandler) GetUserPoint(c echo.Context) error {
-
 	userId := c.QueryParam("userId")
-
 	ctx := c.Request().Context()
+
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -193,7 +188,6 @@ func (cmpgn *CampaignsHandler) GetUserPoint(c echo.Context) error {
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		response.Data = ""
 		return c.JSON(getStatusCode(err), response)
 	}
 
@@ -218,12 +212,11 @@ func (cmpgn *CampaignsHandler) GetUserPointHistory(c echo.Context) error {
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		response.Data = ""
 		return c.JSON(getStatusCode(err), response)
 	}
 
 	response.Status = models.StatusSuccess
-	response.Message = models.StatusSuccess
+	response.Message = models.MassagePointSuccess
 	response.Data = data
 
 	return c.JSON(http.StatusOK, response)

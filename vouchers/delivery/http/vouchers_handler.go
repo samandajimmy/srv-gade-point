@@ -9,11 +9,14 @@ import (
 
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
 var (
-	response = models.Response{} // Response represent the response
+	response     = models.Response{} // Response represent the response
+	responseData interface{}
+	err          error
 )
 
 // VouchersHandler represent the httphandler for vouchers
@@ -30,26 +33,29 @@ func NewVouchersHandler(e *echo.Echo, us vouchers.UseCase) {
 	e.POST("/vouchers", handler.CreateVoucher)
 	e.PUT("/vouchers/status/:id", handler.UpdateStatusVoucher)
 	e.POST("/vouchers/upload", handler.UploadVoucherImages)
+	e.GET("/voucher", handler.GetVoucher)
 	e.GET("/vouchers", handler.GetVouchers)
+	e.GET("/vouchers/user", handler.GetVouchersUser)
+	e.POST("/voucher/buy", handler.CreateVoucherBuy)
+
 }
 
-//Create new voucher and generate promo code by stock
-func (a *VouchersHandler) CreateVoucher(c echo.Context) error {
+// Create new voucher and generate promo code by stock
+func (vchr *VouchersHandler) CreateVoucher(c echo.Context) error {
 	var voucher models.Voucher
-	err := c.Bind(&voucher)
+	response.Data = ""
+	response.TotalCount = ""
+	err = c.Bind(&voucher)
+
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		response.Data = ""
-		response.TotalCount = ""
 		return c.JSON(http.StatusUnprocessableEntity, response)
 	}
 
 	if ok, err := isRequestValid(&voucher); !ok {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		response.Data = ""
-		response.TotalCount = ""
 		return c.JSON(http.StatusBadRequest, response)
 	}
 
@@ -58,25 +64,22 @@ func (a *VouchersHandler) CreateVoucher(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	err = a.VoucherUseCase.CreateVoucher(ctx, &voucher)
+	err = vchr.VoucherUseCase.CreateVoucher(ctx, &voucher)
 
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		response.Data = ""
-		response.TotalCount = ""
 		return c.JSON(http.StatusUnprocessableEntity, response)
 	}
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MassageSaveSuccess
 	response.Data = voucher
-	response.TotalCount = ""
 	return c.JSON(http.StatusCreated, response)
 }
 
-//Update status voucher ACTIVE or INACTIVE
-func (a *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
+// Update status voucher ACTIVE or INACTIVE
+func (vchr *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 
 	updateVoucher := new(models.UpdateVoucher)
 
@@ -103,7 +106,7 @@ func (a *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	err := a.VoucherUseCase.UpdateVoucher(ctx, int64(id), updateVoucher)
+	err := vchr.VoucherUseCase.UpdateVoucher(ctx, int64(id), updateVoucher)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -120,8 +123,8 @@ func (a *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-//Upload image voucher
-func (a *VouchersHandler) UploadVoucherImages(c echo.Context) error {
+// Upload image voucher
+func (vchr *VouchersHandler) UploadVoucherImages(c echo.Context) error {
 
 	ctx := c.Request().Context()
 	if ctx == nil {
@@ -137,7 +140,7 @@ func (a *VouchersHandler) UploadVoucherImages(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	path, err := a.VoucherUseCase.UploadVoucherImages(file)
+	path, err := vchr.VoucherUseCase.UploadVoucherImages(file)
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
@@ -153,8 +156,11 @@ func (a *VouchersHandler) UploadVoucherImages(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-//Get all voucher by param name, status, start date and end date
-func (a *VouchersHandler) GetVouchers(c echo.Context) error {
+// Get all voucher by param name, status, start date and end date
+func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
+	totalCount := ""
+	response.Data = ""
+	response.TotalCount = ""
 
 	name := c.QueryParam("name")
 	status := c.QueryParam("status")
@@ -162,27 +168,153 @@ func (a *VouchersHandler) GetVouchers(c echo.Context) error {
 	endDate := c.QueryParam("endDate")
 	page, _ := strconv.Atoi(c.QueryParam("page"))
 	limit, _ := strconv.Atoi(c.QueryParam("limit"))
+	source := c.QueryParam("source")
 
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	res, totalCount, err := a.VoucherUseCase.GetVouchers(ctx, name, status, startDate, endDate, int32(page), int32(limit))
+	sources := viper.GetStringSlice("source.whitelisted.external")
 
-	if err != nil {
+	if checkAccess(source, sources) {
+		responseData, totalCount, err = vchr.VoucherUseCase.GetVouchers(ctx, name, status, startDate, endDate, int32(page), int32(limit), source)
+		if err != nil {
+			response.Status = models.StatusError
+			response.Message = err.Error()
+			return c.JSON(getStatusCode(err), response)
+		}
+	} else {
 		response.Status = models.StatusError
-		response.Message = err.Error()
-		response.Data = ""
-		response.TotalCount = ""
-		return c.JSON(getStatusCode(err), response)
+		response.Message = models.MassageForbiddenError
+		return c.JSON(http.StatusForbidden, response)
 	}
 
 	response.Status = models.StatusSuccess
 	response.Message = models.StatusSuccess
-	response.Data = res
+	response.Data = responseData
 	response.TotalCount = totalCount
 	return c.JSON(http.StatusOK, response)
+}
+
+// Get detail voucher by voucherId
+func (vchr *VouchersHandler) GetVoucher(c echo.Context) error {
+	totalCount := ""
+	response.Data = ""
+	response.TotalCount = ""
+
+	voucherId := c.QueryParam("voucherId")
+	source := c.QueryParam("source")
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	sources := viper.GetStringSlice("source.whitelisted.external")
+
+	if checkAccess(source, sources) {
+		responseData, err = vchr.VoucherUseCase.GetVoucher(ctx, voucherId, source)
+		if err != nil {
+			response.Status = models.StatusError
+			response.Message = models.MessageDataNotFound
+			return c.JSON(getStatusCode(err), response)
+		}
+	} else {
+		response.Status = models.StatusError
+		response.Message = models.MassageForbiddenError
+		return c.JSON(http.StatusForbidden, response)
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.StatusSuccess
+	response.Data = responseData
+	response.TotalCount = totalCount
+	return c.JSON(http.StatusOK, response)
+}
+
+// Get all promo code voucher by user id and status bought
+func (vchr *VouchersHandler) GetVouchersUser(c echo.Context) error {
+	totalCount := ""
+	response.Data = ""
+	response.TotalCount = ""
+
+	userId := c.QueryParam("userId")
+	status := c.QueryParam("status")
+	page, _ := strconv.Atoi(c.QueryParam("page"))
+	limit, _ := strconv.Atoi(c.QueryParam("limit"))
+	source := c.QueryParam("source")
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	sources := viper.GetStringSlice("source.whitelisted.external")
+
+	if checkAccess(source, sources) {
+		responseData, totalCount, err = vchr.VoucherUseCase.GetVouchersUser(ctx, userId, status, int32(page), int32(limit), source)
+		if err != nil {
+			response.Status = models.StatusError
+			response.Message = err.Error()
+			return c.JSON(getStatusCode(err), response)
+		}
+	} else {
+		response.Status = models.StatusError
+		response.Message = models.MassageForbiddenError
+		return c.JSON(http.StatusForbidden, response)
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MassagePointSuccess
+	response.Data = responseData
+	response.TotalCount = totalCount
+	return c.JSON(http.StatusOK, response)
+}
+
+// Buy voucher
+func (vchr *VouchersHandler) CreateVoucherBuy(c echo.Context) error {
+	var voucher models.PayloadVoucherBuy
+	response.Data = ""
+	response.TotalCount = ""
+	err = c.Bind(&voucher)
+
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		return c.JSON(http.StatusUnprocessableEntity, response)
+	}
+
+	if ok, err := isRequestValid(&voucher); !ok {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	sources := viper.GetStringSlice("source.whitelisted.external")
+
+	if checkAccess(voucher.Source, sources) {
+		responseData, err = vchr.VoucherUseCase.CreateVoucherBuy(ctx, &voucher)
+		if err != nil {
+			response.Status = models.StatusError
+			response.Message = err.Error()
+			return c.JSON(getStatusCode(err), response)
+		}
+	} else {
+		response.Status = models.StatusError
+		response.Message = models.MassageForbiddenError
+		return c.JSON(http.StatusForbidden, response)
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MassagePointSuccess
+	response.Data = responseData
+	return c.JSON(http.StatusCreated, response)
 }
 
 func isRequestValid(m interface{}) (bool, error) {
@@ -212,4 +344,13 @@ func getStatusCode(err error) int {
 	default:
 		return http.StatusInternalServerError
 	}
+}
+
+func checkAccess(str string, list []string) bool {
+	for _, v := range list {
+		if v == str {
+			return true
+		}
+	}
+	return false
 }

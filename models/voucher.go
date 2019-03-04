@@ -5,64 +5,85 @@ import (
 )
 
 type Validators struct {
-	Channel         string `json:"channel" validate:"required"`
-	Product         string `json:"product" validate:"required"`
-	TransactionType string `json:"transactionType" validate:"required"`
-	Unit            string `json:"unit" validate:"required"`
+	Channel         string `json:"channel, omitempty"`
+	Product         string `json:"product, omitempty"`
+	TransactionType string `json:"transactionType, omitempty"`
+	Unit            string `json:"unit, omitempty"`
 }
 
 type Voucher struct {
-	ID              int64      `json:"id"`
-	Name            string     `json:"name" validate:"required"`
-	Description     string     `json:"description" validate:"required"`
-	StartDate       string     `json:"startDate" validate:"required"`
-	EndDate         string     `json:"endDate" validate:"required"`
-	Point           int64      `json:"point" validate:"required"`
-	JournalAccount  string     `json:"journalAccount" validate:"required"`
-	Value           float64    `json:"value" validate:"required"`
-	ImageUrl        string     `json:"imageUrl" validate:"required"`
-	Status          int8       `json:"status"`
-	Stock           int32      `json:"stock" validate:"required"`
-	PrefixPromoCode string     `json:"prefixPromoCode" validate:"required"`
-	Amount          int32      `json:"amount"`
-	Avaliable       int32      `json:"avaliable", omitempty`
-	Bought          int32      `json:"bought", omitempty`
-	Redeemed        int32      `json:"redeemed", omitempty`
-	Expired         int32      `json:"expired", omitempty`
-	Validators      Validators `json:"validators"`
-	UpdatedAt       time.Time  `json:"updatedAt"`
-	CreatedAt       time.Time  `json:"createdAt"`
+	ID              int64       `json:"id, omitempty"`
+	Name            string      `json:"name, omitempty"`
+	Description     string      `json:"description, omitempty"`
+	StartDate       string      `json:"startDate, omitempty"`
+	EndDate         string      `json:"endDate, omitempty"`
+	Point           int64       `json:"point, omitempty"`
+	JournalAccount  string      `json:"journalAccount, omitempty"`
+	Value           float64     `json:"value, omitempty"`
+	ImageUrl        string      `json:"imageUrl, omitempty"`
+	Status          int8        `json:"status, omitempty"`
+	Stock           int32       `json:"stock, omitempty"`
+	PrefixPromoCode string      `json:"prefixPromoCode, omitempty"`
+	Amount          int32       `json:"amount, omitempty"`
+	Available       int32       `json:"available, omitempty"`
+	Bought          int32       `json:"bought, omitempty"`
+	Redeemed        int32       `json:"redeemed, omitempty"`
+	Expired         int32       `json:"expired, omitempty"`
+	Validators      *Validators `json:"validators, omitempty"`
+	UpdatedAt       time.Time   `json:"updatedAt, omitempty"`
+	CreatedAt       time.Time   `json:"createdAt, omitempty"`
 }
 
 type UpdateVoucher struct {
-	Status int8 `json:"status"`
+	Status int8 `json:"status, omitempty"`
 }
 
 type PathVoucher struct {
-	ImageUrl string `json:"imageUrl"`
+	ImageUrl string `json:"imageUrl, omitempty"`
 }
 
 type VoucherDetail struct {
-	ID          int64   `json:"id"`
-	Name        string  `json:"name" validate:"required"`
-	Description string  `json:"description" validate:"required"`
-	StartDate   string  `json:"startDate" validate:"required"`
-	EndDate     string  `json:"endDate" validate:"required"`
-	Point       int64   `json:"point" validate:"required"`
-	Value       float64 `json:"value" validate:"required"`
-	ImageUrl    string  `json:"imageUrl" validate:"required"`
-	Status      int8    `json:"status"`
-	Stock       int32   `json:"stok"`
+	ID          int64   `json:"id, omitempty"`
+	Name        string  `json:"name, omitempty"`
+	Description string  `json:"description, omitempty"`
+	StartDate   string  `json:"startDate, omitempty"`
+	EndDate     string  `json:"endDate, omitempty"`
+	Point       int64   `json:"point, omitempty"`
+	Value       float64 `json:"value, omitempty"`
+	ImageUrl    string  `json:"imageUrl, omitempty"`
+	Stock       int32   `json:"stok, omitempty"`
+	Available   int32   `json:"available, omitempty"`
 }
 
 type PromoCode struct {
-	ID           int64     `json:"id"`
-	PromoCode    string    `json:"promoCode" validate:"required"`
+	ID           int64     `json:"id, omitempty"`
+	PromoCode    string    `json:"promoCode, omitempty"`
 	Status       int8      `json:"status"`
-	UserId       string    `json:"userId" validate:"required"`
-	VoucherId    int64     `json:"voucherId" validate:"required"`
-	RedeemedDate time.Time `json:"redeemedDate"`
-	UsedDate     time.Time `json:"UsedDate"`
-	UpdatedAt    time.Time `json:"updatedAt"`
-	CreatedAt    time.Time `json:"createdAt"`
+	UserId       string    `json:"userId, omitempty"`
+	Voucher      *Voucher  `json:"voucher, omitempty"`
+	RedeemedDate time.Time `json:"redeemedDate, omitempty"`
+	UsedDate     time.Time `json:"UsedDate, omitempty"`
+	UpdatedAt    time.Time `json:"updatedAt, omitempty"`
+	CreatedAt    time.Time `json:"createdAt, omitempty"`
+}
+
+type VoucherSource struct {
+	Source string `json:"source, omitempty"`
+}
+
+type VoucherUser struct {
+	PromoCode   string  `json:"promoCode, omitempty"`
+	BoughtDate  string  `json:"boughtDate, omitempty"`
+	Name        string  `json:"name, omitempty"`
+	Description string  `json:"description, omitempty"`
+	Value       float64 `json:"value, omitempty"`
+	StartDate   string  `json:"startDate, omitempty"`
+	EndDate     string  `json:"endDate, omitempty"`
+	ImageUrl    string  `json:"imageUrl, omitempty"`
+}
+
+type PayloadVoucherBuy struct {
+	VoucherId string `json:"voucherId, omitempty"`
+	UserId    string `json:"userId, omitempty"`
+	Source    string `json:"source, omitempty"`
 }

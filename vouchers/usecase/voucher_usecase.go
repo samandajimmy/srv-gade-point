@@ -60,7 +60,7 @@ func (vchr *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) 
 		ap = &models.PromoCode{
 			PromoCode: m.PrefixPromoCode + code[i],
 			Status:    0,
-			VoucherId: m.ID,
+			Voucher:   m,
 			CreatedAt: time.Now(),
 		}
 		promoCode = append(promoCode, ap)
@@ -204,63 +204,63 @@ func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userId string, st
 
 // Buy voucher
 func (vchr *voucherUseCase) CreateVoucherBuy(c context.Context, m *models.PayloadVoucherBuy) (*models.VoucherUser, error) {
-	var err error
+	// var err error
 
-	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
-	defer cancel()
+	// c, cancel := context.WithTimeout(c, vchr.contextTimeout)
+	// defer cancel()
 
-	voucherDetail, err := vchr.voucherRepo.GetVoucher(c, m.VoucherId)
-	if err != nil {
-		return nil, err
-	}
+	// voucherDetail, err := vchr.voucherRepo.GetVoucher(c, m.VoucherId)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	userPoint, err := vchr.campaignRepo.GetUserPoint(c, m.UserId)
-	if err != nil {
-		return nil, err
-	}
+	// userPoint, err := vchr.campaignRepo.GetUserPoint(c, m.UserId)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	EndDate, err := time.Parse(timeFormat, voucherDetail.EndDate)
-	if err != nil {
-		return nil, err
-	}
+	// EndDate, err := time.Parse(timeFormat, voucherDetail.EndDate)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	_, err = validateBuy(EndDate, voucherDetail.Point, int64(userPoint), voucherDetail.Available)
-	if err != nil {
-		return nil, err
-	}
+	// _, err = validateBuy(EndDate, voucherDetail.Point, int64(userPoint), voucherDetail.Available)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	promoCodeId, promoCode, boughtDate, err := vchr.voucherRepo.UpdatePromoCodeBought(c, m.VoucherId, m.UserId)
-	if err != nil {
-		return nil, err
-	}
+	// promoCodeId, promoCode, boughtDate, err := vchr.voucherRepo.UpdatePromoCodeBought(c, m.VoucherId, m.UserId)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	saveTransactionPoint := &models.SaveTransactionPoint{
-		UserId:          m.UserId,
-		PointAmount:     float64(voucherDetail.Point),
-		TransactionType: models.TransactionPointTypeKredit,
-		TransactionDate: time.Now(),
-		CampaingId:      0,
-		PromoCodeId:     promoCodeId,
-		CreatedAt:       time.Now(),
-	}
+	// saveTransactionPoint := &models.SaveTransactionPoint{
+	// 	UserId:          m.UserId,
+	// 	PointAmount:     float64(voucherDetail.Point),
+	// 	TransactionType: models.TransactionPointTypeKredit,
+	// 	TransactionDate: time.Now(),
+	// 	CampaingId:      0,
+	// 	PromoCodeId:     promoCodeId,
+	// 	CreatedAt:       time.Now(),
+	// }
 
-	err = vchr.campaignRepo.SavePoint(c, saveTransactionPoint)
-	if err != nil {
-		return nil, err
-	}
+	// err = vchr.campaignRepo.SavePoint(c, saveTransactionPoint)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	voucherUser := &models.VoucherUser{
-		PromoCode:   promoCode,
-		BoughtDate:  boughtDate,
-		Name:        voucherDetail.Name,
-		Description: voucherDetail.Description,
-		Value:       voucherDetail.Value,
-		StartDate:   voucherDetail.StartDate,
-		EndDate:     voucherDetail.EndDate,
-		ImageUrl:    voucherDetail.ImageUrl,
-	}
+	// voucherUser := &models.VoucherUser{
+	// 	PromoCode:   promoCode,
+	// 	BoughtDate:  boughtDate,
+	// 	Name:        voucherDetail.Name,
+	// 	Description: voucherDetail.Description,
+	// 	Value:       voucherDetail.Value,
+	// 	StartDate:   voucherDetail.StartDate,
+	// 	EndDate:     voucherDetail.EndDate,
+	// 	ImageUrl:    voucherDetail.ImageUrl,
+	// }
 
-	return voucherUser, nil
+	return nil, nil
 }
 
 // Generate promo code by stock, prefix code and length character code from data voucher

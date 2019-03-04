@@ -179,7 +179,7 @@ func (m *psqlVoucherRepository) CreatePromoCode(ctx context.Context, promoCodes 
 		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d)", i*fieldInsertPromoCode+count[0], i*fieldInsertPromoCode+count[1], i*fieldInsertPromoCode+count[2], i*fieldInsertPromoCode+count[3]))
 		valueArgs = append(valueArgs, promoCode.PromoCode)
 		valueArgs = append(valueArgs, promoCode.Status)
-		valueArgs = append(valueArgs, promoCode.VoucherId)
+		valueArgs = append(valueArgs, promoCode.Voucher.ID)
 		valueArgs = append(valueArgs, promoCode.CreatedAt)
 		i++
 	}

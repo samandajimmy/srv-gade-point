@@ -11,4 +11,4 @@
         created_at TIMESTAMP DEFAULT NULL
     );
 
-    CREATE INDEX index_campaign_transactions ON campaign_transactions (user_id, point_amount, transaction_type, transaction_date, campaign_id, promo_code_id);
+    CREATE INDEX index_campaign_transactions ON campaign_transactions (user_id, point_amount, transaction_type, transaction_date);

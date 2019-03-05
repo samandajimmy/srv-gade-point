@@ -27,10 +27,11 @@ func NewPsqlCampaignRepository(Conn *sql.DB) campaigns.Repository {
 }
 
 func (m *psqlCampaignRepository) CreateCampaign(ctx context.Context, a *models.Campaign) error {
-
+	now := time.Now()
 	query := `INSERT INTO campaigns (name, description, start_date, end_date, status, type, validators, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)  RETURNING id`
 	stmt, err := m.Conn.PrepareContext(ctx, query)
+
 	if err != nil {
 		return err
 	}
@@ -50,7 +51,7 @@ func (m *psqlCampaignRepository) CreateCampaign(ctx context.Context, a *models.C
 	}
 
 	a.ID = lastID
-	a.CreatedAt = &models.TimeNow
+	a.CreatedAt = &now
 	return nil
 }
 

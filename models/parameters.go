@@ -1,8 +1,6 @@
 package models
 
-import (
-	"time"
-)
+import "github.com/labstack/echo"
 
 var (
 	StatusSuccess          = "Success"
@@ -16,5 +14,12 @@ var (
 	MassageValidationError = "Field validation"
 	MassageForbiddenError  = "Forbidden access"
 	MessageDataNotFound    = "Data Not Found"
-	TimeNow                = time.Now()
+	MicroTimeFormat        = "20060102150405.000000"
 )
+
+// EchoGroup to store routes group
+type EchoGroup struct {
+	Admin *echo.Group
+	API   *echo.Group
+	Token *echo.Group
+}

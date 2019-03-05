@@ -1,26 +1,57 @@
 package middleware
 
-import "github.com/labstack/echo"
+import (
+	"gade/srv-gade-point/models"
+	"os"
 
-const (
-	ACCESS_TOKEN_KEY = "Access-Token"
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 )
 
-type goMiddleware struct {
-	// another stuff , may be needed by middleware
+type customMiddleware struct {
+	e *echo.Echo
 }
 
-type responseError struct {
-	Message string `json:"message"`
+var echGroup models.EchoGroup
+
+// InitMiddleware to generate all middleware that app need
+func InitMiddleware(ech *echo.Echo, echoGroup models.EchoGroup) {
+	cm := &customMiddleware{ech}
+	echGroup = echoGroup
+
+	ech.Use(middleware.Logger())
+	ech.Use(middleware.Recover())
+	cm.cors()
+	cm.basicAuth()
+	cm.jwtAuth()
 }
 
-func (m *goMiddleware) CORS(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		c.Response().Header().Set("Access-Control-Allow-Origin", "*")
-		return next(c)
-	}
+func (cm customMiddleware) cors() {
+	cm.e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"Access-Control-Allow-Origin"},
+		AllowMethods: []string{"*"},
+	}))
 }
 
-func InitMiddleware() *goMiddleware {
-	return &goMiddleware{}
+func (cm customMiddleware) basicAuth() {
+	echGroup.Token.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
+		if username == os.Getenv(`BASIC_USERNAME`) && password == os.Getenv(`BASIC_PASSWORD`) {
+			return true, nil
+		}
+
+		return false, nil
+	}))
+}
+
+func (cm customMiddleware) jwtAuth() {
+	echGroup.Admin.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningMethod: "HS512",
+		SigningKey:    []byte(os.Getenv(`JWT_SECRET`)),
+	}))
+
+	echGroup.API.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningMethod: "HS512",
+		SigningKey:    []byte(os.Getenv(`JWT_SECRET`)),
+	}))
+
 }

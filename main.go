@@ -81,7 +81,7 @@ func main() {
 	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, campaignRepository, timeoutContext)
 	_voucherHttpDelivery.NewVouchersHandler(ech, voucherUseCase)
 
-	ech.Start(os.Getenv(`PORT`))
+	ech.Start(":" + os.Getenv(`PORT`))
 }
 
 func getDBConn() *sql.DB {

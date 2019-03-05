@@ -1,0 +1,1 @@
+web: cp .env.sample .env && srv-gade-point

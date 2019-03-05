@@ -94,7 +94,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetC
 	pointAmount := math.Floor(parseFloat)
 
 	campaignTrx := &models.CampaignTrx{
-		UserID:          m.UserId,
+		UserID:          m.UserID,
 		PointAmount:     &pointAmount,
 		TransactionType: models.TransactionPointTypeDebet,
 		TransactionDate: &models.TimeNow,
@@ -102,7 +102,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetC
 		CreatedAt:       &models.TimeNow,
 	}
 
-	err = cmpgn.campaignRepo.SavePoint(ctx, campaignTrx)
+	err = cmpgn.campaignRepo.SavePointDebet(ctx, campaignTrx)
 	if err != nil {
 		return nil, err
 	}

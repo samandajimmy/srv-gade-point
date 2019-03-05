@@ -34,6 +34,8 @@ func init() {
 		log.Fatal("Error loading .env file")
 	}
 
+	ech = echo.New()
+
 	// setup PUBLIC DIRECTORY
 	ech.Static(os.Getenv(`VOUCHER_PATH`), os.Getenv(`VOUCHER_ROUTE_PATH`))
 

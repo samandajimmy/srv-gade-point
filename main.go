@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"gade/srv-gade-point/middleware"
+	"gade/srv-gade-point/models"
 	"log"
 	"os"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	_campaignHttpDelivery "gade/srv-gade-point/campaigns/delivery/http"
 	_campaignRepository "gade/srv-gade-point/campaigns/repository"
 	_campaignUseCase "gade/srv-gade-point/campaigns/usecase"
+	_tokenHttpDelivery "gade/srv-gade-point/tokens/delivery/http"
 	_voucherHttpDelivery "gade/srv-gade-point/vouchers/delivery/http"
 	_voucherRepository "gade/srv-gade-point/vouchers/repository"
 	_voucherUseCase "gade/srv-gade-point/vouchers/usecase"
@@ -48,8 +50,6 @@ func main() {
 	defer dbConn.Close()
 	defer migrate.Close()
 
-	middL := middleware.InitMiddleware()
-	ech.Use(middL.CORS)
 	contextTimeout, err := strconv.Atoi(os.Getenv(`CONTEXT_TIMEOUT`))
 
 	if err != nil {
@@ -58,12 +58,24 @@ func main() {
 
 	timeoutContext := time.Duration(contextTimeout) * time.Second
 
-	//CAMPAIGN
+	echoGroup := models.EchoGroup{
+		ech.Group("/admin"),
+		ech.Group("/api"),
+		ech.Group("/token"),
+	}
+
+	// load all middlewares
+	middleware.InitMiddleware(ech, echoGroup)
+
+	// TOKEN
+	_tokenHttpDelivery.NewTokensHandler(echoGroup)
+
+	// CAMPAIGN
 	campaignRepository := _campaignRepository.NewPsqlCampaignRepository(dbConn)
 	campaignUseCase := _campaignUseCase.NewCampaignUseCase(campaignRepository, timeoutContext)
-	_campaignHttpDelivery.NewCampaignsHandler(ech, campaignUseCase)
+	_campaignHttpDelivery.NewCampaignsHandler(echoGroup, campaignUseCase)
 
-	//VOUCHER
+	// VOUCHER
 	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn)
 	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, campaignRepository, timeoutContext)
 	_voucherHttpDelivery.NewVouchersHandler(ech, voucherUseCase)

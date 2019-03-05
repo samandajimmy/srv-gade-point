@@ -73,6 +73,7 @@ func (cmpgn *campaignUseCase) GetCampaign(c context.Context, name string, status
 }
 
 func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetCampaignValue) (*models.UserPoint, error) {
+	now := time.Now()
 	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
 
@@ -97,9 +98,9 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetC
 		UserID:          m.UserID,
 		PointAmount:     &pointAmount,
 		TransactionType: models.TransactionPointTypeDebet,
-		TransactionDate: &models.TimeNow,
+		TransactionDate: &now,
 		Campaign:        dataCampaign,
-		CreatedAt:       &models.TimeNow,
+		CreatedAt:       &now,
 	}
 
 	err = cmpgn.campaignRepo.SavePointDebet(ctx, campaignTrx)

@@ -21,20 +21,20 @@ type CampaignsHandler struct {
 }
 
 // NewCampaignsHandler represent to register campaigns endpoint
-func NewCampaignsHandler(e *echo.Echo, us campaigns.UseCase) {
+func NewCampaignsHandler(echoGroup models.EchoGroup, us campaigns.UseCase) {
 	handler := &CampaignsHandler{
 		CampaignUseCase: us,
 	}
 
 	//End Point For CMS
-	e.POST("/admin/campaigns", handler.CreateCampaign)
-	e.PUT("/admin/campaigns/status/:id", handler.UpdateStatusCampaign)
-	e.GET("/admin/campaigns", handler.GetCampaigns)
+	echoGroup.Admin.POST("/campaigns", handler.CreateCampaign)
+	echoGroup.Admin.PUT("/campaigns/status/:id", handler.UpdateStatusCampaign)
+	echoGroup.Admin.GET("/campaigns", handler.GetCampaigns)
 
 	//End Point For External
-	e.POST("/api/campaigns/value", handler.GetCampaignValue)
-	e.GET("/api/campaigns/point", handler.GetUserPoint)
-	e.GET("/api/campaigns/point/history", handler.GetUserPointHistory)
+	echoGroup.API.POST("/campaigns/value", handler.GetCampaignValue)
+	echoGroup.API.GET("/campaigns/point", handler.GetUserPoint)
+	echoGroup.API.GET("/campaigns/point/history", handler.GetUserPointHistory)
 }
 
 func (cmpgn *CampaignsHandler) CreateCampaign(c echo.Context) error {

@@ -45,7 +45,7 @@ func NewVoucherUseCase(vchrRepo vouchers.Repository, campgnRepo campaigns.Reposi
 
 // create new voucher and generate promo code
 func (vchr *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) error {
-
+	now := time.Now()
 	promoCode := make([]*models.PromoCode, 0)
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
 
@@ -64,7 +64,7 @@ func (vchr *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) 
 			PromoCode: m.PrefixPromoCode + code[i],
 			Status:    0,
 			Voucher:   m,
-			CreatedAt: &models.TimeNow,
+			CreatedAt: &now,
 		}
 		promoCode = append(promoCode, ap)
 	}
@@ -222,7 +222,7 @@ func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userId string, st
 // Buy voucher
 func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVoucherBuy) (*models.PromoCode, error) {
 	var err error
-
+	now := time.Now()
 	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
 	defer cancel()
 
@@ -259,9 +259,9 @@ func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVouch
 		UserID:          m.UserID,
 		PointAmount:     &pointAmount,
 		TransactionType: models.TransactionPointTypeKredit,
-		TransactionDate: &models.TimeNow,
+		TransactionDate: &now,
 		PromoCode:       promoCode,
-		CreatedAt:       &models.TimeNow,
+		CreatedAt:       &now,
 	}
 
 	err = vchr.campaignRepo.SavePointKredit(c, campaignTrx)

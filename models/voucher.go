@@ -54,10 +54,6 @@ type PromoCode struct {
 	CreatedAt    *time.Time `json:"createdAt,omitempty"`
 }
 
-type VoucherSource struct {
-	Source string `json:"source,omitempty"`
-}
-
 type PayloadVoucherBuy struct {
 	VoucherID string `json:"voucherId,omitempty"`
 	UserID    string `json:"userId,omitempty"`

@@ -53,11 +53,11 @@ type UpdateCampaign struct {
 }
 
 type GetCampaignValue struct {
-	UserID            string  `json:"userId,omitempty`
-	Channel           string  `json:"channel,omitempty`
-	Product           string  `json:"product,omitempty`
-	TransactionType   string  `json:"transactionType,omitempty`
-	Unit              string  `json:"unit,omitempty`
+	UserID            string  `json:"userId,omitempty"`
+	Channel           string  `json:"channel,omitempty"`
+	Product           string  `json:"product,omitempty"`
+	TransactionType   string  `json:"transactionType,omitempty"`
+	Unit              string  `json:"unit,omitempty"`
 	TransactionAmount float64 `json:"transactionAmount,omitempty"`
 }
 

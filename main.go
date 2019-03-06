@@ -24,27 +24,16 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo"
 	_ "github.com/lib/pq"
-	"github.com/sirupsen/logrus"
 )
 
 var ech *echo.Echo
 
 func init() {
 	ech = echo.New()
-
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
-	isDebug, _ := strconv.ParseBool(os.Getenv(`DEBUG_APP`))
-	logrus.Debug(isDebug)
-
-	ech = echo.New()
+	loadEnv()
 
 	// setup PUBLIC DIRECTORY
 	ech.Static(os.Getenv(`VOUCHER_PATH`), os.Getenv(`VOUCHER_ROUTE_PATH`))
-
 }
 
 func main() {
@@ -63,9 +52,9 @@ func main() {
 	timeoutContext := time.Duration(contextTimeout) * time.Second
 
 	echoGroup := models.EchoGroup{
-		ech.Group("/admin"),
-		ech.Group("/api"),
-		ech.Group("/token"),
+		Admin: ech.Group("/admin"),
+		API:   ech.Group("/api"),
+		Token: ech.Group("/token"),
 	}
 
 	// load all middlewares
@@ -100,7 +89,7 @@ func getDBConn() *sql.DB {
 	dbConn, err := sql.Open(`postgres`, connection)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	err = dbConn.Ping()
@@ -121,12 +110,27 @@ func dataMigrations(dbConn *sql.DB) *migrate.Migrate {
 		os.Getenv(`DB_USER`), driver)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	if err := migrations.Up(); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	return migrations
+}
+
+func loadEnv() {
+	// check .env file existence
+	if _, err := os.Stat(".env"); os.IsNotExist(err) {
+		return
+	}
+
+	err := godotenv.Load()
+
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	return
 }

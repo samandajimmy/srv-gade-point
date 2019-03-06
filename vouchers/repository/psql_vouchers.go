@@ -36,7 +36,7 @@ func NewPsqlVoucherRepository(Conn *sql.DB) vouchers.Repository {
 
 // Insert new voucher to database table vouchers
 func (m *psqlVoucherRepository) CreateVoucher(ctx context.Context, a *models.Voucher) error {
-
+	now := time.Now()
 	query := `INSERT INTO vouchers (name, description, start_date, end_date, point, journal_account, value, image_url, status, stock, prefix_promo_code, validators, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)  RETURNING id`
 	stmt, err := m.Conn.PrepareContext(ctx, query)
@@ -44,7 +44,7 @@ func (m *psqlVoucherRepository) CreateVoucher(ctx context.Context, a *models.Vou
 		return err
 	}
 
-	logrus.Debug("Created At: ", &models.TimeNow)
+	logrus.Debug("Created At: ", &now)
 
 	var lastID int64
 	validator, err := json.Marshal(a.Validators)
@@ -52,13 +52,13 @@ func (m *psqlVoucherRepository) CreateVoucher(ctx context.Context, a *models.Vou
 		return err
 	}
 
-	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate, a.Point, a.JournalAccount, a.Value, a.ImageUrl, a.Status, a.Stock, a.PrefixPromoCode, string(validator), &models.TimeNow).Scan(&lastID)
+	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate, a.Point, a.JournalAccount, a.Value, a.ImageUrl, a.Status, a.Stock, a.PrefixPromoCode, string(validator), &now).Scan(&lastID)
 	if err != nil {
 		return err
 	}
 
 	a.ID = lastID
-	a.CreatedAt = &models.TimeNow
+	a.CreatedAt = &now
 	return nil
 }
 
@@ -95,18 +95,18 @@ func (m *psqlVoucherRepository) CreatePromoCode(ctx context.Context, promoCodes 
 
 // Update status voucher to database table vouchers
 func (m *psqlVoucherRepository) UpdateVoucher(ctx context.Context, id int64, updateVoucher *models.UpdateVoucher) error {
-
+	now := time.Now()
 	query := `UPDATE vouchers SET status = $1, updated_at = $2 WHERE id = $3 RETURNING id`
 	stmt, err := m.Conn.PrepareContext(ctx, query)
 	if err != nil {
 		return err
 	}
 
-	logrus.Debug("Update At: ", time.Now())
+	logrus.Debug("Update At: ", &now)
 
 	var lastID int64
 
-	err = stmt.QueryRowContext(ctx, updateVoucher.Status, time.Now(), id).Scan(&lastID)
+	err = stmt.QueryRowContext(ctx, updateVoucher.Status, &now, id).Scan(&lastID)
 	if err != nil {
 		return err
 	}
@@ -470,7 +470,7 @@ func (m *psqlVoucherRepository) CountPromoCode(ctx context.Context, status strin
 // Update promo code foruser
 func (m *psqlVoucherRepository) UpdatePromoCodeBought(ctx context.Context, voucherId string, userId string) (*models.PromoCode, error) {
 	result := new(models.PromoCode)
-
+	now := time.Now()
 	querySelect := `SELECT id FROM promo_codes WHERE status = 0 AND voucher_id = $1 ORDER BY promo_code ASC LIMIT 1`
 
 	err := m.Conn.QueryRowContext(ctx, querySelect, voucherId).Scan(&result.ID)
@@ -484,9 +484,9 @@ func (m *psqlVoucherRepository) UpdatePromoCodeBought(ctx context.Context, vouch
 		return nil, err
 	}
 
-	logrus.Debug("Update At promo_codes : ", &models.TimeNow)
+	logrus.Debug("Update At promo_codes : ", &now)
 
-	err = stmt.QueryRowContext(ctx, userId, &models.TimeNow, &models.TimeNow, &result.ID).Scan(&result.PromoCode, &result.BoughtDate)
+	err = stmt.QueryRowContext(ctx, userId, &now, &now, &result.ID).Scan(&result.PromoCode, &result.BoughtDate)
 	if err != nil {
 		return nil, err
 	}

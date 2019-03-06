@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
+	"time"
 
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -35,7 +36,7 @@ func (m *psqlCampaignRepository) CreateCampaign(ctx context.Context, a *models.C
 		return err
 	}
 
-	logrus.Debug("Created At: ", &models.TimeNow)
+	logrus.Debug("Created At: ", &now)
 
 	var lastID int64
 
@@ -44,7 +45,7 @@ func (m *psqlCampaignRepository) CreateCampaign(ctx context.Context, a *models.C
 		return err
 	}
 
-	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate, a.Status, a.Type, string(validator), &models.TimeNow).Scan(&lastID)
+	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate, a.Status, a.Type, string(validator), &now).Scan(&lastID)
 	if err != nil {
 		return err
 	}
@@ -55,18 +56,18 @@ func (m *psqlCampaignRepository) CreateCampaign(ctx context.Context, a *models.C
 }
 
 func (m *psqlCampaignRepository) UpdateCampaign(ctx context.Context, id int64, updateCampaign *models.UpdateCampaign) error {
-
+	now := time.Now()
 	query := `UPDATE campaigns SET status = $1, updated_at = $2 WHERE id = $3 RETURNING id`
 	stmt, err := m.Conn.PrepareContext(ctx, query)
 	if err != nil {
 		return err
 	}
 
-	logrus.Debug("Update At: ", &models.TimeNow)
+	logrus.Debug("Update At: ", &now)
 
 	var lastID int64
 
-	err = stmt.QueryRowContext(ctx, updateCampaign.Status, &models.TimeNow, id).Scan(&lastID)
+	err = stmt.QueryRowContext(ctx, updateCampaign.Status, &now, id).Scan(&lastID)
 	if err != nil {
 		return err
 	}
@@ -173,6 +174,7 @@ func (m *psqlCampaignRepository) GetValidatorCampaign(ctx context.Context, a *mo
 }
 
 func (m *psqlCampaignRepository) SavePointDebet(ctx context.Context, a *models.CampaignTrx) error {
+	now := time.Now()
 	query := `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, campaign_id, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6)  RETURNING id`
 	stmt, err := m.Conn.PrepareContext(ctx, query)
@@ -180,7 +182,7 @@ func (m *psqlCampaignRepository) SavePointDebet(ctx context.Context, a *models.C
 		return err
 	}
 
-	logrus.Debug("Created At: ", &models.TimeNow)
+	logrus.Debug("Created At: ", &now)
 
 	var lastID int64
 
@@ -194,6 +196,7 @@ func (m *psqlCampaignRepository) SavePointDebet(ctx context.Context, a *models.C
 }
 
 func (m *psqlCampaignRepository) SavePointKredit(ctx context.Context, a *models.CampaignTrx) error {
+	now := time.Now()
 	query := `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, promo_code_id, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6)  RETURNING id`
 	stmt, err := m.Conn.PrepareContext(ctx, query)
@@ -201,7 +204,7 @@ func (m *psqlCampaignRepository) SavePointKredit(ctx context.Context, a *models.
 		return err
 	}
 
-	logrus.Debug("Created At: ", &models.TimeNow)
+	logrus.Debug("Created At: ", &now)
 
 	var lastID int64
 

@@ -30,10 +30,11 @@ var ech *echo.Echo
 
 func init() {
 	ech = echo.New()
-	err := godotenv.Load()
 
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	isDebug, _ := strconv.ParseBool(os.Getenv(`DEBUG_APP`))
+
+	if isDebug {
+		loadEnv()
 	}
 
 	ech = echo.New()
@@ -80,7 +81,7 @@ func main() {
 	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, campaignRepository, timeoutContext)
 	_voucherHttpDelivery.NewVouchersHandler(ech, voucherUseCase)
 
-	ech.Start(os.Getenv(`SERVER_PORT`))
+	ech.Start(":" + os.Getenv(`PORT`))
 }
 
 func getDBConn() *sql.DB {
@@ -125,4 +126,12 @@ func dataMigrations(dbConn *sql.DB) *migrate.Migrate {
 	}
 
 	return migrations
+}
+
+func loadEnv() {
+	err := godotenv.Load()
+
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 }

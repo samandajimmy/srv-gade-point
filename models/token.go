@@ -1,6 +1,6 @@
 package models
 
-import "github.com/dgrijalva/jwt-go"
+import jwt "github.com/dgrijalva/jwt-go"
 
 // Token to store JWT token data
 type Token struct {

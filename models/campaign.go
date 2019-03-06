@@ -5,9 +5,10 @@ import (
 )
 
 var (
-	TransactionPointTypeDebet  = "D"
+	// TransactionPointTypeDebet to store debet code
+	TransactionPointTypeDebet = "D"
+	// TransactionPointTypeKredit to store kredit code
 	TransactionPointTypeKredit = "K"
-	CampaignTypePoint          = 0
 )
 
 // Campaign is represent a campaigns model
@@ -48,10 +49,12 @@ type CampaignTrx struct {
 	CreatedAt       *time.Time `json:"createdAt,omitempty"`
 }
 
+// UpdateCampaign to store payload update campaign
 type UpdateCampaign struct {
 	Status int8 `json:"status"`
 }
 
+// GetCampaignValue to store payload get campaign value
 type GetCampaignValue struct {
 	UserID            string  `json:"userId,omitempty"`
 	Channel           string  `json:"channel,omitempty"`
@@ -61,6 +64,7 @@ type GetCampaignValue struct {
 	TransactionAmount float64 `json:"transactionAmount,omitempty"`
 }
 
+// UserPoint to store payload user point data
 type UserPoint struct {
 	UserPoint float64 `json:"userPoint,omitempty"`
 }

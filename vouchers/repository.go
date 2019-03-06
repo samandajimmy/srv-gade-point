@@ -11,15 +11,15 @@ type Repository interface {
 	CreatePromoCode(ctx context.Context, promoCode []*models.PromoCode) error
 	UpdateVoucher(ctx context.Context, id int64, updateVoucher *models.UpdateVoucher) error
 	GetVouchersAdmin(ctx context.Context, name string, status string, startDate string, endDate string, page int32, limit int32) ([]*models.Voucher, error)
-	GetVoucherAdmin(ctx context.Context, voucherId string) (*models.Voucher, error)
+	GetVoucherAdmin(ctx context.Context, voucherID string) (*models.Voucher, error)
 	GetVouchers(ctx context.Context, name string, startDate string, endDate string, page int32, limit int32) ([]*models.Voucher, error)
-	GetVoucher(ctx context.Context, voucherId string) (*models.Voucher, error)
-	UpdatePromoCodeBought(ctx context.Context, voucherId string, userId string) (*models.PromoCode, error)
-	GetVouchersUser(ctx context.Context, userId string, status string, page int32, limit int32) ([]models.PromoCode, error)
+	GetVoucher(ctx context.Context, voucherID string) (*models.Voucher, error)
+	UpdatePromoCodeBought(ctx context.Context, voucherID string, userID string) (*models.PromoCode, error)
+	GetVouchersUser(ctx context.Context, userID string, status string, page int32, limit int32) ([]models.PromoCode, error)
 	CountVouchers(ctx context.Context, name string, status string, startDate string, endDate string, expired bool) (int, error)
 	DeleteVoucher(ctx context.Context, id int64) error
-	CountPromoCode(ctx context.Context, status string, userId string) (int, error)
-	VoucherCheckExpired(ctx context.Context, voucherId string) error
+	CountPromoCode(ctx context.Context, status string, userID string) (int, error)
+	VoucherCheckExpired(ctx context.Context, voucherID string) error
 	VoucherCheckMinimalTransaction(ctx context.Context, a *models.PayloadValidateVoucher) (*models.Voucher, error)
-	UpdatePromoCodeRedeemed(ctx context.Context, voucherId string, userId string) (*models.PromoCode, error)
+	UpdatePromoCodeRedeemed(ctx context.Context, voucherID string, userID string) (*models.PromoCode, error)
 }

@@ -149,13 +149,13 @@ func (vchr *voucherUseCase) GetVouchersAdmin(c context.Context, name string, sta
 }
 
 // Get detail voucher for admin
-func (vchr *voucherUseCase) GetVoucherAdmin(c context.Context, voucherId string) (*models.Voucher, error) {
+func (vchr *voucherUseCase) GetVoucherAdmin(c context.Context, voucherID string) (*models.Voucher, error) {
 	var voucherDetail *models.Voucher
 	var err error
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
 	defer cancel()
 
-	voucherDetail, err = vchr.voucherRepo.GetVoucherAdmin(ctx, voucherId)
+	voucherDetail, err = vchr.voucherRepo.GetVoucherAdmin(ctx, voucherID)
 	if err != nil {
 		return nil, err
 	}
@@ -185,13 +185,13 @@ func (vchr *voucherUseCase) GetVouchers(c context.Context, name string, status s
 }
 
 // Get detail voucher
-func (vchr *voucherUseCase) GetVoucher(c context.Context, voucherId string) (*models.Voucher, error) {
+func (vchr *voucherUseCase) GetVoucher(c context.Context, voucherID string) (*models.Voucher, error) {
 	var voucherDetail *models.Voucher
 	var err error
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
 	defer cancel()
 
-	voucherDetail, err = vchr.voucherRepo.GetVoucher(ctx, voucherId)
+	voucherDetail, err = vchr.voucherRepo.GetVoucher(ctx, voucherID)
 	if err != nil {
 		return nil, err
 	}
@@ -200,18 +200,18 @@ func (vchr *voucherUseCase) GetVoucher(c context.Context, voucherId string) (*mo
 }
 
 // Get vouchers user
-func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userId string, status string, page int32, limit int32) ([]models.PromoCode, string, error) {
+func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userID string, status string, page int32, limit int32) ([]models.PromoCode, string, error) {
 	var err error
 	var totalCount int
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
 	defer cancel()
 
-	vouchersUser, err := vchr.voucherRepo.GetVouchersUser(ctx, userId, status, page, limit)
+	vouchersUser, err := vchr.voucherRepo.GetVouchersUser(ctx, userID, status, page, limit)
 	if err != nil {
 		return nil, "", err
 	}
 
-	totalCount, err = vchr.voucherRepo.CountPromoCode(ctx, status, userId)
+	totalCount, err = vchr.voucherRepo.CountPromoCode(ctx, status, userID)
 	if err != nil {
 		return nil, "", err
 	}

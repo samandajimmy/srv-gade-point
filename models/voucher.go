@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// Validators is represent a validators inside voucher
 type Validators struct {
 	Channel            string `json:"channel,omitempty"`
 	Product            string `json:"product,omitempty"`
@@ -12,6 +13,7 @@ type Validators struct {
 	MinimalTransaction string `json:"minimalTransaction,omitempty"`
 }
 
+// Voucher is represent a vouchers model
 type Voucher struct {
 	ID              int64       `json:"id,omitempty"`
 	Name            string      `json:"name,omitempty"`
@@ -21,7 +23,7 @@ type Voucher struct {
 	Point           int64       `json:"point,omitempty"`
 	JournalAccount  string      `json:"journalAccount,omitempty"`
 	Value           *float64    `json:"value,omitempty"`
-	ImageUrl        string      `json:"imageUrl,omitempty"`
+	ImageURL        string      `json:"imageUrl,omitempty"`
 	Status          *int8       `json:"status,omitempty"`
 	Stock           int32       `json:"stock,omitempty"`
 	PrefixPromoCode string      `json:"prefixPromoCode,omitempty"`
@@ -35,14 +37,17 @@ type Voucher struct {
 	CreatedAt       *time.Time  `json:"createdAt,omitempty"`
 }
 
+// UpdateVoucher to store payload for update status
 type UpdateVoucher struct {
 	Status int8 `json:"status,omitempty"`
 }
 
+// PathVoucher to store payload for upload voucher
 type PathVoucher struct {
-	ImageUrl string `json:"imageUrl,omitempty"`
+	ImageURL string `json:"imageUrl,omitempty"`
 }
 
+// PromoCode to store a promo codes data
 type PromoCode struct {
 	ID           int64      `json:"id,omitempty"`
 	PromoCode    string     `json:"promoCode,omitempty"`
@@ -55,11 +60,13 @@ type PromoCode struct {
 	CreatedAt    *time.Time `json:"createdAt,omitempty"`
 }
 
+// PayloadVoucherBuy to store payload to buy a voucher
 type PayloadVoucherBuy struct {
 	VoucherID string `json:"voucherId,omitempty"`
 	UserID    string `json:"userId,omitempty"`
 }
 
+// PayloadValidateVoucher to store payload to validate a voucher
 type PayloadValidateVoucher struct {
 	PromoCode         string  `json:"promoCode,omitempty"`
 	VoucherID         string  `json:"voucherId,omitempty"`

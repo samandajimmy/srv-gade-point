@@ -28,8 +28,6 @@ type psqlVoucherRepository struct {
 	Conn *sql.DB
 }
 
-type JSONB []byte
-
 // NewPsqlVoucherRepository will create an object that represent the vouchers. Repository interface
 func NewPsqlVoucherRepository(Conn *sql.DB) vouchers.Repository {
 	return &psqlVoucherRepository{Conn}
@@ -202,14 +200,14 @@ func (m *psqlVoucherRepository) getVouchersAdmin(ctx context.Context, query stri
 }
 
 // Get data voucher detail for admin
-func (m *psqlVoucherRepository) GetVoucherAdmin(ctx context.Context, voucherId string) (*models.Voucher, error) {
+func (m *psqlVoucherRepository) GetVoucherAdmin(ctx context.Context, voucherID string) (*models.Voucher, error) {
 	result := new(models.Voucher)
 	var validator json.RawMessage
 	var createDate, updateDate pq.NullTime
 
 	query := `SELECT d.id, d.name, d.description, d.start_date, d.end_date, d.point, d.journal_account, d.value, d.image_url, d.status, d.stock, d.prefix_promo_code, d.amount, CASE WHEN d.end_date::date < now()::date THEN 0 ELSE coalesce(e.available,0) END AS available, coalesce(f.bought,0) bought , coalesce(g.reedem,0) reedem, CASE WHEN coalesce(h.expired,0)-coalesce(g.reedem,0) < 0 THEN 0 ELSE coalesce(h.expired,0)-coalesce(g.reedem,0) END AS expired, d.validators, d.updated_at, d.created_at FROM (SELECT b.id, b.name, b.description, b.start_date, b.end_date, b.point, b.journal_account, b.value, b.image_url, b.status, b.stock, b.prefix_promo_code, count(a.id) as amount, b.validators, b.updated_at, b.created_at FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id	GROUP BY b.id, b.name, b.description, b.start_date, b.end_date, b.point, b.journal_account, b.value, b.image_url, b.status, b.stock, b.prefix_promo_code, b.validators, b.updated_at, b.created_at) as d LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as available FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 0	GROUP BY b.id) as e ON e.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as bought FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 1 GROUP BY b.id) as f ON f.id = d.id	LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as reedem FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 2 GROUP BY b.id) as g ON g.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as expired FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE end_date::date < now()::date GROUP BY b.id) as h ON h.id = d.id	WHERE d.id = $1`
 
-	err := m.Conn.QueryRowContext(ctx, query, voucherId).Scan(
+	err := m.Conn.QueryRowContext(ctx, query, voucherID).Scan(
 		&result.ID,
 		&result.Name,
 		&result.Description,
@@ -301,12 +299,12 @@ func (m *psqlVoucherRepository) GetVouchers(ctx context.Context, name string, st
 }
 
 // Get data voucher detail for admin
-func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, voucherId string) (*models.Voucher, error) {
+func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, voucherID string) (*models.Voucher, error) {
 	result := new(models.Voucher)
 	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, c.value, c.image_url, c.stock, d. available FROM vouchers c 
 	LEFT JOIN(SELECT b.id, coalesce(count(a.id), 0) as available FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 0 GROUP BY b.id) d ON d.id = c.id WHERE c.id = $1 `
 
-	err := m.Conn.QueryRowContext(ctx, query, voucherId).Scan(
+	err := m.Conn.QueryRowContext(ctx, query, voucherID).Scan(
 		&result.ID,
 		&result.Name,
 		&result.Description,
@@ -326,7 +324,7 @@ func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, voucherId string
 }
 
 //Get vouchers user
-func (m *psqlVoucherRepository) GetVouchersUser(ctx context.Context, userId string, status string, page int32, limit int32) ([]models.PromoCode, error) {
+func (m *psqlVoucherRepository) GetVouchersUser(ctx context.Context, userID string, status string, page int32, limit int32) ([]models.PromoCode, error) {
 	paging := fmt.Sprintf(" LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
 
 	query := `SELECT a.id, a.promo_code, a.bought_date, b.id, b.name, b.description, b.start_date, b.end_date, b.value, b.image_url FROM promo_codes AS a LEFT JOIN vouchers AS b ON b.id = a.voucher_id WHERE a.promo_code IS NOT NULL`
@@ -335,8 +333,8 @@ func (m *psqlVoucherRepository) GetVouchersUser(ctx context.Context, userId stri
 		where += " AND a.status='" + status + "'"
 	}
 
-	if userId != "" {
-		where += " AND a.user_id='" + userId + "'"
+	if userID != "" {
+		where += " AND a.user_id='" + userID + "'"
 	}
 
 	query += where + " ORDER BY a.bought_date DESC" + paging
@@ -442,7 +440,7 @@ func (m *psqlVoucherRepository) DeleteVoucher(ctx context.Context, id int64) err
 }
 
 // Count data promo code by userand status
-func (m *psqlVoucherRepository) CountPromoCode(ctx context.Context, status string, userId string) (int, error) {
+func (m *psqlVoucherRepository) CountPromoCode(ctx context.Context, status string, userID string) (int, error) {
 
 	query := `SELECT coalesce(COUNT(id), 0) FROM promo_codes WHERE id IS NOT NULL`
 
@@ -452,8 +450,8 @@ func (m *psqlVoucherRepository) CountPromoCode(ctx context.Context, status strin
 		where += " AND status='" + status + "'"
 	}
 
-	if userId != "" {
-		where += " AND user_id='" + userId + "'"
+	if userID != "" {
+		where += " AND user_id='" + userID + "'"
 	}
 
 	query += where
@@ -469,12 +467,12 @@ func (m *psqlVoucherRepository) CountPromoCode(ctx context.Context, status strin
 }
 
 // Update promo code for user bought
-func (m *psqlVoucherRepository) UpdatePromoCodeBought(ctx context.Context, voucherId string, userId string) (*models.PromoCode, error) {
+func (m *psqlVoucherRepository) UpdatePromoCodeBought(ctx context.Context, voucherID string, userID string) (*models.PromoCode, error) {
 	result := new(models.PromoCode)
 	now := time.Now()
 	querySelect := `SELECT id FROM promo_codes WHERE status = 0 AND voucher_id = $1 ORDER BY promo_code ASC LIMIT 1`
 
-	err := m.Conn.QueryRowContext(ctx, querySelect, voucherId).Scan(&result.ID)
+	err := m.Conn.QueryRowContext(ctx, querySelect, voucherID).Scan(&result.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -487,7 +485,7 @@ func (m *psqlVoucherRepository) UpdatePromoCodeBought(ctx context.Context, vouch
 
 	logrus.Debug("Update At promo_codes : ", &now)
 
-	err = stmt.QueryRowContext(ctx, userId, &now, &now, &result.ID).Scan(&result.PromoCode, &result.BoughtDate)
+	err = stmt.QueryRowContext(ctx, userID, &now, &now, &result.ID).Scan(&result.PromoCode, &result.BoughtDate)
 	if err != nil {
 		return nil, err
 	}
@@ -496,13 +494,13 @@ func (m *psqlVoucherRepository) UpdatePromoCodeBought(ctx context.Context, vouch
 }
 
 // For count all data voucher by id
-func (m *psqlVoucherRepository) VoucherCheckExpired(ctx context.Context, voucherId string) error {
+func (m *psqlVoucherRepository) VoucherCheckExpired(ctx context.Context, voucherID string) error {
 
 	query := `SELECT coalesce(COUNT(id), 0) FROM vouchers WHERE end_date::date >= now() AND id = $1`
 
 	var total int
 
-	err := m.Conn.QueryRowContext(ctx, query, voucherId).Scan(&total)
+	err := m.Conn.QueryRowContext(ctx, query, voucherID).Scan(&total)
 	if err != nil {
 		return err
 	}
@@ -516,17 +514,16 @@ func (m *psqlVoucherRepository) VoucherCheckExpired(ctx context.Context, voucher
 
 // check minimal transaction
 func (m *psqlVoucherRepository) VoucherCheckMinimalTransaction(ctx context.Context, a *models.PayloadValidateVoucher) (*models.Voucher, error) {
-	result := new(models.Voucher)
-
-	query := `select b.value, b.journal_account, b.validators->>'minimalTransaction' from promo_codes as a left join vouchers as b on b.id = a.voucher_id where a.promo_code = $1 and a.voucher_id = $2 and a.user_id = $3`
-
 	var minimalTransaction float64
+	result := new(models.Voucher)
+	query := `select b.value, b.journal_account, b.validators->>'minimalTransaction' from promo_codes as a left join vouchers as b on b.id = a.voucher_id where a.promo_code = $1 and a.voucher_id = $2 and a.user_id = $3`
 	err := m.Conn.QueryRowContext(ctx, query, a.PromoCode, a.VoucherID, a.UserID).Scan(&result.Value, &result.JournalAccount, &minimalTransaction)
+
 	if err != nil {
 		return nil, models.ErrNotFound
 	}
 
-	var min int = int(minimalTransaction)
+	min := int(minimalTransaction)
 
 	if a.TransactionAmount < minimalTransaction {
 		return nil, errors.New("Minimum Transaction " + fmt.Sprintf("%d", min))
@@ -536,12 +533,12 @@ func (m *psqlVoucherRepository) VoucherCheckMinimalTransaction(ctx context.Conte
 }
 
 // Update promo code for user redeem
-func (m *psqlVoucherRepository) UpdatePromoCodeRedeemed(ctx context.Context, voucherId string, userId string) (*models.PromoCode, error) {
+func (m *psqlVoucherRepository) UpdatePromoCodeRedeemed(ctx context.Context, voucherID string, userID string) (*models.PromoCode, error) {
 	result := new(models.PromoCode)
 	now := time.Now()
 	querySelect := `SELECT id FROM promo_codes WHERE status = 1 AND voucher_id = $1 ORDER BY promo_code ASC LIMIT 1`
 
-	err := m.Conn.QueryRowContext(ctx, querySelect, voucherId).Scan(&result.ID)
+	err := m.Conn.QueryRowContext(ctx, querySelect, voucherID).Scan(&result.ID)
 	if err != nil {
 		return nil, err
 	}

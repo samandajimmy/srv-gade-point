@@ -20,4 +20,6 @@ type Repository interface {
 	DeleteVoucher(ctx context.Context, id int64) error
 	CountPromoCode(ctx context.Context, status string, userId string) (int, error)
 	VoucherCheckExpired(ctx context.Context, voucherId string) error
+	VoucherCheckMinimalTransaction(ctx context.Context, a *models.PayloadValidateVoucher) (*models.Voucher, error)
+	UpdatePromoCodeRedeemed(ctx context.Context, voucherId string, userId string) (*models.PromoCode, error)
 }

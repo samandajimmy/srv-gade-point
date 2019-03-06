@@ -5,10 +5,11 @@ import (
 )
 
 type Validators struct {
-	Channel         string `json:"channel,omitempty"`
-	Product         string `json:"product,omitempty"`
-	TransactionType string `json:"transactionType,omitempty"`
-	Unit            string `json:"unit,omitempty"`
+	Channel            string `json:"channel,omitempty"`
+	Product            string `json:"product,omitempty"`
+	TransactionType    string `json:"transactionType,omitempty"`
+	Unit               string `json:"unit,omitempty"`
+	MinimalTransaction string `json:"minimalTransaction,omitempty"`
 }
 
 type Voucher struct {
@@ -21,7 +22,7 @@ type Voucher struct {
 	JournalAccount  string      `json:"journalAccount,omitempty"`
 	Value           *float64    `json:"value,omitempty"`
 	ImageUrl        string      `json:"imageUrl,omitempty"`
-	Status          int8        `json:"status,omitempty"`
+	Status          *int8       `json:"status,omitempty"`
 	Stock           int32       `json:"stock,omitempty"`
 	PrefixPromoCode string      `json:"prefixPromoCode,omitempty"`
 	Amount          *int32      `json:"amount,omitempty"`
@@ -57,4 +58,15 @@ type PromoCode struct {
 type PayloadVoucherBuy struct {
 	VoucherID string `json:"voucherId,omitempty"`
 	UserID    string `json:"userId,omitempty"`
+}
+
+type PayloadValidateVoucher struct {
+	PromoCode         string  `json:"promoCode,omitempty"`
+	VoucherID         string  `json:"voucherId,omitempty"`
+	UserID            string  `json:"userId,omitempty"`
+	Channel           string  `json:"channel,omitempty"`
+	Product           string  `json:"product,omitempty"`
+	TransactionType   string  `json:"transactionType,omitempty"`
+	Unit              string  `json:"unit,omitempty"`
+	TransactionAmount float64 `json:"transactionAmount,omitempty"`
 }

@@ -173,10 +173,23 @@ func (m *psqlCampaignRepository) GetValidatorCampaign(ctx context.Context, a *mo
 
 }
 
-func (m *psqlCampaignRepository) SavePointDebet(ctx context.Context, a *models.CampaignTrx) error {
+func (m *psqlCampaignRepository) SavePoint(ctx context.Context, cmpgnTrx *models.CampaignTrx) error {
 	now := time.Now()
-	query := `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, campaign_id, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6)  RETURNING id`
+	var id int64
+	var query string
+	if cmpgnTrx.TransactionType == models.TransactionPointTypeDebet {
+		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, promo_code_id, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6)  RETURNING id`
+		id = cmpgnTrx.Campaign.ID
+	}
+
+	if cmpgnTrx.TransactionType == models.TransactionPointTypeKredit {
+		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, promo_code_id, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6)  RETURNING id`
+		id = cmpgnTrx.PromoCode.ID
+
+	}
+
 	stmt, err := m.Conn.PrepareContext(ctx, query)
 	if err != nil {
 		return err
@@ -186,34 +199,12 @@ func (m *psqlCampaignRepository) SavePointDebet(ctx context.Context, a *models.C
 
 	var lastID int64
 
-	err = stmt.QueryRowContext(ctx, a.UserID, a.PointAmount, a.TransactionType, a.TransactionDate, a.Campaign.ID, a.CreatedAt).Scan(&lastID)
+	err = stmt.QueryRowContext(ctx, cmpgnTrx.UserID, cmpgnTrx.PointAmount, cmpgnTrx.TransactionType, cmpgnTrx.TransactionDate, id, cmpgnTrx.CreatedAt).Scan(&lastID)
 	if err != nil {
 		return err
 	}
 
-	a.ID = lastID
-	return nil
-}
-
-func (m *psqlCampaignRepository) SavePointKredit(ctx context.Context, a *models.CampaignTrx) error {
-	now := time.Now()
-	query := `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, promo_code_id, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6)  RETURNING id`
-	stmt, err := m.Conn.PrepareContext(ctx, query)
-	if err != nil {
-		return err
-	}
-
-	logrus.Debug("Created At: ", &now)
-
-	var lastID int64
-
-	err = stmt.QueryRowContext(ctx, a.UserID, a.PointAmount, a.TransactionType, a.TransactionDate, a.PromoCode.ID, a.CreatedAt).Scan(&lastID)
-	if err != nil {
-		return err
-	}
-
-	a.ID = lastID
+	cmpgnTrx.ID = lastID
 	return nil
 }
 

@@ -24,6 +24,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo"
 	_ "github.com/lib/pq"
+	"github.com/sirupsen/logrus"
 )
 
 var ech *echo.Echo
@@ -31,11 +32,13 @@ var ech *echo.Echo
 func init() {
 	ech = echo.New()
 
-	isDebug, _ := strconv.ParseBool(os.Getenv(`DEBUG_APP`))
-
-	if isDebug {
-		loadEnv()
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
 	}
+
+	isDebug, _ := strconv.ParseBool(os.Getenv(`DEBUG_APP`))
+	logrus.Debug(isDebug)
 
 	ech = echo.New()
 
@@ -79,7 +82,7 @@ func main() {
 	// VOUCHER
 	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn)
 	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, campaignRepository, timeoutContext)
-	_voucherHttpDelivery.NewVouchersHandler(ech, voucherUseCase)
+	_voucherHttpDelivery.NewVouchersHandler(echoGroup, voucherUseCase)
 
 	ech.Start(":" + os.Getenv(`PORT`))
 }
@@ -126,12 +129,4 @@ func dataMigrations(dbConn *sql.DB) *migrate.Migrate {
 	}
 
 	return migrations
-}
-
-func loadEnv() {
-	err := godotenv.Load()
-
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
 }

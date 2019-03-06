@@ -264,12 +264,47 @@ func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVouch
 		CreatedAt:       &now,
 	}
 
-	err = vchr.campaignRepo.SavePointKredit(c, campaignTrx)
+	err = vchr.campaignRepo.SavePoint(c, campaignTrx)
 	if err != nil {
 		return nil, err
 	}
 
 	promoCode.Voucher = voucherDetail
+
+	return promoCode, nil
+}
+
+// Voucher validate
+func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *models.PayloadValidateVoucher) (*models.Voucher, error) {
+	var err error
+
+	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
+	defer cancel()
+
+	err = vchr.voucherRepo.VoucherCheckExpired(c, validateVoucher.VoucherID)
+	if err != nil {
+		return nil, err
+	}
+
+	voucher, err := vchr.voucherRepo.VoucherCheckMinimalTransaction(c, validateVoucher)
+	if err != nil {
+		return nil, err
+	}
+
+	return voucher, nil
+}
+
+// Voucher redeem
+func (vchr *voucherUseCase) VoucherRedeem(c context.Context, voucherRedeem *models.PayloadValidateVoucher) (*models.PromoCode, error) {
+	var err error
+
+	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
+	defer cancel()
+
+	promoCode, err := vchr.voucherRepo.UpdatePromoCodeRedeemed(c, voucherRedeem.VoucherID, voucherRedeem.UserID)
+	if err != nil {
+		return nil, err
+	}
 
 	return promoCode, nil
 }

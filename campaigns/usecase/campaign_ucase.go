@@ -103,7 +103,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetC
 		CreatedAt:       &now,
 	}
 
-	err = cmpgn.campaignRepo.SavePointDebet(ctx, campaignTrx)
+	err = cmpgn.campaignRepo.SavePoint(ctx, campaignTrx)
 	if err != nil {
 		return nil, err
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/vouchers"
@@ -467,7 +468,7 @@ func (m *psqlVoucherRepository) CountPromoCode(ctx context.Context, status strin
 	return total, nil
 }
 
-// Update promo code foruser
+// Update promo code for user bought
 func (m *psqlVoucherRepository) UpdatePromoCodeBought(ctx context.Context, voucherId string, userId string) (*models.PromoCode, error) {
 	result := new(models.PromoCode)
 	now := time.Now()
@@ -511,4 +512,52 @@ func (m *psqlVoucherRepository) VoucherCheckExpired(ctx context.Context, voucher
 	}
 
 	return nil
+}
+
+// check minimal transaction
+func (m *psqlVoucherRepository) VoucherCheckMinimalTransaction(ctx context.Context, a *models.PayloadValidateVoucher) (*models.Voucher, error) {
+	result := new(models.Voucher)
+
+	query := `select b.value, b.journal_account, b.validators->>'minimalTransaction' from promo_codes as a left join vouchers as b on b.id = a.voucher_id where a.promo_code = $1 and a.voucher_id = $2 and a.user_id = $3`
+
+	var minimalTransaction float64
+	err := m.Conn.QueryRowContext(ctx, query, a.PromoCode, a.VoucherID, a.UserID).Scan(&result.Value, &result.JournalAccount, &minimalTransaction)
+	if err != nil {
+		return nil, models.ErrNotFound
+	}
+
+	var min int = int(minimalTransaction)
+
+	if a.TransactionAmount < minimalTransaction {
+		return nil, errors.New("Minimum Transaction " + fmt.Sprintf("%d", min))
+	}
+
+	return result, nil
+}
+
+// Update promo code for user redeem
+func (m *psqlVoucherRepository) UpdatePromoCodeRedeemed(ctx context.Context, voucherId string, userId string) (*models.PromoCode, error) {
+	result := new(models.PromoCode)
+	now := time.Now()
+	querySelect := `SELECT id FROM promo_codes WHERE status = 1 AND voucher_id = $1 ORDER BY promo_code ASC LIMIT 1`
+
+	err := m.Conn.QueryRowContext(ctx, querySelect, voucherId).Scan(&result.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	queryUpdate := `UPDATE promo_codes SET status = 2, redeemed_date = $1, updated_at = $2 WHERE id = $3 RETURNING promo_code, redeemed_date`
+	stmt, err := m.Conn.PrepareContext(ctx, queryUpdate)
+	if err != nil {
+		return nil, err
+	}
+
+	logrus.Debug("Update At promo_codes : ", &now)
+
+	err = stmt.QueryRowContext(ctx, &now, &now, &result.ID).Scan(&result.PromoCode, &result.RedeemedDate)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

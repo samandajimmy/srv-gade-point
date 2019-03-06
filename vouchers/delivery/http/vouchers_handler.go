@@ -24,22 +24,24 @@ type VouchersHandler struct {
 }
 
 // NewVouchersHandler represent to register vouchers endpoint
-func NewVouchersHandler(e *echo.Echo, us vouchers.UseCase) {
+func NewVouchersHandler(echoGroup models.EchoGroup, us vouchers.UseCase) {
 	handler := &VouchersHandler{
 		VoucherUseCase: us,
 	}
 
 	//End Point For CMS
-	e.POST("/admin/vouchers", handler.CreateVoucher)
-	e.PUT("/admin/vouchers/status/:id", handler.UpdateStatusVoucher)
-	e.POST("/admin/vouchers/upload", handler.UploadVoucherImages)
-	e.GET("/admin/vouchers", handler.GetVouchersAdmin)
-	e.GET("/admin/voucher", handler.GetVoucherAdmin)
+	echoGroup.Admin.POST("/vouchers", handler.CreateVoucher)
+	echoGroup.Admin.PUT("/vouchers/status/:id", handler.UpdateStatusVoucher)
+	echoGroup.Admin.POST("/vouchers/upload", handler.UploadVoucherImages)
+	echoGroup.Admin.GET("/vouchers", handler.GetVouchersAdmin)
+	echoGroup.Admin.GET("/voucher", handler.GetVoucherAdmin)
 	//End Point For External
-	e.GET("/api/vouchers", handler.GetVouchers)
-	e.GET("/api/voucher", handler.GetVoucher)
-	e.GET("/api/vouchers/user", handler.GetVouchersUser)
-	e.POST("/api/voucher/buy", handler.VoucherBuy)
+	echoGroup.API.GET("/vouchers", handler.GetVouchers)
+	echoGroup.API.GET("/voucher", handler.GetVoucher)
+	echoGroup.API.GET("/vouchers/user", handler.GetVouchersUser)
+	echoGroup.API.POST("/voucher/buy", handler.VoucherBuy)
+	echoGroup.API.POST("/voucher/validate", handler.VoucherValidate)
+	echoGroup.API.POST("/voucher/redeem", handler.VoucherRedeem)
 
 }
 
@@ -283,13 +285,13 @@ func (vchr *VouchersHandler) GetVouchersUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-// Buy voucher
+// VoucherBuy is a handler to provide and endpoint to buy voucher with point
 func (vchr *VouchersHandler) VoucherBuy(c echo.Context) error {
 	var voucher models.PayloadVoucherBuy
 	response.Data = ""
 	response.TotalCount = ""
-	err = c.Bind(&voucher)
 
+	err = c.Bind(&voucher)
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
@@ -312,6 +314,68 @@ func (vchr *VouchersHandler) VoucherBuy(c echo.Context) error {
 	response.Message = models.MassagePointSuccess
 	response.Data = responseData
 	return c.JSON(http.StatusCreated, response)
+}
+
+// VoucherValidate is a handler to provide and endpoint to validate voucher before reedem
+func (a *VouchersHandler) VoucherValidate(c echo.Context) error {
+	var voucher models.PayloadValidateVoucher
+	response.Data = ""
+	response.TotalCount = ""
+
+	err = c.Bind(&voucher)
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		return c.JSON(http.StatusUnprocessableEntity, response)
+	}
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	responseData, err = a.VoucherUseCase.VoucherValidate(ctx, &voucher)
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MassagePointSuccess
+	response.Data = responseData
+	return c.JSON(http.StatusOK, response)
+}
+
+// VoucherRedeem is a handler to provide and endpoint to reedem voucher
+func (a *VouchersHandler) VoucherRedeem(c echo.Context) error {
+	var voucher models.PayloadValidateVoucher
+	response.Data = ""
+	response.TotalCount = ""
+
+	err = c.Bind(&voucher)
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		return c.JSON(http.StatusUnprocessableEntity, response)
+	}
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	responseData, err = a.VoucherUseCase.VoucherRedeem(ctx, &voucher)
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MassagePointSuccess
+	response.Data = responseData
+	return c.JSON(http.StatusOK, response)
 }
 
 func isRequestValid(m interface{}) (bool, error) {

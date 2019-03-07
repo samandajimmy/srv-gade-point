@@ -12,10 +12,7 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
-var (
-	response = models.Response{} // Response represent the response
-	err      error
-)
+var response = models.Response{} // Response represent the response
 
 // VouchersHandler represent the httphandler for vouchers
 type VouchersHandler struct {
@@ -61,7 +58,7 @@ func (vchr *VouchersHandler) CreateVoucher(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	err = vchr.VoucherUseCase.CreateVoucher(ctx, &voucher)
+	err := vchr.VoucherUseCase.CreateVoucher(ctx, &voucher)
 
 	if err != nil {
 		response.Status = models.StatusError

@@ -43,7 +43,6 @@ func NewVoucherUseCase(vchrRepo vouchers.Repository, campgnRepo campaigns.Reposi
 	}
 }
 
-// create new voucher and generate promo code
 func (vchr *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) error {
 	now := time.Now()
 	promoCode := make([]*models.PromoCode, 0)
@@ -82,7 +81,6 @@ func (vchr *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) 
 	return nil
 }
 
-// Update status voucher by id
 func (vchr *voucherUseCase) UpdateVoucher(c context.Context, id int64, updateVoucher *models.UpdateVoucher) error {
 
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
@@ -96,7 +94,6 @@ func (vchr *voucherUseCase) UpdateVoucher(c context.Context, id int64, updateVou
 	return nil
 }
 
-// Upload file image voucher
 func (vchr *voucherUseCase) UploadVoucherImages(file *multipart.FileHeader) (string, error) {
 
 	src, err := file.Open()
@@ -127,7 +124,6 @@ func (vchr *voucherUseCase) UploadVoucherImages(file *multipart.FileHeader) (str
 	return filePathPublic, nil
 }
 
-// Get all voucher by param name, status, start date and end date for admin
 func (vchr *voucherUseCase) GetVouchersAdmin(c context.Context, name string, status string, startDate string, endDate string, page int32, limit int32) ([]*models.Voucher, string, error) {
 	var listVoucher []*models.Voucher
 	var err error
@@ -148,7 +144,6 @@ func (vchr *voucherUseCase) GetVouchersAdmin(c context.Context, name string, sta
 	return listVoucher, strconv.Itoa(totalCount), nil
 }
 
-// Get detail voucher for admin
 func (vchr *voucherUseCase) GetVoucherAdmin(c context.Context, voucherID string) (*models.Voucher, error) {
 	var voucherDetail *models.Voucher
 	var err error
@@ -163,7 +158,6 @@ func (vchr *voucherUseCase) GetVoucherAdmin(c context.Context, voucherID string)
 	return voucherDetail, nil
 }
 
-// Get all voucher by param name, status, start date and end date
 func (vchr *voucherUseCase) GetVouchers(c context.Context, name string, status string, startDate string, endDate string, page int32, limit int32) ([]*models.Voucher, string, error) {
 	var listVoucher []*models.Voucher
 	var err error
@@ -184,7 +178,6 @@ func (vchr *voucherUseCase) GetVouchers(c context.Context, name string, status s
 	return listVoucher, strconv.Itoa(totalCount), nil
 }
 
-// Get detail voucher
 func (vchr *voucherUseCase) GetVoucher(c context.Context, voucherID string) (*models.Voucher, error) {
 	var voucherDetail *models.Voucher
 	var err error
@@ -199,7 +192,6 @@ func (vchr *voucherUseCase) GetVoucher(c context.Context, voucherID string) (*mo
 	return voucherDetail, nil
 }
 
-// Get vouchers user
 func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userID string, status string, page int32, limit int32) ([]models.PromoCode, string, error) {
 	var err error
 	var totalCount int
@@ -219,7 +211,6 @@ func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userID string, st
 	return vouchersUser, strconv.Itoa(totalCount), nil
 }
 
-// Buy voucher
 func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVoucherBuy) (*models.PromoCode, error) {
 	var err error
 	now := time.Now()
@@ -274,7 +265,6 @@ func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVouch
 	return promoCode, nil
 }
 
-// Voucher validate
 func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *models.PayloadValidateVoucher) (*models.Voucher, error) {
 	var err error
 
@@ -294,7 +284,6 @@ func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *
 	return voucher, nil
 }
 
-// Voucher redeem
 func (vchr *voucherUseCase) VoucherRedeem(c context.Context, voucherRedeem *models.PayloadValidateVoucher) (*models.PromoCode, error) {
 	var err error
 
@@ -309,7 +298,6 @@ func (vchr *voucherUseCase) VoucherRedeem(c context.Context, voucherRedeem *mode
 	return promoCode, nil
 }
 
-// Generate promo code by stock, prefix code and length character code from data voucher
 func generatePromoCode(stock int32) (code []string, err error) {
 
 	var arr = make([]string, stock)
@@ -320,7 +308,6 @@ func generatePromoCode(stock int32) (code []string, err error) {
 	return arr, nil
 }
 
-// Rand String from letter bytes constant
 func randStringBytes(n int) string {
 	b := make([]byte, n)
 	for i := range b {
@@ -329,7 +316,6 @@ func randStringBytes(n int) string {
 	return string(b)
 }
 
-// validate buy voucher
 func validateBuy(voucherPoint int64, userPoint int64, avaliable *int32) error {
 	if *avaliable <= 0 {
 		return models.ErrVoucherUnavailable

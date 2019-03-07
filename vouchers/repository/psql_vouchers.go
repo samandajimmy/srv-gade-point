@@ -33,7 +33,6 @@ func NewPsqlVoucherRepository(Conn *sql.DB) vouchers.Repository {
 	return &psqlVoucherRepository{Conn}
 }
 
-// Insert new voucher to database table vouchers
 func (m *psqlVoucherRepository) CreateVoucher(ctx context.Context, a *models.Voucher) error {
 	now := time.Now()
 	query := `INSERT INTO vouchers (name, description, start_date, end_date, point, journal_account, value, image_url, status, stock, prefix_promo_code, validators, created_at)
@@ -51,7 +50,7 @@ func (m *psqlVoucherRepository) CreateVoucher(ctx context.Context, a *models.Vou
 		return err
 	}
 
-	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate, a.Point, a.JournalAccount, a.Value, a.ImageUrl, a.Status, a.Stock, a.PrefixPromoCode, string(validator), &now).Scan(&lastID)
+	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate, a.Point, a.JournalAccount, a.Value, a.ImageURL, a.Status, a.Stock, a.PrefixPromoCode, string(validator), &now).Scan(&lastID)
 	if err != nil {
 		return err
 	}
@@ -61,7 +60,6 @@ func (m *psqlVoucherRepository) CreateVoucher(ctx context.Context, a *models.Vou
 	return nil
 }
 
-// Insert data promo code from result generate promo code
 func (m *psqlVoucherRepository) CreatePromoCode(ctx context.Context, promoCodes []*models.PromoCode) error {
 
 	var valueStrings []string
@@ -92,7 +90,6 @@ func (m *psqlVoucherRepository) CreatePromoCode(ctx context.Context, promoCodes 
 	return nil
 }
 
-// Update status voucher to database table vouchers
 func (m *psqlVoucherRepository) UpdateVoucher(ctx context.Context, id int64, updateVoucher *models.UpdateVoucher) error {
 	now := time.Now()
 	query := `UPDATE vouchers SET status = $1, updated_at = $2 WHERE id = $3 RETURNING id`
@@ -113,7 +110,6 @@ func (m *psqlVoucherRepository) UpdateVoucher(ctx context.Context, id int64, upd
 	return nil
 }
 
-// Get data all voucher with detail monitoring promo code
 func (m *psqlVoucherRepository) GetVouchersAdmin(ctx context.Context, name string, status string, startDate string, endDate string, page int32, limit int32) ([]*models.Voucher, error) {
 
 	paging := fmt.Sprintf(" LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
@@ -148,7 +144,6 @@ func (m *psqlVoucherRepository) GetVouchersAdmin(ctx context.Context, name strin
 
 }
 
-// Execute query select from func GetVouchers return all data voucher with detail monitoring promo code
 func (m *psqlVoucherRepository) getVouchersAdmin(ctx context.Context, query string) ([]*models.Voucher, error) {
 	var validator json.RawMessage
 	rows, err := m.Conn.QueryContext(ctx, query)
@@ -172,7 +167,7 @@ func (m *psqlVoucherRepository) getVouchersAdmin(ctx context.Context, query stri
 			&t.Point,
 			&t.JournalAccount,
 			&t.Value,
-			&t.ImageUrl,
+			&t.ImageURL,
 			&t.Status,
 			&t.Stock,
 			&t.PrefixPromoCode,
@@ -199,7 +194,6 @@ func (m *psqlVoucherRepository) getVouchersAdmin(ctx context.Context, query stri
 	return result, nil
 }
 
-// Get data voucher detail for admin
 func (m *psqlVoucherRepository) GetVoucherAdmin(ctx context.Context, voucherID string) (*models.Voucher, error) {
 	result := new(models.Voucher)
 	var validator json.RawMessage
@@ -216,7 +210,7 @@ func (m *psqlVoucherRepository) GetVoucherAdmin(ctx context.Context, voucherID s
 		&result.Point,
 		&result.JournalAccount,
 		&result.Value,
-		&result.ImageUrl,
+		&result.ImageURL,
 		&result.Status,
 		&result.Stock,
 		&result.PrefixPromoCode,
@@ -245,7 +239,6 @@ func (m *psqlVoucherRepository) GetVoucherAdmin(ctx context.Context, voucherID s
 
 }
 
-// Get data all vouchers for external
 func (m *psqlVoucherRepository) GetVouchers(ctx context.Context, name string, startDate string, endDate string, page int32, limit int32) ([]*models.Voucher, error) {
 
 	paging := fmt.Sprintf(" LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
@@ -287,7 +280,7 @@ func (m *psqlVoucherRepository) GetVouchers(ctx context.Context, name string, st
 			&t.EndDate,
 			&t.Point,
 			&t.Value,
-			&t.ImageUrl,
+			&t.ImageURL,
 			&t.Stock,
 			&t.Available,
 		)
@@ -298,7 +291,6 @@ func (m *psqlVoucherRepository) GetVouchers(ctx context.Context, name string, st
 	return result, nil
 }
 
-// Get data voucher detail for admin
 func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, voucherID string) (*models.Voucher, error) {
 	result := new(models.Voucher)
 	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, c.value, c.image_url, c.stock, d. available FROM vouchers c 
@@ -312,7 +304,7 @@ func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, voucherID string
 		&result.EndDate,
 		&result.Point,
 		&result.Value,
-		&result.ImageUrl,
+		&result.ImageURL,
 		&result.Stock,
 		&result.Available,
 	)
@@ -323,7 +315,6 @@ func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, voucherID string
 	return result, err
 }
 
-//Get vouchers user
 func (m *psqlVoucherRepository) GetVouchersUser(ctx context.Context, userID string, status string, page int32, limit int32) ([]models.PromoCode, error) {
 	paging := fmt.Sprintf(" LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
 
@@ -361,7 +352,7 @@ func (m *psqlVoucherRepository) GetVouchersUser(ctx context.Context, userID stri
 			&voucher.StartDate,
 			&voucher.EndDate,
 			&voucher.Value,
-			&voucher.ImageUrl,
+			&voucher.ImageURL,
 		)
 
 		if err != nil {
@@ -379,7 +370,6 @@ func (m *psqlVoucherRepository) GetVouchersUser(ctx context.Context, userID stri
 	return result, nil
 }
 
-// For count all data voucher by id
 func (m *psqlVoucherRepository) CountVouchers(ctx context.Context, name string, status string, startDate string, endDate string, expired bool) (int, error) {
 
 	query := `SELECT coalesce(COUNT(id), 0) FROM vouchers WHERE id IS NOT NULL`
@@ -419,7 +409,6 @@ func (m *psqlVoucherRepository) CountVouchers(ctx context.Context, name string, 
 	return total, nil
 }
 
-// Delete voucher when failed generate promocode
 func (m *psqlVoucherRepository) DeleteVoucher(ctx context.Context, id int64) error {
 
 	query := `DELETE FROM vouchers WHERE ID = $1`
@@ -439,7 +428,6 @@ func (m *psqlVoucherRepository) DeleteVoucher(ctx context.Context, id int64) err
 	return nil
 }
 
-// Count data promo code by userand status
 func (m *psqlVoucherRepository) CountPromoCode(ctx context.Context, status string, userID string) (int, error) {
 
 	query := `SELECT coalesce(COUNT(id), 0) FROM promo_codes WHERE id IS NOT NULL`
@@ -466,7 +454,6 @@ func (m *psqlVoucherRepository) CountPromoCode(ctx context.Context, status strin
 	return total, nil
 }
 
-// Update promo code for user bought
 func (m *psqlVoucherRepository) UpdatePromoCodeBought(ctx context.Context, voucherID string, userID string) (*models.PromoCode, error) {
 	result := new(models.PromoCode)
 	now := time.Now()
@@ -493,7 +480,6 @@ func (m *psqlVoucherRepository) UpdatePromoCodeBought(ctx context.Context, vouch
 	return result, nil
 }
 
-// For count all data voucher by id
 func (m *psqlVoucherRepository) VoucherCheckExpired(ctx context.Context, voucherID string) error {
 
 	query := `SELECT coalesce(COUNT(id), 0) FROM vouchers WHERE end_date::date >= now() AND id = $1`
@@ -512,7 +498,6 @@ func (m *psqlVoucherRepository) VoucherCheckExpired(ctx context.Context, voucher
 	return nil
 }
 
-// check minimal transaction
 func (m *psqlVoucherRepository) VoucherCheckMinimalTransaction(ctx context.Context, a *models.PayloadValidateVoucher) (*models.Voucher, error) {
 	var minimalTransaction float64
 	result := new(models.Voucher)
@@ -532,7 +517,6 @@ func (m *psqlVoucherRepository) VoucherCheckMinimalTransaction(ctx context.Conte
 	return result, nil
 }
 
-// Update promo code for user redeem
 func (m *psqlVoucherRepository) UpdatePromoCodeRedeemed(ctx context.Context, voucherID string, userID string) (*models.PromoCode, error) {
 	result := new(models.PromoCode)
 	now := time.Now()

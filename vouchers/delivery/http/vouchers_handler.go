@@ -45,7 +45,7 @@ func NewVouchersHandler(echoGroup models.EchoGroup, us vouchers.UseCase) {
 
 }
 
-// Create new voucher and generate promo code by stock
+// CreateVoucher Create new voucher and generate promo code by stock
 func (vchr *VouchersHandler) CreateVoucher(c echo.Context) error {
 	var voucher models.Voucher
 	response.Data = ""
@@ -72,12 +72,12 @@ func (vchr *VouchersHandler) CreateVoucher(c echo.Context) error {
 	}
 
 	response.Status = models.StatusSuccess
-	response.Message = models.MassageSaveSuccess
+	response.Message = models.MessageSaveSuccess
 	response.Data = voucher
 	return c.JSON(http.StatusCreated, response)
 }
 
-// Update status voucher ACTIVE or INACTIVE
+// UpdateStatusVoucher Update status voucher ACTIVE or INACTIVE
 func (vchr *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 	response.Data = ""
 	response.TotalCount = ""
@@ -105,13 +105,12 @@ func (vchr *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 	}
 
 	response.Status = models.StatusSuccess
-	response.Message = models.MassageUpdateSuccess
+	response.Message = models.MessageUpdateSuccess
 	return c.JSON(http.StatusOK, response)
 }
 
-// Upload image voucher
+// UploadVoucherImages Upload image voucher
 func (vchr *VouchersHandler) UploadVoucherImages(c echo.Context) error {
-
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
@@ -136,13 +135,13 @@ func (vchr *VouchersHandler) UploadVoucherImages(c echo.Context) error {
 	}
 
 	response.Status = models.StatusSuccess
-	response.Message = models.MassageUploadSuccess
-	response.Data = models.PathVoucher{ImageUrl: path}
+	response.Message = models.MessageUploadSuccess
+	response.Data = models.PathVoucher{ImageURL: path}
 	response.TotalCount = ""
 	return c.JSON(http.StatusOK, response)
 }
 
-// Get all voucher by param name, status, start date and end date for admin
+// GetVouchersAdmin Get all voucher by param name, status, start date and end date for admin
 func (vchr *VouchersHandler) GetVouchersAdmin(c echo.Context) error {
 	totalCount := ""
 	response.Data = ""
@@ -168,25 +167,25 @@ func (vchr *VouchersHandler) GetVouchersAdmin(c echo.Context) error {
 	}
 
 	response.Status = models.StatusSuccess
-	response.Message = models.MassagePointSuccess
+	response.Message = models.MessagePointSuccess
 	response.Data = responseData
 	response.TotalCount = totalCount
 	return c.JSON(http.StatusOK, response)
 }
 
-// Get detail voucher by voucherId for admin
+// GetVoucherAdmin Get detail voucher by voucherId for admin
 func (vchr *VouchersHandler) GetVoucherAdmin(c echo.Context) error {
 	response.Data = ""
 	response.TotalCount = ""
 
-	voucherId := c.QueryParam("voucherId")
+	voucherID := c.QueryParam("voucherId")
 
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	responseData, err = vchr.VoucherUseCase.GetVoucherAdmin(ctx, voucherId)
+	responseData, err = vchr.VoucherUseCase.GetVoucherAdmin(ctx, voucherID)
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = models.MessageDataNotFound
@@ -194,12 +193,12 @@ func (vchr *VouchersHandler) GetVoucherAdmin(c echo.Context) error {
 	}
 
 	response.Status = models.StatusSuccess
-	response.Message = models.MassagePointSuccess
+	response.Message = models.MessagePointSuccess
 	response.Data = responseData
 	return c.JSON(http.StatusOK, response)
 }
 
-// Get all voucher by param name, status, start date and end date
+// GetVouchers Get all voucher by param name, status, start date and end date
 func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 	totalCount := ""
 	response.Data = ""
@@ -225,25 +224,25 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 	}
 
 	response.Status = models.StatusSuccess
-	response.Message = models.MassagePointSuccess
+	response.Message = models.MessagePointSuccess
 	response.Data = responseData
 	response.TotalCount = totalCount
 	return c.JSON(http.StatusOK, response)
 }
 
-// Get detail voucher by voucherId
+// GetVoucher Get detail voucher by voucherId
 func (vchr *VouchersHandler) GetVoucher(c echo.Context) error {
 	response.Data = ""
 	response.TotalCount = ""
 
-	voucherId := c.QueryParam("voucherId")
+	voucherID := c.QueryParam("voucherId")
 
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	responseData, err = vchr.VoucherUseCase.GetVoucher(ctx, voucherId)
+	responseData, err = vchr.VoucherUseCase.GetVoucher(ctx, voucherID)
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = models.MessageDataNotFound
@@ -251,7 +250,7 @@ func (vchr *VouchersHandler) GetVoucher(c echo.Context) error {
 	}
 
 	response.Status = models.StatusSuccess
-	response.Message = models.MassagePointSuccess
+	response.Message = models.MessagePointSuccess
 	response.Data = responseData
 	return c.JSON(http.StatusOK, response)
 }
@@ -279,7 +278,7 @@ func (vchr *VouchersHandler) GetVouchersUser(c echo.Context) error {
 	}
 
 	response.Status = models.StatusSuccess
-	response.Message = models.MassagePointSuccess
+	response.Message = models.MessagePointSuccess
 	response.Data = responseData
 	response.TotalCount = totalCount
 	return c.JSON(http.StatusOK, response)
@@ -311,7 +310,7 @@ func (vchr *VouchersHandler) VoucherBuy(c echo.Context) error {
 	}
 
 	response.Status = models.StatusSuccess
-	response.Message = models.MassagePointSuccess
+	response.Message = models.MessagePointSuccess
 	response.Data = responseData
 	return c.JSON(http.StatusCreated, response)
 }
@@ -342,7 +341,7 @@ func (a *VouchersHandler) VoucherValidate(c echo.Context) error {
 	}
 
 	response.Status = models.StatusSuccess
-	response.Message = models.MassagePointSuccess
+	response.Message = models.MessagePointSuccess
 	response.Data = responseData
 	return c.JSON(http.StatusOK, response)
 }
@@ -373,7 +372,7 @@ func (a *VouchersHandler) VoucherRedeem(c echo.Context) error {
 	}
 
 	response.Status = models.StatusSuccess
-	response.Message = models.MassagePointSuccess
+	response.Message = models.MessagePointSuccess
 	response.Data = responseData
 	return c.JSON(http.StatusOK, response)
 }

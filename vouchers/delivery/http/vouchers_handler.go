@@ -34,6 +34,7 @@ func NewVouchersHandler(echoGroup models.EchoGroup, us vouchers.UseCase) {
 	echoGroup.Admin.POST("/voucher/upload", handler.UploadVoucherImages)
 	echoGroup.Admin.GET("/vouchers", handler.GetVouchersAdmin)
 	echoGroup.Admin.GET("/voucher", handler.GetVoucherAdmin)
+
 	//End Point For External
 	echoGroup.API.GET("/vouchers", handler.GetVouchers)
 	echoGroup.API.GET("/voucher", handler.GetVoucher)

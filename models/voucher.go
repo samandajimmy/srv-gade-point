@@ -51,7 +51,7 @@ type PathVoucher struct {
 type PromoCode struct {
 	ID           int64      `json:"id,omitempty"`
 	PromoCode    string     `json:"promoCode,omitempty"`
-	Status       int8       `json:"status,omitempty"`
+	Status       *int8      `json:"status,omitempty"`
 	UserID       string     `json:"userId,omitempty"`
 	Voucher      *Voucher   `json:"voucher,omitempty"`
 	RedeemedDate *time.Time `json:"redeemedDate,omitempty"`

@@ -51,30 +51,36 @@ func (vchr *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) 
 	defer cancel()
 
 	err := vchr.voucherRepo.CreateVoucher(ctx, m)
+
 	code, err := generatePromoCode(m.Stock)
+
 	if err != nil {
 		return err
 	}
 
-	for i := 0; i < len(code); i++ {
-		ap := new(models.PromoCode)
-
-		ap = &models.PromoCode{
-			PromoCode: m.PrefixPromoCode + code[i],
-			Status:    0,
-			Voucher:   m,
-			CreatedAt: &now,
+	if len(code) > 0 {
+		for i := 0; i < len(code); i++ {
+			pc := new(models.PromoCode)
+			pc = &models.PromoCode{
+				PromoCode: m.PrefixPromoCode + code[i],
+				Voucher:   m,
+				CreatedAt: &now,
+			}
+			promoCode = append(promoCode, pc)
 		}
-		promoCode = append(promoCode, ap)
 	}
+
 	err = vchr.voucherRepo.CreatePromoCode(ctx, promoCode)
+
 	if err != nil {
 		//Delete voucher when failed generate promo code
 		err = vchr.voucherRepo.DeleteVoucher(ctx, m.ID)
+
 		if err != nil {
 			err = vchr.voucherRepo.DeleteVoucher(ctx, m.ID)
 			return err
 		}
+
 		return err
 	}
 
@@ -82,11 +88,12 @@ func (vchr *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) 
 }
 
 func (vchr *voucherUseCase) UpdateVoucher(c context.Context, id int64, updateVoucher *models.UpdateVoucher) error {
-
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
+
 	defer cancel()
 
 	err := vchr.voucherRepo.UpdateVoucher(ctx, id, updateVoucher)
+
 	if err != nil {
 		return err
 	}
@@ -124,19 +131,24 @@ func (vchr *voucherUseCase) UploadVoucherImages(file *multipart.FileHeader) (str
 	return filePathPublic, nil
 }
 
-func (vchr *voucherUseCase) GetVouchersAdmin(c context.Context, name string, status string, startDate string, endDate string, page int32, limit int32) ([]*models.Voucher, string, error) {
+// Get all voucher by param name, status, start date and end date for admin
+func (vchr *voucherUseCase) GetVouchersAdmin(c context.Context, name string, status string, startDate string, endDate string, page int, limit int) ([]*models.Voucher, string, error) {
 	var listVoucher []*models.Voucher
 	var err error
 	var totalCount int
+
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
+
 	defer cancel()
 
 	listVoucher, err = vchr.voucherRepo.GetVouchersAdmin(ctx, name, status, startDate, endDate, page, limit)
+
 	if err != nil {
 		return nil, "", err
 	}
 
 	totalCount, err = vchr.voucherRepo.CountVouchers(ctx, name, status, startDate, endDate, false)
+
 	if err != nil {
 		return nil, "", err
 	}
@@ -147,10 +159,13 @@ func (vchr *voucherUseCase) GetVouchersAdmin(c context.Context, name string, sta
 func (vchr *voucherUseCase) GetVoucherAdmin(c context.Context, voucherID string) (*models.Voucher, error) {
 	var voucherDetail *models.Voucher
 	var err error
+
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
+
 	defer cancel()
 
 	voucherDetail, err = vchr.voucherRepo.GetVoucherAdmin(ctx, voucherID)
+
 	if err != nil {
 		return nil, err
 	}
@@ -158,19 +173,24 @@ func (vchr *voucherUseCase) GetVoucherAdmin(c context.Context, voucherID string)
 	return voucherDetail, nil
 }
 
-func (vchr *voucherUseCase) GetVouchers(c context.Context, name string, status string, startDate string, endDate string, page int32, limit int32) ([]*models.Voucher, string, error) {
+// Get all voucher by param name, status, start date and end date
+func (vchr *voucherUseCase) GetVouchers(c context.Context, name string, status string, startDate string, endDate string, page int, limit int) ([]*models.Voucher, string, error) {
 	var listVoucher []*models.Voucher
 	var err error
 	var totalCount int
+
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
+
 	defer cancel()
 
 	listVoucher, err = vchr.voucherRepo.GetVouchers(ctx, name, startDate, endDate, page, limit)
+
 	if err != nil {
 		return nil, "", err
 	}
 
 	totalCount, err = vchr.voucherRepo.CountVouchers(ctx, name, statusVoucher[1], startDate, endDate, true)
+
 	if err != nil {
 		return nil, "", err
 	}
@@ -181,10 +201,13 @@ func (vchr *voucherUseCase) GetVouchers(c context.Context, name string, status s
 func (vchr *voucherUseCase) GetVoucher(c context.Context, voucherID string) (*models.Voucher, error) {
 	var voucherDetail *models.Voucher
 	var err error
+
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
+
 	defer cancel()
 
 	voucherDetail, err = vchr.voucherRepo.GetVoucher(ctx, voucherID)
+
 	if err != nil {
 		return nil, err
 	}
@@ -192,13 +215,17 @@ func (vchr *voucherUseCase) GetVoucher(c context.Context, voucherID string) (*mo
 	return voucherDetail, nil
 }
 
-func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userID string, status string, page int32, limit int32) ([]models.PromoCode, string, error) {
+// Get vouchers user
+func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userID string, status string, page int, limit int) ([]models.PromoCode, string, error) {
 	var err error
 	var totalCount int
+
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
+
 	defer cancel()
 
 	vouchersUser, err := vchr.voucherRepo.GetVouchersUser(ctx, userID, status, page, limit)
+
 	if err != nil {
 		return nil, "", err
 	}
@@ -214,25 +241,31 @@ func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userID string, st
 func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVoucherBuy) (*models.PromoCode, error) {
 	var err error
 	now := time.Now()
+
 	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
+
 	defer cancel()
 
 	err = vchr.voucherRepo.VoucherCheckExpired(c, m.VoucherID)
+
 	if err != nil {
 		return nil, err
 	}
 
 	voucherDetail, err := vchr.voucherRepo.GetVoucher(c, m.VoucherID)
+
 	if err != nil {
 		return nil, err
 	}
 
 	userPoint, err := vchr.campaignRepo.GetUserPoint(c, m.UserID)
+
 	if err != nil {
 		return nil, err
 	}
 
 	err = validateBuy(voucherDetail.Point, int64(userPoint), voucherDetail.Available)
+
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +278,6 @@ func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVouch
 	// Parse interface to float
 	parseFloat, err := getFloat(voucherDetail.Point)
 	pointAmount := math.Floor(parseFloat)
-
 	campaignTrx := &models.CampaignTrx{
 		UserID:          m.UserID,
 		PointAmount:     &pointAmount,
@@ -256,6 +288,7 @@ func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVouch
 	}
 
 	err = vchr.campaignRepo.SavePoint(c, campaignTrx)
+
 	if err != nil {
 		return nil, err
 	}
@@ -269,14 +302,17 @@ func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *
 	var err error
 
 	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
+
 	defer cancel()
 
 	err = vchr.voucherRepo.VoucherCheckExpired(c, validateVoucher.VoucherID)
+
 	if err != nil {
 		return nil, err
 	}
 
 	voucher, err := vchr.voucherRepo.VoucherCheckMinimalTransaction(c, validateVoucher)
+
 	if err != nil {
 		return nil, err
 	}
@@ -288,9 +324,11 @@ func (vchr *voucherUseCase) VoucherRedeem(c context.Context, voucherRedeem *mode
 	var err error
 
 	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
+
 	defer cancel()
 
 	promoCode, err := vchr.voucherRepo.UpdatePromoCodeRedeemed(c, voucherRedeem.VoucherID, voucherRedeem.UserID)
+
 	if err != nil {
 		return nil, err
 	}
@@ -299,8 +337,8 @@ func (vchr *voucherUseCase) VoucherRedeem(c context.Context, voucherRedeem *mode
 }
 
 func generatePromoCode(stock int32) (code []string, err error) {
-
 	var arr = make([]string, stock)
+
 	for i := range arr {
 		arr[i] = randStringBytes(lengthCode)
 	}
@@ -310,9 +348,11 @@ func generatePromoCode(stock int32) (code []string, err error) {
 
 func randStringBytes(n int) string {
 	b := make([]byte, n)
+
 	for i := range b {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
+
 	return string(b)
 }
 
@@ -320,9 +360,11 @@ func validateBuy(voucherPoint int64, userPoint int64, avaliable *int32) error {
 	if *avaliable <= 0 {
 		return models.ErrVoucherUnavailable
 	}
+
 	if userPoint < voucherPoint {
 		return models.ErrPointDeficit
 	}
+
 	return nil
 }
 

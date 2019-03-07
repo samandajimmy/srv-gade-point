@@ -53,7 +53,6 @@ func (cmpgn *CampaignsHandler) CreateCampaign(c echo.Context) error {
 	}
 
 	err = cmpgn.CampaignUseCase.CreateCampaign(ctx, &campaign)
-
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
@@ -63,7 +62,6 @@ func (cmpgn *CampaignsHandler) CreateCampaign(c echo.Context) error {
 	if (models.Campaign{}) != campaign {
 		response.Data = campaign
 	}
-
 	response.Status = models.StatusSuccess
 	response.Message = models.MessageSaveSuccess
 	return c.JSON(http.StatusCreated, response)
@@ -73,15 +71,14 @@ func (cmpgn *CampaignsHandler) CreateCampaign(c echo.Context) error {
 func (cmpgn *CampaignsHandler) UpdateStatusCampaign(c echo.Context) error {
 	updateCampaign := new(models.UpdateCampaign)
 	response = models.Response{}
+	id, _ := strconv.Atoi(c.Param("id"))
+	ctx := c.Request().Context()
 
 	if err := c.Bind(updateCampaign); err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		return c.JSON(http.StatusUnprocessableEntity, response)
 	}
-
-	id, _ := strconv.Atoi(c.Param("id"))
-	ctx := c.Request().Context()
 
 	if ctx == nil {
 		ctx = context.Background()
@@ -110,6 +107,8 @@ func (cmpgn *CampaignsHandler) GetCampaigns(c echo.Context) error {
 	page, _ := strconv.Atoi(c.QueryParam("page"))
 	limit, _ := strconv.Atoi(c.QueryParam("limit"))
 	ctx := c.Request().Context()
+	response.Data = ""
+	response.TotalCount = ""
 
 	if ctx == nil {
 		ctx = context.Background()

@@ -29,7 +29,6 @@ func NewCampaignUseCase(cmpgn campaigns.Repository, timeout time.Duration) campa
 }
 
 func (cmpgn *campaignUseCase) CreateCampaign(c context.Context, m *models.Campaign) error {
-
 	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
 
@@ -41,7 +40,6 @@ func (cmpgn *campaignUseCase) CreateCampaign(c context.Context, m *models.Campai
 }
 
 func (cmpgn *campaignUseCase) UpdateCampaign(c context.Context, id int64, updateCampaign *models.UpdateCampaign) error {
-
 	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
 
@@ -54,7 +52,6 @@ func (cmpgn *campaignUseCase) UpdateCampaign(c context.Context, id int64, update
 }
 
 func (cmpgn *campaignUseCase) GetCampaign(c context.Context, name string, status string, startDate string, endDate string, page int, limit int) (string, []*models.Campaign, error) {
-
 	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
 
@@ -65,8 +62,13 @@ func (cmpgn *campaignUseCase) GetCampaign(c context.Context, name string, status
 	}
 
 	countCampaign, err := cmpgn.campaignRepo.CountCampaign(ctx, name, status, startDate, endDate)
+
 	if err != nil {
 		return "", nil, err
+	}
+
+	if countCampaign <= 0 {
+		return "", listCampaign, nil
 	}
 
 	return strconv.Itoa(countCampaign), listCampaign, nil
@@ -76,8 +78,8 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetC
 	now := time.Now()
 	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
-
 	dataCampaign, err := cmpgn.campaignRepo.GetValidatorCampaign(ctx, m)
+
 	if err != nil {
 		return nil, models.ErrNoCampaign
 	}
@@ -95,7 +97,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetC
 	pointAmount := math.Floor(parseFloat)
 
 	campaignTrx := &models.CampaignTrx{
-		UserID:          m.UserId,
+		UserID:          m.UserID,
 		PointAmount:     &pointAmount,
 		TransactionType: models.TransactionPointTypeDebet,
 		TransactionDate: &now,
@@ -104,6 +106,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetC
 	}
 
 	err = cmpgn.campaignRepo.SavePoint(ctx, campaignTrx)
+
 	if err != nil {
 		return nil, err
 	}
@@ -114,11 +117,11 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetC
 	return p, nil
 }
 
-func (cmpgn *campaignUseCase) GetUserPoint(c context.Context, userId string) (*models.UserPoint, error) {
+func (cmpgn *campaignUseCase) GetUserPoint(c context.Context, userID string) (*models.UserPoint, error) {
 	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
+	pointAmount, err := cmpgn.campaignRepo.GetUserPoint(ctx, userID)
 
-	pointAmount, err := cmpgn.campaignRepo.GetUserPoint(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +135,6 @@ func (cmpgn *campaignUseCase) GetUserPoint(c context.Context, userId string) (*m
 func (cmpgn *campaignUseCase) GetUserPointHistory(c context.Context, userID string) ([]models.CampaignTrx, error) {
 	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
-
 	dataHistory, err := cmpgn.campaignRepo.GetUserPointHistory(ctx, userID)
 
 	if err != nil {
@@ -145,9 +147,11 @@ func (cmpgn *campaignUseCase) GetUserPointHistory(c context.Context, userID stri
 func getFloat(unk interface{}) (float64, error) {
 	v := reflect.ValueOf(unk)
 	v = reflect.Indirect(v)
+
 	if !v.Type().ConvertibleTo(floatType) {
 		return 0, fmt.Errorf("cannot convert %v to float64", v.Type())
 	}
+
 	fv := v.Convert(floatType)
 	return fv.Float(), nil
 }

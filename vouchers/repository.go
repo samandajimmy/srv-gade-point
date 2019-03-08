@@ -10,13 +10,16 @@ type Repository interface {
 	CreateVoucher(ctx context.Context, a *models.Voucher) error
 	CreatePromoCode(ctx context.Context, promoCode []*models.PromoCode) error
 	UpdateVoucher(ctx context.Context, id int64, updateVoucher *models.UpdateVoucher) error
-	GetVouchers(ctx context.Context, name string, status string, startDate string, endDate string, page int32, limit int32) ([]*models.Voucher, error)
-	GetVouchersExternal(ctx context.Context, name string, startDate string, endDate string, page int32, limit int32) ([]*models.VoucherDetail, error)
+	GetVouchersAdmin(ctx context.Context, name string, status string, startDate string, endDate string, page int, limit int) ([]*models.Voucher, error)
+	GetVoucherAdmin(ctx context.Context, voucherId string) (*models.Voucher, error)
+	GetVouchers(ctx context.Context, name string, startDate string, endDate string, page int, limit int) ([]*models.Voucher, error)
 	GetVoucher(ctx context.Context, voucherId string) (*models.Voucher, error)
-	GetVoucherExternal(ctx context.Context, voucherId string) (*models.VoucherDetail, error)
-	CountVouchers(ctx context.Context, status string, expired bool) (int, error)
+	UpdatePromoCodeBought(ctx context.Context, voucherId string, userId string) (*models.PromoCode, error)
+	GetVouchersUser(ctx context.Context, userId string, status string, page int, limit int) ([]models.PromoCode, error)
+	CountVouchers(ctx context.Context, name string, status string, startDate string, endDate string, expired bool) (int, error)
 	DeleteVoucher(ctx context.Context, id int64) error
-	GetVouchersUser(ctx context.Context, userId string, status string, page int32, limit int32) ([]*models.VoucherUser, error)
-	CountPromoCode(ctx context.Context, status string, userId string) (int, error)
-	UpdatePromoCodeBought(ctx context.Context, voucherId string, userId string) (int64, string, string, error)
+	CountPromoCode(ctx context.Context, status string, userID string) (int, error)
+	VoucherCheckExpired(ctx context.Context, voucherID string) error
+	VoucherCheckMinimalTransaction(ctx context.Context, a *models.PayloadValidateVoucher) (*models.Voucher, error)
+	UpdatePromoCodeRedeemed(ctx context.Context, voucherID string, userID string) (*models.PromoCode, error)
 }

@@ -36,16 +36,17 @@ func (m *psqlCampaignRepository) CreateCampaign(ctx context.Context, a *models.C
 		return err
 	}
 
-	logrus.Debug("Created At: ", time.Now())
+	logrus.Debug("Created At: ", &now)
 
 	var lastID int64
-
 	validator, err := json.Marshal(a.Validators)
+
 	if err != nil {
 		return err
 	}
 
-	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate, a.Status, a.Type, string(validator), time.Now()).Scan(&lastID)
+	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate, a.Status, a.Type, string(validator), &now).Scan(&lastID)
+
 	if err != nil {
 		return err
 	}
@@ -56,18 +57,20 @@ func (m *psqlCampaignRepository) CreateCampaign(ctx context.Context, a *models.C
 }
 
 func (m *psqlCampaignRepository) UpdateCampaign(ctx context.Context, id int64, updateCampaign *models.UpdateCampaign) error {
-
+	now := time.Now()
 	query := `UPDATE campaigns SET status = $1, updated_at = $2 WHERE id = $3 RETURNING id`
 	stmt, err := m.Conn.PrepareContext(ctx, query)
+
 	if err != nil {
 		return err
 	}
 
-	logrus.Debug("Update At: ", time.Now())
+	logrus.Debug("Update At: ", &now)
 
 	var lastID int64
 
-	err = stmt.QueryRowContext(ctx, updateCampaign.Status, time.Now(), id).Scan(&lastID)
+	err = stmt.QueryRowContext(ctx, updateCampaign.Status, &now, id).Scan(&lastID)
+
 	if err != nil {
 		return err
 	}
@@ -126,6 +129,7 @@ func (m *psqlCampaignRepository) getCampaign(ctx context.Context, query string) 
 	for rows.Next() {
 		t := new(models.Campaign)
 		var createDate, updateDate pq.NullTime
+
 		err = rows.Scan(
 			&t.ID,
 			&t.Name,
@@ -138,6 +142,7 @@ func (m *psqlCampaignRepository) getCampaign(ctx context.Context, query string) 
 			&updateDate,
 			&createDate,
 		)
+
 		t.CreatedAt = &createDate.Time
 		t.UpdatedAt = &updateDate.Time
 		err = json.Unmarshal([]byte(validator), &t.Validators)
@@ -146,6 +151,7 @@ func (m *psqlCampaignRepository) getCampaign(ctx context.Context, query string) 
 			logrus.Error(err)
 			return nil, err
 		}
+
 		result = append(result, t)
 	}
 
@@ -153,18 +159,18 @@ func (m *psqlCampaignRepository) getCampaign(ctx context.Context, query string) 
 }
 
 func (m *psqlCampaignRepository) GetValidatorCampaign(ctx context.Context, a *models.GetCampaignValue) (*models.Campaign, error) {
-	result := new(models.Campaign)
 	var validator json.RawMessage
-
+	result := new(models.Campaign)
 	query := `SELECT id, validators FROM campaigns WHERE status = 1 AND start_date::date <= now()::date
 	AND end_date::date >= now()::date AND validators->>'channel'=$1 AND validators->>'product'=$2 AND validators->>'transactionType'=$3 AND validators->>'unit'=$4 ORDER BY end_date ASC LIMIT 1`
-
 	err := m.Conn.QueryRowContext(ctx, query, a.Channel, a.Product, a.TransactionType, a.Unit).Scan(&result.ID, &validator)
+
 	if err != nil {
 		return nil, err
 	}
 
 	err = json.Unmarshal([]byte(validator), &result.Validators)
+
 	if err != nil {
 		return nil, err
 	}
@@ -173,47 +179,60 @@ func (m *psqlCampaignRepository) GetValidatorCampaign(ctx context.Context, a *mo
 
 }
 
-func (m *psqlCampaignRepository) SavePoint(ctx context.Context, a *models.CampaignTrx) error {
-	query := `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, campaign_id, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6)  RETURNING id`
+func (m *psqlCampaignRepository) SavePoint(ctx context.Context, cmpgnTrx *models.CampaignTrx) error {
+	now := time.Now()
+	var id int64
+	var query string
+
+	if cmpgnTrx.TransactionType == models.TransactionPointTypeDebet {
+		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, campaign_id, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6)  RETURNING id`
+		id = cmpgnTrx.Campaign.ID
+	}
+
+	if cmpgnTrx.TransactionType == models.TransactionPointTypeKredit {
+		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, promo_code_id, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6)  RETURNING id`
+		id = cmpgnTrx.PromoCode.ID
+	}
+
 	stmt, err := m.Conn.PrepareContext(ctx, query)
+
 	if err != nil {
 		return err
 	}
 
-	logrus.Debug("Created At: ", time.Now())
+	logrus.Debug("Created At: ", &now)
 
 	var lastID int64
+	err = stmt.QueryRowContext(ctx, cmpgnTrx.UserID, cmpgnTrx.PointAmount, cmpgnTrx.TransactionType, cmpgnTrx.TransactionDate, id, cmpgnTrx.CreatedAt).Scan(&lastID)
 
-	err = stmt.QueryRowContext(ctx, a.UserID, a.PointAmount, a.TransactionType, a.TransactionDate, a.Campaign.ID, a.CreatedAt).Scan(&lastID)
 	if err != nil {
 		return err
 	}
 
-	a.ID = lastID
+	cmpgnTrx.ID = lastID
 	return nil
 }
 
-func (m *psqlCampaignRepository) GetUserPoint(ctx context.Context, UserId string) (float64, error) {
+func (m *psqlCampaignRepository) GetUserPoint(ctx context.Context, UserID string) (float64, error) {
 	var pointDebet float64
 	var pointKredit float64
-
 	queryDebet := `SELECT coalesce(sum(point_amount), 0) as debet FROM public.campaign_transactions WHERE user_id = $1 AND transaction_type = 'D' AND to_char(transaction_date, 'YYYY') = to_char(NOW(), 'YYYY')`
+	err := m.Conn.QueryRowContext(ctx, queryDebet, UserID).Scan(&pointDebet)
 
-	err := m.Conn.QueryRowContext(ctx, queryDebet, UserId).Scan(&pointDebet)
 	if err != nil {
 		return 0, err
 	}
 
 	queryKredit := `SELECT coalesce(sum(point_amount), 0) as debet FROM public.campaign_transactions WHERE user_id = $1 AND transaction_type = 'K' AND to_char(transaction_date, 'YYYY') = to_char(NOW(), 'YYYY')`
+	err = m.Conn.QueryRowContext(ctx, queryKredit, UserID).Scan(&pointKredit)
 
-	err = m.Conn.QueryRowContext(ctx, queryKredit, UserId).Scan(&pointKredit)
 	if err != nil {
 		return 0, err
 	}
 
 	pointAmount := pointDebet - pointKredit
-
 	return pointAmount, nil
 }
 
@@ -247,6 +266,7 @@ func (m *psqlCampaignRepository) GetUserPointHistory(ctx context.Context, userID
 				ct.transaction_date desc;`
 
 	rows, err := m.Conn.QueryContext(ctx, query, userID)
+
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
@@ -292,11 +312,9 @@ func (m *psqlCampaignRepository) GetUserPointHistory(ctx context.Context, userID
 	return dataHistory, nil
 }
 
-// Count data campaign
 func (m *psqlCampaignRepository) CountCampaign(ctx context.Context, name string, status string, startDate string, endDate string) (int, error) {
-
+	var total int
 	query := `SELECT coalesce(COUNT(id), 0) FROM campaigns WHERE id IS NOT NULL`
-
 	where := ""
 
 	if name != "" {
@@ -316,10 +334,8 @@ func (m *psqlCampaignRepository) CountCampaign(ctx context.Context, name string,
 	}
 
 	query += where
-
-	var total int
-
 	err := m.Conn.QueryRowContext(ctx, query).Scan(&total)
+
 	if err != nil {
 		return 0, err
 	}

@@ -8,12 +8,10 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo"
-	"github.com/sirupsen/logrus"
-	validator "gopkg.in/go-playground/validator.v9"
+	"github.com/labstack/gommon/log"
 )
 
-// Response represent the response
-var response = models.Response{}
+var response models.Response
 
 // CampaignsHandler represent the httphandler for campaigns
 type CampaignsHandler struct {
@@ -37,8 +35,10 @@ func NewCampaignsHandler(echoGroup models.EchoGroup, us campaigns.UseCase) {
 	echoGroup.API.GET("/campaigns/point/history", handler.GetUserPointHistory)
 }
 
+// CreateCampaign a handler to create a campaign
 func (cmpgn *CampaignsHandler) CreateCampaign(c echo.Context) error {
 	var campaign models.Campaign
+	response = models.Response{}
 	err := c.Bind(&campaign)
 	ctx := c.Request().Context()
 
@@ -52,45 +52,33 @@ func (cmpgn *CampaignsHandler) CreateCampaign(c echo.Context) error {
 		return c.JSON(http.StatusUnprocessableEntity, response)
 	}
 
-	if ok, err := isRequestValid(&campaign); !ok {
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		return c.JSON(http.StatusBadRequest, response)
-	}
-
 	err = cmpgn.CampaignUseCase.CreateCampaign(ctx, &campaign)
-
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		return c.JSON(getStatusCode(err), response)
 	}
 
+	if (models.Campaign{}) != campaign {
+		response.Data = campaign
+	}
 	response.Status = models.StatusSuccess
-	response.Message = models.MassageSaveSuccess
-	response.Data = campaign
+	response.Message = models.MessageSaveSuccess
 	return c.JSON(http.StatusCreated, response)
 }
 
+// UpdateStatusCampaign a handler to update campaign status
 func (cmpgn *CampaignsHandler) UpdateStatusCampaign(c echo.Context) error {
 	updateCampaign := new(models.UpdateCampaign)
+	response = models.Response{}
+	id, _ := strconv.Atoi(c.Param("id"))
+	ctx := c.Request().Context()
 
 	if err := c.Bind(updateCampaign); err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		response.Data = ""
 		return c.JSON(http.StatusUnprocessableEntity, response)
 	}
-
-	if ok, err := isRequestValid(updateCampaign); !ok {
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		response.Data = ""
-		return c.JSON(http.StatusBadRequest, response)
-	}
-
-	id, _ := strconv.Atoi(c.Param("id"))
-	ctx := c.Request().Context()
 
 	if ctx == nil {
 		ctx = context.Background()
@@ -101,17 +89,17 @@ func (cmpgn *CampaignsHandler) UpdateStatusCampaign(c echo.Context) error {
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		response.Data = ""
 		return c.JSON(getStatusCode(err), response)
 	}
 
 	response.Status = models.StatusSuccess
-	response.Message = models.MassageUpdateSuccess
-	response.Data = ""
+	response.Message = models.MessageUpdateSuccess
 	return c.JSON(http.StatusOK, response)
 }
 
+// GetCampaigns to get list of campaigns data
 func (cmpgn *CampaignsHandler) GetCampaigns(c echo.Context) error {
+	response = models.Response{}
 	name := c.QueryParam("name")
 	status := c.QueryParam("status")
 	startDate := c.QueryParam("startDate")
@@ -119,6 +107,8 @@ func (cmpgn *CampaignsHandler) GetCampaigns(c echo.Context) error {
 	page, _ := strconv.Atoi(c.QueryParam("page"))
 	limit, _ := strconv.Atoi(c.QueryParam("limit"))
 	ctx := c.Request().Context()
+	response.Data = ""
+	response.TotalCount = ""
 
 	if ctx == nil {
 		ctx = context.Background()
@@ -132,16 +122,21 @@ func (cmpgn *CampaignsHandler) GetCampaigns(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	response.Status = models.StatusSuccess
-	response.Message = models.StatusSuccess
-	response.Data = res
-	response.TotalCount = countCampaign
-	return c.JSON(http.StatusOK, response)
+	if len(res) > 0 {
+		response.Data = res
+	}
 
+	response.Status = models.StatusSuccess
+	response.Message = models.MessageDataSuccess
+	response.TotalCount = countCampaign
+
+	return c.JSON(http.StatusOK, response)
 }
 
+// GetCampaignValue to validate point amount available and store the point trx
 func (cmpgn *CampaignsHandler) GetCampaignValue(c echo.Context) error {
 	var campaignValue models.GetCampaignValue
+	response = models.Response{}
 	ctx := c.Request().Context()
 	err := c.Bind(&campaignValue)
 
@@ -155,12 +150,6 @@ func (cmpgn *CampaignsHandler) GetCampaignValue(c echo.Context) error {
 		return c.JSON(http.StatusUnprocessableEntity, response)
 	}
 
-	if ok, err := isRequestValid(&campaignValue); !ok {
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		return c.JSON(http.StatusBadRequest, response)
-	}
-
 	userPoint, err := cmpgn.CampaignUseCase.GetCampaignValue(ctx, &campaignValue)
 
 	if err != nil {
@@ -169,21 +158,26 @@ func (cmpgn *CampaignsHandler) GetCampaignValue(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
+	if (&models.UserPoint{}) != userPoint {
+		response.Data = userPoint
+	}
+
 	response.Status = models.StatusSuccess
-	response.Message = models.MassagePointSuccess
-	response.Data = userPoint
+	response.Message = models.MessagePointSuccess
 	return c.JSON(http.StatusOK, response)
 }
 
+// GetUserPoint to get user current point
 func (cmpgn *CampaignsHandler) GetUserPoint(c echo.Context) error {
-	userId := c.QueryParam("userId")
+	response = models.Response{}
+	userID := c.QueryParam("userId")
 	ctx := c.Request().Context()
 
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	res, err := cmpgn.CampaignUseCase.GetUserPoint(ctx, userId)
+	userPoint, err := cmpgn.CampaignUseCase.GetUserPoint(ctx, userID)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -191,15 +185,19 @@ func (cmpgn *CampaignsHandler) GetUserPoint(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
+	if (&models.UserPoint{}) != userPoint {
+		response.Data = userPoint
+	}
+
 	response.Status = models.StatusSuccess
-	response.Message = models.StatusSuccess
-	response.Data = res
+	response.Message = models.MessagePointSuccess
 	return c.JSON(http.StatusOK, response)
 
 }
 
 // GetUserPointHistory is a handler to provide and endpoint to get user point history
 func (cmpgn *CampaignsHandler) GetUserPointHistory(c echo.Context) error {
+	response = models.Response{}
 	userID := c.QueryParam("userId")
 	ctx := c.Request().Context()
 
@@ -215,30 +213,22 @@ func (cmpgn *CampaignsHandler) GetUserPointHistory(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	response.Status = models.StatusSuccess
-	response.Message = models.MassagePointSuccess
-	response.Data = data
+	if len(data) > 0 {
+		response.Data = data
+	}
 
+	response.Status = models.StatusSuccess
+	response.Message = models.MessagePointSuccess
 	return c.JSON(http.StatusOK, response)
 }
 
-func isRequestValid(m interface{}) (bool, error) {
-
-	validate := validator.New()
-
-	err := validate.Struct(m)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
 func getStatusCode(err error) int {
-
 	if err == nil {
 		return http.StatusOK
 	}
-	logrus.Error(err)
+
+	log.Error(err)
+
 	switch err {
 	case models.ErrInternalServerError:
 		return http.StatusInternalServerError

@@ -9,7 +9,6 @@ import (
 
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
-	validator "gopkg.in/go-playground/validator.v9"
 )
 
 var response = models.Response{} // Response represent the response
@@ -26,19 +25,19 @@ func NewVouchersHandler(echoGroup models.EchoGroup, us vouchers.UseCase) {
 	}
 
 	//End Point For CMS
-	echoGroup.Admin.POST("/voucher", handler.CreateVoucher)
-	echoGroup.Admin.PUT("/voucher/status/:id", handler.UpdateStatusVoucher)
-	echoGroup.Admin.POST("/voucher/upload", handler.UploadVoucherImages)
+	echoGroup.Admin.POST("/vouchers", handler.CreateVoucher)
 	echoGroup.Admin.GET("/vouchers", handler.GetVouchersAdmin)
-	echoGroup.Admin.GET("/voucher", handler.GetVoucherAdmin)
+	echoGroup.Admin.GET("/vouchers/:id", handler.GetVoucherAdmin)
+	echoGroup.Admin.POST("/vouchers/upload", handler.UploadVoucherImages)
+	echoGroup.Admin.PUT("/vouchers/status/:id", handler.UpdateStatusVoucher)
 
 	//End Point For External
 	echoGroup.API.GET("/vouchers", handler.GetVouchers)
-	echoGroup.API.GET("/voucher", handler.GetVoucher)
-	echoGroup.API.POST("/voucher/buy", handler.VoucherBuy)
+	echoGroup.API.GET("/vouchers/:id", handler.GetVoucher)
+	echoGroup.API.POST("/vouchers/buy", handler.VoucherBuy)
+	echoGroup.API.POST("/vouchers/redeem", handler.VoucherRedeem)
 	echoGroup.API.GET("/vouchers/user", handler.GetVouchersUser)
-	echoGroup.API.POST("/voucher/validate", handler.VoucherValidate)
-	echoGroup.API.POST("/voucher/redeem", handler.VoucherRedeem)
+	echoGroup.API.POST("/vouchers/validate", handler.VoucherValidate)
 
 }
 
@@ -175,7 +174,7 @@ func (vchr *VouchersHandler) GetVouchersAdmin(c echo.Context) error {
 // GetVoucherAdmin Get detail voucher by voucherId for admin
 func (vchr *VouchersHandler) GetVoucherAdmin(c echo.Context) error {
 	response = models.Response{}
-	voucherID := c.QueryParam("voucherId")
+	voucherID := c.Param("id")
 	ctx := c.Request().Context()
 
 	if ctx == nil {
@@ -235,7 +234,7 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 // GetVoucher Get detail voucher by voucherId
 func (vchr *VouchersHandler) GetVoucher(c echo.Context) error {
 	response = models.Response{}
-	voucherID := c.QueryParam("voucherId")
+	voucherID := c.Param("id")
 	ctx := c.Request().Context()
 
 	if ctx == nil {
@@ -259,10 +258,10 @@ func (vchr *VouchersHandler) GetVoucher(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-// Get all promo code voucher by user id and status bought
+// GetVouchersUser Get all promo code voucher by user id and status bought
 func (vchr *VouchersHandler) GetVouchersUser(c echo.Context) error {
 	response = models.Response{}
-	userId := c.QueryParam("userId")
+	userID := c.QueryParam("userId")
 	status := c.QueryParam("status")
 	page, _ := strconv.Atoi(c.QueryParam("page"))
 	limit, _ := strconv.Atoi(c.QueryParam("limit"))
@@ -272,7 +271,7 @@ func (vchr *VouchersHandler) GetVouchersUser(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	responseData, totalCount, err := vchr.VoucherUseCase.GetVouchersUser(ctx, userId, status, int(page), int(limit))
+	responseData, totalCount, err := vchr.VoucherUseCase.GetVouchersUser(ctx, userID, status, int(page), int(limit))
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -324,7 +323,7 @@ func (vchr *VouchersHandler) VoucherBuy(c echo.Context) error {
 }
 
 // VoucherValidate is a handler to provide and endpoint to validate voucher before reedem
-func (a *VouchersHandler) VoucherValidate(c echo.Context) error {
+func (vchr *VouchersHandler) VoucherValidate(c echo.Context) error {
 	var voucher models.PayloadValidateVoucher
 	response = models.Response{}
 	ctx := c.Request().Context()
@@ -339,7 +338,7 @@ func (a *VouchersHandler) VoucherValidate(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	responseData, err := a.VoucherUseCase.VoucherValidate(ctx, &voucher)
+	responseData, err := vchr.VoucherUseCase.VoucherValidate(ctx, &voucher)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -357,7 +356,7 @@ func (a *VouchersHandler) VoucherValidate(c echo.Context) error {
 }
 
 // VoucherRedeem is a handler to provide and endpoint to reedem voucher
-func (a *VouchersHandler) VoucherRedeem(c echo.Context) error {
+func (vchr *VouchersHandler) VoucherRedeem(c echo.Context) error {
 	var voucher models.PayloadValidateVoucher
 	response = models.Response{}
 	ctx := c.Request().Context()
@@ -372,7 +371,7 @@ func (a *VouchersHandler) VoucherRedeem(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	responseData, err := a.VoucherUseCase.VoucherRedeem(ctx, &voucher)
+	responseData, err := vchr.VoucherUseCase.VoucherRedeem(ctx, &voucher)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -387,17 +386,6 @@ func (a *VouchersHandler) VoucherRedeem(c echo.Context) error {
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
 	return c.JSON(http.StatusOK, response)
-}
-
-func isRequestValid(m interface{}) (bool, error) {
-
-	validate := validator.New()
-
-	err := validate.Struct(m)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
 }
 
 func getStatusCode(err error) int {

@@ -51,7 +51,6 @@ func (vchr *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) 
 	defer cancel()
 
 	err := vchr.voucherRepo.CreateVoucher(ctx, m)
-
 	code, err := generatePromoCode(m.Stock)
 
 	if err != nil {
@@ -75,12 +74,6 @@ func (vchr *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) 
 	if err != nil {
 		//Delete voucher when failed generate promo code
 		err = vchr.voucherRepo.DeleteVoucher(ctx, m.ID)
-
-		if err != nil {
-			err = vchr.voucherRepo.DeleteVoucher(ctx, m.ID)
-			return err
-		}
-
 		return err
 	}
 
@@ -91,7 +84,6 @@ func (vchr *voucherUseCase) UpdateVoucher(c context.Context, id int64, updateVou
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
 
 	defer cancel()
-
 	err := vchr.voucherRepo.UpdateVoucher(ctx, id, updateVoucher)
 
 	if err != nil {
@@ -102,22 +94,20 @@ func (vchr *voucherUseCase) UpdateVoucher(c context.Context, id int64, updateVou
 }
 
 func (vchr *voucherUseCase) UploadVoucherImages(file *multipart.FileHeader) (string, error) {
-
 	src, err := file.Open()
+
 	if err != nil {
 		return "", err
 	}
 
 	defer src.Close()
-
 	ext := filepath.Ext(file.Filename)
 	nsec := time.Now().UnixNano() // number of nanoseconds unix
 	fileName := strconv.FormatInt(nsec, 10) + ext
-
 	filePathUpload := os.Getenv(`VOUCHER_UPLOAD_PATH`) + fileName
 	filePathPublic := os.Getenv(`VOUCHER_PATH`) + "/" + fileName
-
 	dst, err := os.Create(filePathUpload)
+
 	if err != nil {
 		return "", err
 	}
@@ -131,16 +121,12 @@ func (vchr *voucherUseCase) UploadVoucherImages(file *multipart.FileHeader) (str
 	return filePathPublic, nil
 }
 
-// Get all voucher by param name, status, start date and end date for admin
 func (vchr *voucherUseCase) GetVouchersAdmin(c context.Context, name string, status string, startDate string, endDate string, page int, limit int) ([]*models.Voucher, string, error) {
 	var listVoucher []*models.Voucher
 	var err error
 	var totalCount int
-
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
-
 	defer cancel()
-
 	listVoucher, err = vchr.voucherRepo.GetVouchersAdmin(ctx, name, status, startDate, endDate, page, limit)
 
 	if err != nil {
@@ -159,9 +145,7 @@ func (vchr *voucherUseCase) GetVouchersAdmin(c context.Context, name string, sta
 func (vchr *voucherUseCase) GetVoucherAdmin(c context.Context, voucherID string) (*models.Voucher, error) {
 	var voucherDetail *models.Voucher
 	var err error
-
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
-
 	defer cancel()
 
 	voucherDetail, err = vchr.voucherRepo.GetVoucherAdmin(ctx, voucherID)
@@ -173,16 +157,13 @@ func (vchr *voucherUseCase) GetVoucherAdmin(c context.Context, voucherID string)
 	return voucherDetail, nil
 }
 
-// Get all voucher by param name, status, start date and end date
 func (vchr *voucherUseCase) GetVouchers(c context.Context, name string, status string, startDate string, endDate string, page int, limit int) ([]*models.Voucher, string, error) {
 	var listVoucher []*models.Voucher
 	var err error
 	var totalCount int
 
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
-
 	defer cancel()
-
 	listVoucher, err = vchr.voucherRepo.GetVouchers(ctx, name, startDate, endDate, page, limit)
 
 	if err != nil {
@@ -201,11 +182,8 @@ func (vchr *voucherUseCase) GetVouchers(c context.Context, name string, status s
 func (vchr *voucherUseCase) GetVoucher(c context.Context, voucherID string) (*models.Voucher, error) {
 	var voucherDetail *models.Voucher
 	var err error
-
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
-
 	defer cancel()
-
 	voucherDetail, err = vchr.voucherRepo.GetVoucher(ctx, voucherID)
 
 	if err != nil {
@@ -215,15 +193,11 @@ func (vchr *voucherUseCase) GetVoucher(c context.Context, voucherID string) (*mo
 	return voucherDetail, nil
 }
 
-// Get vouchers user
 func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userID string, status string, page int, limit int) ([]models.PromoCode, string, error) {
 	var err error
 	var totalCount int
-
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
-
 	defer cancel()
-
 	vouchersUser, err := vchr.voucherRepo.GetVouchersUser(ctx, userID, status, page, limit)
 
 	if err != nil {
@@ -231,6 +205,7 @@ func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userID string, st
 	}
 
 	totalCount, err = vchr.voucherRepo.CountPromoCode(ctx, status, userID)
+
 	if err != nil {
 		return nil, "", err
 	}
@@ -241,11 +216,8 @@ func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userID string, st
 func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVoucherBuy) (*models.PromoCode, error) {
 	var err error
 	now := time.Now()
-
 	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
-
 	defer cancel()
-
 	err = vchr.voucherRepo.VoucherCheckExpired(c, m.VoucherID)
 
 	if err != nil {
@@ -271,6 +243,7 @@ func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVouch
 	}
 
 	promoCode, err := vchr.voucherRepo.UpdatePromoCodeBought(c, m.VoucherID, m.UserID)
+
 	if err != nil {
 		return nil, err
 	}
@@ -278,6 +251,7 @@ func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVouch
 	// Parse interface to float
 	parseFloat, err := getFloat(voucherDetail.Point)
 	pointAmount := math.Floor(parseFloat)
+
 	campaignTrx := &models.CampaignTrx{
 		UserID:          m.UserID,
 		PointAmount:     &pointAmount,
@@ -294,17 +268,13 @@ func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVouch
 	}
 
 	promoCode.Voucher = voucherDetail
-
 	return promoCode, nil
 }
 
 func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *models.PayloadValidateVoucher) (*models.Voucher, error) {
 	var err error
-
 	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
-
 	defer cancel()
-
 	err = vchr.voucherRepo.VoucherCheckExpired(c, validateVoucher.VoucherID)
 
 	if err != nil {
@@ -322,11 +292,8 @@ func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *
 
 func (vchr *voucherUseCase) VoucherRedeem(c context.Context, voucherRedeem *models.PayloadValidateVoucher) (*models.PromoCode, error) {
 	var err error
-
 	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
-
 	defer cancel()
-
 	promoCode, err := vchr.voucherRepo.UpdatePromoCodeRedeemed(c, voucherRedeem.VoucherID, voucherRedeem.UserID)
 
 	if err != nil {
@@ -336,8 +303,8 @@ func (vchr *voucherUseCase) VoucherRedeem(c context.Context, voucherRedeem *mode
 	return promoCode, nil
 }
 
-func generatePromoCode(stock int32) (code []string, err error) {
-	var arr = make([]string, stock)
+func generatePromoCode(stock *int32) (code []string, err error) {
+	var arr = make([]string, *stock)
 
 	for i := range arr {
 		arr[i] = randStringBytes(lengthCode)
@@ -356,12 +323,12 @@ func randStringBytes(n int) string {
 	return string(b)
 }
 
-func validateBuy(voucherPoint int64, userPoint int64, avaliable *int32) error {
+func validateBuy(voucherPoint *int64, userPoint int64, avaliable *int32) error {
 	if *avaliable <= 0 {
 		return models.ErrVoucherUnavailable
 	}
 
-	if userPoint < voucherPoint {
+	if userPoint < *voucherPoint {
 		return models.ErrPointDeficit
 	}
 
@@ -371,9 +338,11 @@ func validateBuy(voucherPoint int64, userPoint int64, avaliable *int32) error {
 func getFloat(unk interface{}) (float64, error) {
 	v := reflect.ValueOf(unk)
 	v = reflect.Indirect(v)
+
 	if !v.Type().ConvertibleTo(floatType) {
 		return 0, fmt.Errorf("cannot convert %v to float64", v.Type())
 	}
+
 	fv := v.Convert(floatType)
 	return fv.Float(), nil
 }

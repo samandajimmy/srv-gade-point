@@ -20,12 +20,12 @@ type Voucher struct {
 	Description     string      `json:"description,omitempty"`
 	StartDate       string      `json:"startDate,omitempty"`
 	EndDate         string      `json:"endDate,omitempty"`
-	Point           int64       `json:"point,omitempty"`
+	Point           *int64      `json:"point,omitempty"`
 	JournalAccount  string      `json:"journalAccount,omitempty"`
 	Value           *float64    `json:"value,omitempty"`
 	ImageURL        string      `json:"imageUrl,omitempty"`
 	Status          *int8       `json:"status,omitempty"`
-	Stock           int32       `json:"stock,omitempty"`
+	Stock           *int32      `json:"stock,omitempty"`
 	PrefixPromoCode string      `json:"prefixPromoCode,omitempty"`
 	Amount          *int32      `json:"amount,omitempty"`
 	Available       *int32      `json:"available,omitempty"`

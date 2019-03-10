@@ -36,6 +36,12 @@ var (
 	// MessageDataNotFound to store a message response of data not found
 	MessageDataNotFound = "Data Not Found"
 
+	// MessageUnprocessableEntity to store a message response of unproccessable entity
+	MessageUnprocessableEntity = "Unprocessable Entity"
+
+	// MessageTokenFailed to store a message response token failure
+	MessageTokenFailed = "Creating token failed!"
+
 	// MicroTimeFormat to store a time format of micro timestamp
 	MicroTimeFormat = "20060102150405.000000"
 )

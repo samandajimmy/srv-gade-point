@@ -1,6 +1,8 @@
 package models
 
-import jwt "github.com/dgrijalva/jwt-go"
+import (
+	jwt "github.com/dgrijalva/jwt-go"
+)
 
 // Token to store JWT token data
 type Token struct {
@@ -10,7 +12,8 @@ type Token struct {
 
 // AccountToken to store account token data
 type AccountToken struct {
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
-	Token    string `json:"token,omitempty"`
+	Username  string `json:"username,omitempty"`
+	Password  string `json:"password,omitempty"`
+	Token     string `json:"token,omitempty"`
+	ExpiresAt string `json:"expiresAt,omitempty"`
 }

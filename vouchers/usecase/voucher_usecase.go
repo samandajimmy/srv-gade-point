@@ -290,11 +290,11 @@ func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *
 	}
 
 	// check voucher codes
-	_, err = vchr.voucherRepo.GetVoucherCode(c, validateVoucher.PromoCode)
+	_, err = vchr.voucherRepo.GetVoucherCode(c, validateVoucher.PromoCode, validateVoucher.UserID)
 
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		log.Error(models.ErrVoucherCodeUnavailable)
+		return nil, models.ErrVoucherCodeUnavailable
 	}
 
 	vStartDate, _ := time.Parse(time.RFC3339, voucher.StartDate)
@@ -329,7 +329,7 @@ func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *
 				return nil, models.ErrValidation
 			}
 		case "minimalTransaction":
-			minTrx, _ := getFloat(fieldValue)
+			minTrx, _ := strconv.ParseFloat(fieldValue.(string), 64)
 
 			if minTrx > validateVoucher.TransactionAmount {
 				log.Error(models.ErrValidation)

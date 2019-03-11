@@ -535,13 +535,13 @@ func (m *psqlVoucherRepository) UpdatePromoCodeRedeemed(ctx context.Context, vou
 	return result, nil
 }
 
-func (m *psqlVoucherRepository) GetVoucherCode(ctx context.Context, voucherCode string) (*models.PromoCode, error) {
+func (m *psqlVoucherRepository) GetVoucherCode(ctx context.Context, voucherCode string, userID string) (*models.PromoCode, error) {
 	result := &models.PromoCode{}
 	query := `SELECT id, promo_code, status, user_id, redeemed_date, bought_date
 		FROM promo_codes
-		WHERE promo_code = $1`
+		WHERE promo_code = $1 AND user_id = $2`
 
-	err := m.Conn.QueryRowContext(ctx, query, voucherCode).Scan(
+	err := m.Conn.QueryRowContext(ctx, query, voucherCode, userID).Scan(
 		&result.ID,
 		&result.PromoCode,
 		&result.Status,

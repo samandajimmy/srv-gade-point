@@ -324,11 +324,11 @@ func (vchr *VouchersHandler) VoucherBuy(c echo.Context) error {
 
 // VoucherValidate is a handler to provide and endpoint to validate voucher before reedem
 func (vchr *VouchersHandler) VoucherValidate(c echo.Context) error {
-	var voucher models.PayloadValidateVoucher
+	var payloadValidator models.PayloadValidateVoucher
 	response = models.Response{}
 	ctx := c.Request().Context()
 
-	if err := c.Bind(&voucher); err != nil {
+	if err := c.Bind(&payloadValidator); err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		return c.JSON(http.StatusUnprocessableEntity, response)
@@ -338,7 +338,7 @@ func (vchr *VouchersHandler) VoucherValidate(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	responseData, err := vchr.VoucherUseCase.VoucherValidate(ctx, &voucher)
+	responseData, err := vchr.VoucherUseCase.VoucherValidate(ctx, &payloadValidator)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -346,7 +346,7 @@ func (vchr *VouchersHandler) VoucherValidate(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	if (&models.Voucher{}) != responseData {
+	if (&models.ResponseValidateVoucher{}) != responseData {
 		response.Data = responseData
 	}
 

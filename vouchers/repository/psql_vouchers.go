@@ -4,13 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/vouchers"
 	"strings"
 	"time"
 
+	"github.com/labstack/gommon/log"
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
@@ -508,24 +508,24 @@ func (m *psqlVoucherRepository) VoucherCheckExpired(ctx context.Context, voucher
 	return nil
 }
 
-func (m *psqlVoucherRepository) VoucherCheckMinimalTransaction(ctx context.Context, a *models.PayloadValidateVoucher) (*models.Voucher, error) {
-	var minimalTransaction float64
-	result := new(models.Voucher)
-	query := `select b.value, b.journal_account, b.validators->>'minimalTransaction' from promo_codes as a left join vouchers as b on b.id = a.voucher_id where a.promo_code = $1 and a.voucher_id = $2 and a.user_id = $3`
-	err := m.Conn.QueryRowContext(ctx, query, a.PromoCode, a.VoucherID, a.UserID).Scan(&result.Value, &result.JournalAccount, &minimalTransaction)
+// func (m *psqlVoucherRepository) VoucherCheckMinimalTransaction(ctx context.Context, a *models.PayloadValidateVoucher) (*models.Voucher, error) {
+// 	var minimalTransaction float64
+// 	result := new(models.Voucher)
+// 	query := `select b.value, b.journal_account, b.validators->>'minimalTransaction' from promo_codes as a left join vouchers as b on b.id = a.voucher_id where a.promo_code = $1 and a.voucher_id = $2 and a.user_id = $3`
+// 	err := m.Conn.QueryRowContext(ctx, query, a.PromoCode, a.VoucherID, a.UserID).Scan(&result.Value, &result.JournalAccount, &minimalTransaction)
 
-	if err != nil {
-		return nil, models.ErrNotFound
-	}
+// 	if err != nil {
+// 		return nil, models.ErrNotFound
+// 	}
 
-	min := int(minimalTransaction)
+// 	min := int(minimalTransaction)
 
-	if a.TransactionAmount < minimalTransaction {
-		return nil, errors.New("Minimum Transaction " + fmt.Sprintf("%d", min))
-	}
+// 	if a.TransactionAmount < minimalTransaction {
+// 		return nil, errors.New("Minimum Transaction " + fmt.Sprintf("%d", min))
+// 	}
 
-	return result, nil
-}
+// 	return result, nil
+// }
 
 func (m *psqlVoucherRepository) UpdatePromoCodeRedeemed(ctx context.Context, voucherID string, userID string) (*models.PromoCode, error) {
 	result := new(models.PromoCode)
@@ -552,4 +552,27 @@ func (m *psqlVoucherRepository) UpdatePromoCodeRedeemed(ctx context.Context, vou
 	}
 
 	return result, nil
+}
+
+func (m *psqlVoucherRepository) GetVoucherCode(ctx context.Context, voucherCode string) (*models.PromoCode, error) {
+	result := &models.PromoCode{}
+	query := `SELECT id, promo_code, status, user_id, redeemed_date, bought_date
+		FROM promo_codes
+		WHERE promo_code = $1`
+
+	err := m.Conn.QueryRowContext(ctx, query, voucherCode).Scan(
+		&result.ID,
+		&result.PromoCode,
+		&result.Status,
+		&result.UserID,
+		&result.RedeemedDate,
+		&result.BoughtDate,
+	)
+
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return result, err
 }

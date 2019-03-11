@@ -3,6 +3,7 @@ module gade/srv-gade-point
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/golang-migrate/migrate/v4 v4.2.5
+	github.com/iancoleman/strcase v0.0.0-20180726023541-3605ed457bf7
 	github.com/joho/godotenv v1.3.0
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.2.8

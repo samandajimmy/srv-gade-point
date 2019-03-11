@@ -26,4 +26,10 @@ var (
 
 	// ErrVoucherUnavailable to store voucher unavailable error message
 	ErrVoucherUnavailable = errors.New("Voucher Unavailable")
+
+	// ErrValidatorUnavailable to store validator unavailable error message
+	ErrValidatorUnavailable = errors.New("Validator is unavailable")
+
+	// ErrValidation to store validation error message
+	ErrValidation = errors.New("Some of your input is not valid!")
 )

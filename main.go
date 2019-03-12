@@ -14,6 +14,8 @@ import (
 	_campaignRepository "gade/srv-gade-point/campaigns/repository"
 	_campaignUseCase "gade/srv-gade-point/campaigns/usecase"
 	_tokenHttpDelivery "gade/srv-gade-point/tokens/delivery/http"
+	_tokenRepository "gade/srv-gade-point/tokens/repository"
+	_tokenUseCase "gade/srv-gade-point/tokens/usecase"
 	_voucherHttpDelivery "gade/srv-gade-point/vouchers/delivery/http"
 	_voucherRepository "gade/srv-gade-point/vouchers/repository"
 	_voucherUseCase "gade/srv-gade-point/vouchers/usecase"
@@ -61,7 +63,9 @@ func main() {
 	middleware.InitMiddleware(ech, echoGroup)
 
 	// TOKEN
-	_tokenHttpDelivery.NewTokensHandler(echoGroup)
+	tokenRepository := _tokenRepository.NewPsqlTokenRepository(dbConn)
+	tokenUseCase := _tokenUseCase.NewTokenUseCase(tokenRepository, timeoutContext)
+	_tokenHttpDelivery.NewTokensHandler(echoGroup, tokenUseCase)
 
 	// CAMPAIGN
 	campaignRepository := _campaignRepository.NewPsqlCampaignRepository(dbConn)

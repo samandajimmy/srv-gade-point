@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
@@ -12,8 +14,12 @@ type Token struct {
 
 // AccountToken to store account token data
 type AccountToken struct {
-	Username  string `json:"username,omitempty"`
-	Password  string `json:"password,omitempty"`
-	Token     string `json:"token,omitempty"`
-	ExpiresAt string `json:"expiresAt,omitempty"`
+	ID        int64      `json:"id,omitempty"`
+	Username  string     `json:"username,omitempty"`
+	Password  string     `json:"password,omitempty"`
+	Token     string     `json:"token,omitempty"`
+	ExpireAt  *time.Time `json:"expireAt,omitempty"`
+	Status    *int8      `json:"status,omitempty"`
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }

@@ -26,4 +26,25 @@ var (
 
 	// ErrVoucherUnavailable to store voucher unavailable error message
 	ErrVoucherUnavailable = errors.New("Voucher Unavailable")
+<<<<<<< Updated upstream
+=======
+
+	// ErrVoucherCodeUnavailable to store voucher unavailable error message
+	ErrVoucherCodeUnavailable = errors.New("Voucher code unavailable")
+
+	// ErrValidatorUnavailable to store validator unavailable error message
+	ErrValidatorUnavailable = errors.New("Validator is unavailable")
+
+	// ErrValidation to store validation error message
+	ErrValidation = errors.New("Some of your inputs are not valid")
+
+	// ErrUsername to store username error message
+	ErrUsername = errors.New("Username that you input is not valid")
+
+	// ErrPassword to store password error message
+	ErrPassword = errors.New("Password that you input is not valid")
+
+	// ErrTokenExpired to store password error message
+	ErrTokenExpired = errors.New("Your token has been expired")
+>>>>>>> Stashed changes
 )

@@ -116,7 +116,6 @@ func (m *psqlVoucherRepository) UpdateVoucher(ctx context.Context, id int64, upd
 	return nil
 }
 
-// Get data all voucher with detail monitoring promo code
 func (m *psqlVoucherRepository) GetVouchersAdmin(ctx context.Context, name string, status string, startDate string, endDate string, page int, limit int) ([]*models.Voucher, error) {
 	paging := ""
 	where := ""

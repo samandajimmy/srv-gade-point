@@ -26,8 +26,6 @@ var (
 
 	// ErrVoucherUnavailable to store voucher unavailable error message
 	ErrVoucherUnavailable = errors.New("Voucher Unavailable")
-<<<<<<< Updated upstream
-=======
 
 	// ErrVoucherCodeUnavailable to store voucher unavailable error message
 	ErrVoucherCodeUnavailable = errors.New("Voucher code unavailable")
@@ -46,5 +44,4 @@ var (
 
 	// ErrTokenExpired to store password error message
 	ErrTokenExpired = errors.New("Your token has been expired")
->>>>>>> Stashed changes
 )

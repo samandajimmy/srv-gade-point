@@ -1,4 +1,4 @@
-package models
+package configs
 
 import "errors"
 
@@ -17,9 +17,6 @@ var (
 
 	// ErrNoCampaign to store campaign not found error message
 	ErrNoCampaign = errors.New("No campaign avaliable")
-
-	// ErrCampaignExpired to store campaign expired error message
-	ErrCampaignExpired = errors.New("Campaign has been expired")
 
 	// ErrPointDeficit to store point deficit error message
 	ErrPointDeficit = errors.New("Point deficit")
@@ -41,15 +38,6 @@ var (
 
 	// ErrValidation to store validation error message
 	ErrValidation = errors.New("Some of your inputs are not valid")
-
-	// ErrUsername to store username error message
-	ErrUsername = errors.New("Username that you input is not valid")
-
-	// ErrPassword to store password error message
-	ErrPassword = errors.New("Password that you input is not valid")
-
-	// ErrTokenExpired to store password error message
-	ErrTokenExpired = errors.New("Your token has been expired")
 )
 
 type Errors struct {

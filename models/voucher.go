@@ -68,12 +68,15 @@ type PayloadVoucherBuy struct {
 
 // PayloadValidateVoucher to store payload to validate a voucher
 type PayloadValidateVoucher struct {
-	PromoCode         string  `json:"promoCode,omitempty"`
-	VoucherID         string  `json:"voucherId,omitempty"`
-	UserID            string  `json:"userId,omitempty"`
-	Channel           string  `json:"channel,omitempty"`
-	Product           string  `json:"product,omitempty"`
-	TransactionType   string  `json:"transactionType,omitempty"`
-	Unit              string  `json:"unit,omitempty"`
-	TransactionAmount float64 `json:"transactionAmount,omitempty"`
+	PromoCode         string      `json:"promoCode,omitempty"`
+	VoucherID         string      `json:"voucherId,omitempty"`
+	UserID            string      `json:"userId,omitempty"`
+	TransactionAmount float64     `json:"transactionAmount,omitempty"`
+	Validators        *Validators `json:"validators,omitempty"`
+}
+
+// ResponseValidateVoucher to store response to validate a voucher
+type ResponseValidateVoucher struct {
+	Discount       *float64 `json:"discount,omitempty"`
+	JournalAccount string   `json:"journalAccount,omitempty"`
 }

@@ -24,6 +24,18 @@ var (
 	// ErrVoucherExpired to store voucher expired error message
 	ErrVoucherExpired = errors.New("Voucher has been expired")
 
+	// ErrVoucherNotStarted to store voucher not started error message
+	ErrVoucherNotStarted = errors.New("Voucher has not started yet")
+
 	// ErrVoucherUnavailable to store voucher unavailable error message
 	ErrVoucherUnavailable = errors.New("Voucher Unavailable")
+
+	// ErrVoucherCodeUnavailable to store voucher unavailable error message
+	ErrVoucherCodeUnavailable = errors.New("Voucher code unavailable")
+
+	// ErrValidatorUnavailable to store validator unavailable error message
+	ErrValidatorUnavailable = errors.New("Validator is unavailable")
+
+	// ErrValidation to store validation error message
+	ErrValidation = errors.New("Some of your inputs are not valid")
 )

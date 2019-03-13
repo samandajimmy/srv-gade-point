@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
@@ -15,6 +16,9 @@ import (
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/iancoleman/strcase"
+	"github.com/labstack/gommon/log"
 )
 
 const (
@@ -271,23 +275,80 @@ func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVouch
 	return promoCode, nil
 }
 
-func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *models.PayloadValidateVoucher) (*models.Voucher, error) {
-	var err error
+func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *models.PayloadValidateVoucher) (*models.ResponseValidateVoucher, error) {
+	var payloadValidator map[string]interface{}
+	now := time.Now()
 	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
 	defer cancel()
-	err = vchr.voucherRepo.VoucherCheckExpired(c, validateVoucher.VoucherID)
+
+	// get voucher detail
+	voucher, err := vchr.voucherRepo.GetVoucherAdmin(c, validateVoucher.VoucherID)
 
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
-	voucher, err := vchr.voucherRepo.VoucherCheckMinimalTransaction(c, validateVoucher)
+	// check voucher codes
+	_, err = vchr.voucherRepo.GetVoucherCode(c, validateVoucher.PromoCode, validateVoucher.UserID)
 
 	if err != nil {
-		return nil, err
+		log.Error(models.ErrVoucherCodeUnavailable)
+		return nil, models.ErrVoucherCodeUnavailable
 	}
 
-	return voucher, nil
+	vStartDate, _ := time.Parse(time.RFC3339, voucher.StartDate)
+	vEndDate, _ := time.Parse(time.RFC3339, voucher.EndDate)
+
+	// check date expiry
+	if vStartDate.After(now) {
+		log.Error(models.ErrVoucherNotStarted)
+		return nil, models.ErrVoucherNotStarted
+	}
+
+	if vEndDate.Before(now) {
+		log.Error(models.ErrVoucherExpired)
+		return nil, models.ErrVoucherExpired
+	}
+
+	// voucher validations
+	validator := voucher.Validators
+
+	if validator == nil {
+		log.Error(models.ErrValidatorUnavailable)
+		return nil, models.ErrValidatorUnavailable
+	}
+
+	vReflector := reflect.ValueOf(validator).Elem()
+	tempJSON, _ := json.Marshal(validateVoucher.Validators)
+	json.Unmarshal(tempJSON, &payloadValidator)
+
+	for i := 0; i < vReflector.NumField(); i++ {
+		fieldName := strcase.ToLowerCamel(vReflector.Type().Field(i).Name)
+		fieldValue := vReflector.Field(i).Interface()
+
+		switch fieldName {
+		case "channel", "product", "transactionType", "unit":
+			if fieldValue != payloadValidator[fieldName] {
+				log.Error(models.ErrValidation)
+				return nil, models.ErrValidation
+			}
+		case "minimalTransaction":
+			minTrx, _ := strconv.ParseFloat(fieldValue.(string), 64)
+
+			if minTrx > validateVoucher.TransactionAmount {
+				log.Error(models.ErrValidation)
+				return nil, models.ErrValidation
+			}
+		}
+	}
+
+	responseValid := &models.ResponseValidateVoucher{
+		Discount:       voucher.Value,
+		JournalAccount: voucher.JournalAccount,
+	}
+
+	return responseValid, nil
 }
 
 func (vchr *voucherUseCase) VoucherRedeem(c context.Context, voucherRedeem *models.PayloadValidateVoucher) (*models.PromoCode, error) {

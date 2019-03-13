@@ -24,6 +24,9 @@ var (
 	// ErrVoucherExpired to store voucher expired error message
 	ErrVoucherExpired = errors.New("Voucher has been expired")
 
+	// ErrVoucherNotStarted to store voucher not started error message
+	ErrVoucherNotStarted = errors.New("Voucher has not started yet")
+
 	// ErrVoucherUnavailable to store voucher unavailable error message
 	ErrVoucherUnavailable = errors.New("Voucher Unavailable")
 

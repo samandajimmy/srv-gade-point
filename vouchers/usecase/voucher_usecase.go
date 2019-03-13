@@ -301,7 +301,12 @@ func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *
 	vEndDate, _ := time.Parse(time.RFC3339, voucher.EndDate)
 
 	// check date expiry
-	if vStartDate.After(now) || vEndDate.Before(now) {
+	if vStartDate.After(now) {
+		log.Error(models.ErrVoucherNotStarted)
+		return nil, models.ErrVoucherNotStarted
+	}
+
+	if vEndDate.Before(now) {
 		log.Error(models.ErrVoucherExpired)
 		return nil, models.ErrVoucherExpired
 	}

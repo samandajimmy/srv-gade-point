@@ -26,4 +26,10 @@ var (
 
 	// ErrVoucherUnavailable to store voucher unavailable error message
 	ErrVoucherUnavailable = errors.New("Voucher Unavailable")
+
+	// ErrUsername to store username error message
+	ErrUsername = errors.New("Username that you input is not valid")
+
+	// ErrPassword to store password error message
+	ErrPassword = errors.New("Password that you input is not valid")
 )

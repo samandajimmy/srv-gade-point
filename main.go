@@ -14,6 +14,9 @@ import (
 	_campaignRepository "gade/srv-gade-point/campaigns/repository"
 	_campaignUseCase "gade/srv-gade-point/campaigns/usecase"
 	_tokenHttpDelivery "gade/srv-gade-point/tokens/delivery/http"
+	_userHttpDelivery "gade/srv-gade-point/users/delivery/http"
+	_userRepository "gade/srv-gade-point/users/repository"
+	_userUseCase "gade/srv-gade-point/users/usecase"
 	_voucherHttpDelivery "gade/srv-gade-point/vouchers/delivery/http"
 	_voucherRepository "gade/srv-gade-point/vouchers/repository"
 	_voucherUseCase "gade/srv-gade-point/vouchers/usecase"
@@ -72,6 +75,11 @@ func main() {
 	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn)
 	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, campaignRepository, timeoutContext)
 	_voucherHttpDelivery.NewVouchersHandler(echoGroup, voucherUseCase)
+
+	// USER
+	userRepository := _userRepository.NewPsqlUserRepository(dbConn)
+	userUseCase := _userUseCase.NewUserUseCase(userRepository, timeoutContext)
+	_userHttpDelivery.NewUserHandler(echoGroup, userUseCase)
 
 	ech.Start(":" + os.Getenv(`PORT`))
 }

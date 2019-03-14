@@ -2,12 +2,6 @@ package models
 
 import "time"
 
-// Validators is represent a validators inside user
-type ValidatorsUser struct {
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
-}
-
 // User is represent a users model
 type User struct {
 	ID        int64      `json:"id,omitempty"`

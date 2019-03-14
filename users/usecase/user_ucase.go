@@ -33,6 +33,9 @@ func (usr *userUseCase) CreateUser(ctx context.Context, user *models.User) error
 		return err
 	}
 
+	// rearrange data
+	user.Password = ""
+
 	return nil
 }
 
@@ -47,13 +50,13 @@ func (usr *userUseCase) ValidateUser(ctx context.Context, userPayload models.Use
 		return nil, models.ErrUsername
 	}
 
-	if err = verifyToken(&user, userPayload.Password); err != nil {
+	if err = verifyPassword(&user, userPayload.Password); err != nil {
 		log.Error(err)
 
 		return nil, err
 	}
 
-	// validate
+	// rearrange data
 	user.ID = 0
 	user.Password = ""
 	user.Status = nil
@@ -61,7 +64,7 @@ func (usr *userUseCase) ValidateUser(ctx context.Context, userPayload models.Use
 	return &user, nil
 }
 
-func verifyToken(user *models.User, password string) error {
+func verifyPassword(user *models.User, password string) error {
 	// validate password
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 

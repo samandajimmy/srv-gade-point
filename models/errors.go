@@ -38,4 +38,10 @@ var (
 
 	// ErrValidation to store validation error message
 	ErrValidation = errors.New("Some of your inputs are not valid")
+
+	// ErrUsername to store username error message
+	ErrUsername = errors.New("Username that you input is not valid")
+
+	// ErrPassword to store password error message
+	ErrPassword = errors.New("Password that you input is not valid")
 )

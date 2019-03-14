@@ -48,7 +48,6 @@ func (usr *UserHandler) createUser(echTx echo.Context) error {
 		return echTx.JSON(http.StatusBadRequest, response)
 	}
 
-	user.Password = ""
 	response.Status = models.StatusSuccess
 	response.Message = models.MessageDataSuccess
 	response.Data = user

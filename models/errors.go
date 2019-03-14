@@ -44,4 +44,7 @@ var (
 
 	// ErrPassword to store password error message
 	ErrPassword = errors.New("Password that you input is not valid")
+
+	// ErrTokenExpired to store password error message
+	ErrTokenExpired = errors.New("Your token has been expired")
 )

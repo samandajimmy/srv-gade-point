@@ -19,8 +19,6 @@ build:
   script:
     - docker build --pull -t $CONTAINER_TEST_IMAGE .
     - docker push $CONTAINER_TEST_IMAGE
-  tags:
-    - dev
 
 release:
   image: docker:stable
@@ -34,5 +32,3 @@ release:
     - docker push $CONTAINER_RELEASE_IMAGE
   only:
     - tags
-  tags:
-    - dev

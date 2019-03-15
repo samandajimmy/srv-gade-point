@@ -1,0 +1,34 @@
+stages:
+  - build
+  - release
+
+variables:
+  CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
+
+before_script:
+  - echo $CONTAINER_TEST_IMAGE && echo $CI_COMMIT_TAG
+  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN 10.251.4.82:5000
+
+build:
+  image: docker:stable
+  services:
+    - name: docker:dind
+      command: ["--insecure-registry=10.251.4.82:5000"]
+  stage: build
+  script:
+    - docker build --pull -t $CONTAINER_TEST_IMAGE .
+    - docker push $CONTAINER_TEST_IMAGE
+
+release:
+  image: docker:stable
+  services:
+    - name: docker:dind
+      command: ["--insecure-registry=10.251.4.82:5000"]
+  stage: release
+  script:
+    - docker pull $CONTAINER_TEST_IMAGE
+    - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_RELEASE_IMAGE
+    - docker push $CONTAINER_RELEASE_IMAGE
+  only:
+    - tags

@@ -1,25 +1,28 @@
-############################################################
-# Dockerfile to build Golang project with go tool
-############################################################
+FROM golang:1.12 as build-env
+# All these steps will be cached
 
-FROM golang:1.11
+RUN mkdir /srv-gade-point
+WORKDIR /srv-gade-point
 
-ENV GO111MODULE=on
+# Force the go compiler to use modules
+# ENV GO111MODULE=on
 
-# Copy whole code to WORKDIR
-COPY . /go/src/gade/srv-gade-point
-WORKDIR /go/src/gade/srv-gade-point
+# COPY go.mod and go.sum files to the workspace
+COPY go.mod . 
+COPY go.sum .
 
-# Set TimeZone to Jakarta Indonesia
-ENV TZ=Asia/Jakarta
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+# Get dependancies - will also be cached if we won't change mod/sum
+RUN go mod download
 
-# Install dependencies based on go.mod and go.sum
-RUN go get
+# COPY the source code as the last step
+COPY . .
 
-# Build server binary
-RUN go build
+# Build the binary
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o /go/bin/srv-gade-point
 
-# Run the entrypoint.sh
-ENTRYPOINT ["sh", "/go/src/gade/srv-gade-point/entrypoint.sh"]
-
+# Second step to build minimal image
+FROM alpine:3.7
+COPY --from=build-env /go/bin/srv-gade-point /go/bin/srv-gade-point
+COPY --from=build-env /srv-gade-point/entrypoint.sh /srv-gade-point/entrypoint.sh
+COPY --from=build-env /srv-gade-point/migrations /migrations
+ENTRYPOINT ["sh", "/srv-gade-point/entrypoint.sh"]

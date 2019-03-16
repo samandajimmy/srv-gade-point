@@ -1,7 +1,7 @@
 FROM golang:1.12 as build-env
 # All these steps will be cached
 
-RUN mkdir /srv-gade-point
+RUN mkdir /srv-gade-point 
 WORKDIR /srv-gade-point
 
 # Force the go compiler to use modules
@@ -25,4 +25,5 @@ FROM alpine:3.7
 COPY --from=build-env /go/bin/srv-gade-point /go/bin/srv-gade-point
 COPY --from=build-env /srv-gade-point/entrypoint.sh /srv-gade-point/entrypoint.sh
 COPY --from=build-env /srv-gade-point/migrations /migrations
+EXPOSE 8080
 ENTRYPOINT ["sh", "/srv-gade-point/entrypoint.sh"]

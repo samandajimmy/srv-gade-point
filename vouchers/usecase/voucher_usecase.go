@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
@@ -17,7 +16,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/iancoleman/strcase"
 	"github.com/labstack/gommon/log"
 )
 
@@ -275,8 +273,7 @@ func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVouch
 	return promoCode, nil
 }
 
-func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *models.PayloadValidateVoucher) (*models.ResponseValidateVoucher, error) {
-	var payloadValidator map[string]interface{}
+func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *models.PayloadValidator) (*models.ResponseValidateVoucher, error) {
 	now := time.Now()
 	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
 	defer cancel()
@@ -312,35 +309,10 @@ func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *
 	}
 
 	// voucher validations
-	validator := voucher.Validators
+	err = voucher.Validators.Validate(validateVoucher)
 
-	if validator == nil {
-		log.Error(models.ErrValidatorUnavailable)
-		return nil, models.ErrValidatorUnavailable
-	}
-
-	vReflector := reflect.ValueOf(validator).Elem()
-	tempJSON, _ := json.Marshal(validateVoucher.Validators)
-	json.Unmarshal(tempJSON, &payloadValidator)
-
-	for i := 0; i < vReflector.NumField(); i++ {
-		fieldName := strcase.ToLowerCamel(vReflector.Type().Field(i).Name)
-		fieldValue := vReflector.Field(i).Interface()
-
-		switch fieldName {
-		case "channel", "product", "transactionType", "unit":
-			if fieldValue != payloadValidator[fieldName] {
-				log.Error(models.ErrValidation)
-				return nil, models.ErrValidation
-			}
-		case "minimalTransaction":
-			minTrx, _ := strconv.ParseFloat(fieldValue.(string), 64)
-
-			if minTrx > validateVoucher.TransactionAmount {
-				log.Error(models.ErrValidation)
-				return nil, models.ErrValidation
-			}
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	responseValid := &models.ResponseValidateVoucher{
@@ -351,7 +323,7 @@ func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *
 	return responseValid, nil
 }
 
-func (vchr *voucherUseCase) VoucherRedeem(c context.Context, voucherRedeem *models.PayloadValidateVoucher) (*models.PromoCode, error) {
+func (vchr *voucherUseCase) VoucherRedeem(c context.Context, voucherRedeem *models.PayloadValidator) (*models.PromoCode, error) {
 	var err error
 	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
 	defer cancel()

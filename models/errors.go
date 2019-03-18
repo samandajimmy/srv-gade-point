@@ -48,11 +48,3 @@ var (
 	// ErrTokenExpired to store password error message
 	ErrTokenExpired = errors.New("Your token has been expired")
 )
-
-type Errors struct {
-	// do nothing
-}
-
-func (err *Errors) ErrValidation() error {
-	return ErrValidation
-}

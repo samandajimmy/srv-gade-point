@@ -145,7 +145,6 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetC
 
 	if err != nil {
 		log.Error(err)
-
 		return nil, err
 	}
 

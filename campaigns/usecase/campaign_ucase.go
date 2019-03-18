@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/labstack/gommon/log"
 	govaluate "gopkg.in/Knetic/govaluate.v2"
 )
 
@@ -86,14 +87,31 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetC
 
 	// Calculate point
 	expression, err := govaluate.NewEvaluableExpression(dataCampaign.Validators.Formula)
+
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
 	parameters := make(map[string]interface{}, 8)
 	parameters["transactionAmount"] = m.TransactionAmount
-	parameters["multiplier"] = dataCampaign.Validators.Multiplier
-	parameters["value"] = dataCampaign.Validators.Value
+	parameters["multiplier"] = *dataCampaign.Validators.Multiplier
+	parameters["value"] = *dataCampaign.Validators.Value
 	result, err := expression.Evaluate(parameters)
+
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
 
 	// Parse interface to float
 	parseFloat, err := getFloat(result)
+
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
 	pointAmount := math.Floor(parseFloat)
 
 	campaignTrx := &models.CampaignTrx{

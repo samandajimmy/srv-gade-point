@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strconv"
 
@@ -29,6 +30,8 @@ type PayloadValidator struct {
 	TransactionAmount float64    `json:"transactionAmount,omitempty"`
 	Validators        *Validator `json:"validators,omitempty"`
 }
+
+var skippedValidator = []string{"userID", "transactionAmount", "multiplier", "value", "formaula"}
 
 // Validate to validate client input with admin input
 func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
@@ -70,6 +73,45 @@ func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
 }
 
 // GetValidatorKeys to get all validator keys needed
-func (v *Validator) GetValidatorKeys(payloadValidator *PayloadValidator) error {
-	return nil
+func (v *Validator) GetValidatorKeys(payloadValidator *GetCampaignValue) map[string]string {
+	validator := make(map[string]string)
+	vReflector := reflect.ValueOf(payloadValidator).Elem()
+	var value string
+
+	for i := 0; i < vReflector.NumField(); i++ {
+		fieldName := strcase.ToLowerCamel(vReflector.Type().Field(i).Name)
+		fieldValue := vReflector.Field(i).Interface()
+
+		if contains(skippedValidator, fieldName) {
+			continue
+		}
+
+		switch fieldValue.(type) {
+		case float64:
+			value = fmt.Sprintf("%f", fieldValue.(float64))
+
+			validator[fieldName] = value
+		default:
+			value, ok := fieldValue.(string)
+
+			if !ok {
+				log.Error(ok)
+			}
+
+			validator[fieldName] = value
+		}
+
+	}
+
+	return validator
+}
+
+func contains(strings []string, str string) bool {
+	for _, n := range strings {
+		if str == n {
+			return true
+		}
+	}
+
+	return false
 }

@@ -31,8 +31,8 @@ type PayloadValidator struct {
 }
 
 // Validate to validate client input with admin input
-func (v *Validator) Validate(validateVoucher PayloadValidator) error {
-	var payloadValidator map[string]interface{}
+func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
+	var reqValidator map[string]interface{}
 
 	if v == nil {
 		log.Error(ErrValidatorUnavailable)
@@ -41,8 +41,8 @@ func (v *Validator) Validate(validateVoucher PayloadValidator) error {
 	}
 
 	vReflector := reflect.ValueOf(v).Elem()
-	tempJSON, _ := json.Marshal(validateVoucher.Validators)
-	json.Unmarshal(tempJSON, &payloadValidator)
+	tempJSON, _ := json.Marshal(payloadValidator.Validators)
+	json.Unmarshal(tempJSON, &reqValidator)
 
 	for i := 0; i < vReflector.NumField(); i++ {
 		fieldName := strcase.ToLowerCamel(vReflector.Type().Field(i).Name)
@@ -50,7 +50,7 @@ func (v *Validator) Validate(validateVoucher PayloadValidator) error {
 
 		switch fieldName {
 		case "channel", "product", "transactionType", "unit":
-			if fieldValue != payloadValidator[fieldName] {
+			if fieldValue != reqValidator[fieldName] {
 				log.Error(ErrValidation)
 
 				return ErrValidation
@@ -58,7 +58,7 @@ func (v *Validator) Validate(validateVoucher PayloadValidator) error {
 		case "minimalTransaction":
 			minTrx, _ := strconv.ParseFloat(fieldValue.(string), 64)
 
-			if minTrx > validateVoucher.TransactionAmount {
+			if minTrx > payloadValidator.TransactionAmount {
 				log.Error(ErrValidation)
 
 				return ErrValidation
@@ -66,5 +66,10 @@ func (v *Validator) Validate(validateVoucher PayloadValidator) error {
 		}
 	}
 
+	return nil
+}
+
+// GetValidatorKeys to get all validator keys needed
+func (v *Validator) GetValidatorKeys(payloadValidator *PayloadValidator) error {
 	return nil
 }

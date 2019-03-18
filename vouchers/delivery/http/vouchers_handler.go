@@ -324,7 +324,7 @@ func (vchr *VouchersHandler) VoucherBuy(c echo.Context) error {
 
 // VoucherValidate is a handler to provide and endpoint to validate voucher before reedem
 func (vchr *VouchersHandler) VoucherValidate(c echo.Context) error {
-	var payloadValidator models.PayloadValidateVoucher
+	var payloadValidator models.PayloadValidator
 	response = models.Response{}
 	ctx := c.Request().Context()
 
@@ -357,7 +357,7 @@ func (vchr *VouchersHandler) VoucherValidate(c echo.Context) error {
 
 // VoucherRedeem is a handler to provide and endpoint to reedem voucher
 func (vchr *VouchersHandler) VoucherRedeem(c echo.Context) error {
-	var voucher models.PayloadValidateVoucher
+	var voucher models.PayloadValidator
 	response = models.Response{}
 	ctx := c.Request().Context()
 

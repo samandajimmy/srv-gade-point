@@ -210,17 +210,27 @@ func (m *psqlCampaignRepository) getCampaign(ctx context.Context, query string) 
 func (m *psqlCampaignRepository) GetValidatorCampaign(ctx context.Context, a *models.GetCampaignValue) (*models.Campaign, error) {
 	var validator json.RawMessage
 	result := new(models.Campaign)
-	query := `SELECT id, validators FROM campaigns WHERE status = 1 AND start_date::date <= now()::date
-	AND end_date::date >= now()::date AND validators->>'channel'=$1 AND validators->>'product'=$2 AND validators->>'transactionType'=$3 AND validators->>'unit'=$4 ORDER BY end_date ASC LIMIT 1`
-	err := m.Conn.QueryRowContext(ctx, query, a.Channel, a.Product, a.TransactionType, a.Unit).Scan(&result.ID, &validator)
+	reqValidator := &models.Validator{}
+	query := `SELECT id, validators FROM campaigns WHERE status = 1 AND start_date::date <= now()::date AND end_date::date >= now()::date`
+
+	mapValidator := reqValidator.GetValidatorKeys(a)
+
+	for key, value := range mapValidator {
+		query += ` AND validators->>'` + key + `'='` + value + `'`
+	}
+
+	query += ` ORDER BY end_date ASC LIMIT 1`
+	err := m.Conn.QueryRowContext(ctx, query).Scan(&result.ID, &validator)
 
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
 	err = json.Unmarshal([]byte(validator), &result.Validators)
 
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 

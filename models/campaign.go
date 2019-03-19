@@ -51,6 +51,7 @@ type GetCampaignValue struct {
 	TransactionType   string  `json:"transactionType,omitempty"`
 	Unit              string  `json:"unit,omitempty"`
 	TransactionAmount float64 `json:"transactionAmount,omitempty"`
+	Source            string  `json:"source,omitempty"` // device name that user used
 }
 
 // UserPoint to store payload user point data

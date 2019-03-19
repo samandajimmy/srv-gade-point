@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jinzhu/copier"
 	"github.com/labstack/gommon/log"
 	govaluate "gopkg.in/Knetic/govaluate.v2"
 )
@@ -99,31 +100,65 @@ func (cmpgn *campaignUseCase) GetCampaign(c context.Context, name string, status
 }
 
 func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetCampaignValue) (*models.UserPoint, error) {
+	payloadValidator := &models.PayloadValidator{}
+	payloadValidator.Validators = &models.Validator{}
 	now := time.Now()
 	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
-	dataCampaign, err := cmpgn.campaignRepo.GetValidatorCampaign(ctx, m)
+
+	// get available campaign
+	campaigns, err := cmpgn.campaignRepo.GetCampaignAvailable(ctx)
 
 	if err != nil {
+		// no campaign available
+		log.Error(err)
+
 		return nil, models.ErrNoCampaign
 	}
 
-	// Calculate point
-	expression, err := govaluate.NewEvaluableExpression(dataCampaign.Validators.Formula)
+	// validate available campaigns
+	validCampaigns := []*models.Campaign{}
+	copier.Copy(payloadValidator, m)
+	copier.Copy(payloadValidator.Validators, m)
+
+	for _, campaign := range campaigns {
+		//  validate each campaign
+		err = campaign.Validators.Validate(payloadValidator)
+
+		if err == nil {
+			validCampaigns = append(validCampaigns, campaign)
+		}
+	}
+
+	if len(validCampaigns) < 1 {
+		// no valid campaign available
+		log.Error(err)
+
+		return nil, models.ErrNoCampaign
+	}
+
+	// get latest campaign
+	latestCampaign := validCampaigns[0]
+
+	// get campaign formula
+	expression, err := govaluate.NewEvaluableExpression(latestCampaign.Validators.Formula)
 
 	if err != nil {
 		log.Error(err)
+
 		return nil, err
 	}
 
+	// get formula parameters
 	parameters := make(map[string]interface{}, 8)
 	parameters["transactionAmount"] = m.TransactionAmount
-	parameters["multiplier"] = *dataCampaign.Validators.Multiplier
-	parameters["value"] = *dataCampaign.Validators.Value
+	parameters["multiplier"] = *latestCampaign.Validators.Multiplier
+	parameters["value"] = *latestCampaign.Validators.Value
 	result, err := expression.Evaluate(parameters)
 
 	if err != nil {
 		log.Error(err)
+
 		return nil, err
 	}
 
@@ -137,12 +172,13 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetC
 
 	pointAmount := math.Floor(parseFloat)
 
+	// store campaign transaction
 	campaignTrx := &models.CampaignTrx{
 		UserID:          m.UserID,
 		PointAmount:     &pointAmount,
 		TransactionType: models.TransactionPointTypeDebet,
 		TransactionDate: &now,
-		Campaign:        dataCampaign,
+		Campaign:        latestCampaign,
 		CreatedAt:       &now,
 	}
 

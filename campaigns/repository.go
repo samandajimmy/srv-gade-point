@@ -10,7 +10,6 @@ type Repository interface {
 	CreateCampaign(ctx context.Context, a *models.Campaign) error
 	UpdateCampaign(ctx context.Context, id int64, updateCampaign *models.UpdateCampaign) error
 	GetCampaign(ctx context.Context, name string, status string, startDate string, endDate string, page int, limit int) ([]*models.Campaign, error)
-	GetValidatorCampaign(ctx context.Context, a *models.GetCampaignValue) (*models.Campaign, error)
 	SavePoint(ctx context.Context, a *models.CampaignTrx) error
 	GetUserPoint(ctx context.Context, UserID string) (float64, error)
 	GetUserPointHistory(ctx context.Context, UserID string) ([]models.CampaignTrx, error)
@@ -18,4 +17,5 @@ type Repository interface {
 	GetCampaignDetail(ctx context.Context, id int64) (*models.Campaign, error)
 	UpdateExpiryDate(ctx context.Context) error
 	UpdateStatusBasedOnStartDate() error
+	GetCampaignAvailable(ctx context.Context) ([]*models.Campaign, error)
 }

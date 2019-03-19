@@ -9,7 +9,6 @@ import (
 	"gade/srv-gade-point/models"
 	"time"
 
-	"github.com/labstack/gommon/log"
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
@@ -207,35 +206,18 @@ func (m *psqlCampaignRepository) getCampaign(ctx context.Context, query string) 
 	return result, nil
 }
 
-func (m *psqlCampaignRepository) GetValidatorCampaign(ctx context.Context, a *models.GetCampaignValue) (*models.Campaign, error) {
-	var validator json.RawMessage
-	result := new(models.Campaign)
-	reqValidator := &models.Validator{}
-	query := `SELECT id, validators FROM campaigns WHERE status = 1 AND start_date::date <= now()::date AND end_date::date >= now()::date`
+func (m *psqlCampaignRepository) GetCampaignAvailable(ctx context.Context) ([]*models.Campaign, error) {
+	query := `SELECT id, name, description, start_date, end_date, status, type, validators, updated_at, created_at
+		FROM campaigns WHERE status = 1 AND start_date::date <= now()::date 
+		AND end_date::date >= now()::date ORDER BY start_date DESC`
 
-	mapValidator := reqValidator.GetValidatorKeys(a)
-
-	for key, value := range mapValidator {
-		query += ` AND validators->>'` + key + `'='` + value + `'`
-	}
-
-	query += ` ORDER BY end_date ASC LIMIT 1`
-	err := m.Conn.QueryRowContext(ctx, query).Scan(&result.ID, &validator)
+	res, err := m.getCampaign(ctx, query)
 
 	if err != nil {
-		log.Error(err)
 		return nil, err
 	}
 
-	err = json.Unmarshal([]byte(validator), &result.Validators)
-
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	return result, nil
-
+	return res, err
 }
 
 func (m *psqlCampaignRepository) SavePoint(ctx context.Context, cmpgnTrx *models.CampaignTrx) error {

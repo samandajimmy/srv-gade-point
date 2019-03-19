@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/labstack/gommon/log"
@@ -20,18 +21,21 @@ type Validator struct {
 	Value              *int64   `json:"value,omitempty"`
 	Formula            string   `json:"formula,omitempty"`
 	MinimalTransaction string   `json:"minimalTransaction,omitempty"`
+	Source             string   `json:"source,omitempty"` // device name that user used
 }
 
 // PayloadValidator to store a payload to validate a request
 type PayloadValidator struct {
 	PromoCode         string     `json:"promoCode,omitempty"`
 	VoucherID         string     `json:"voucherId,omitempty"`
+	CampaignID        string     `json:"campaignId,omitempty"`
 	UserID            string     `json:"userId,omitempty"`
 	TransactionAmount float64    `json:"transactionAmount,omitempty"`
 	Validators        *Validator `json:"validators,omitempty"`
 }
 
-var skippedValidator = []string{"userID", "transactionAmount", "multiplier", "value", "formaula"}
+var skippedValidator = []string{"multiplier", "value", "formula"}
+var compareEqual = []string{"channel", "product", "transactionType", "unit", "source"}
 
 // Validate to validate client input with admin input
 func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
@@ -48,21 +52,33 @@ func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
 	json.Unmarshal(tempJSON, &reqValidator)
 
 	for i := 0; i < vReflector.NumField(); i++ {
-		fieldName := strcase.ToLowerCamel(vReflector.Type().Field(i).Name)
-		fieldValue := vReflector.Field(i).Interface()
+		interfaceValue := vReflector.Field(i).Interface()
 
-		switch fieldName {
-		case "channel", "product", "transactionType", "unit":
-			if fieldValue != reqValidator[fieldName] {
-				log.Error(ErrValidation)
+		fieldName := strcase.ToLowerCamel(vReflector.Type().Field(i).Name)
+		fieldValue := getInterfaceValue(interfaceValue)
+
+		if contains(skippedValidator, fieldName) {
+			continue
+		}
+
+		if fieldValue == "" {
+			continue
+		}
+
+		switch {
+		case contains(compareEqual, fieldName):
+			reqValidatorVal := fmt.Sprintf("%v", reqValidator[fieldName])
+
+			if !strings.Contains(fieldValue, reqValidatorVal) {
+				log.Warn(ErrValidation)
 
 				return ErrValidation
 			}
-		case "minimalTransaction":
-			minTrx, _ := strconv.ParseFloat(fieldValue.(string), 64)
+		case fieldName == "minimalTransaction":
+			minTrx, _ := strconv.ParseFloat(fieldValue, 64)
 
 			if minTrx > payloadValidator.TransactionAmount {
-				log.Error(ErrValidation)
+				log.Warn(ErrValidation)
 
 				return ErrValidation
 			}
@@ -70,40 +86,6 @@ func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
 	}
 
 	return nil
-}
-
-// GetValidatorKeys to get all validator keys needed
-func (v *Validator) GetValidatorKeys(payloadValidator *GetCampaignValue) map[string]string {
-	validator := make(map[string]string)
-	vReflector := reflect.ValueOf(payloadValidator).Elem()
-	var value string
-
-	for i := 0; i < vReflector.NumField(); i++ {
-		fieldName := strcase.ToLowerCamel(vReflector.Type().Field(i).Name)
-		fieldValue := vReflector.Field(i).Interface()
-
-		if contains(skippedValidator, fieldName) {
-			continue
-		}
-
-		switch fieldValue.(type) {
-		case float64:
-			value = fmt.Sprintf("%f", fieldValue.(float64))
-
-			validator[fieldName] = value
-		default:
-			value, ok := fieldValue.(string)
-
-			if !ok {
-				log.Error(ok)
-			}
-
-			validator[fieldName] = value
-		}
-
-	}
-
-	return validator
 }
 
 func contains(strings []string, str string) bool {
@@ -114,4 +96,23 @@ func contains(strings []string, str string) bool {
 	}
 
 	return false
+}
+
+func getInterfaceValue(intfc interface{}) string {
+	switch v := intfc.(type) {
+	case *float64:
+		if v == nil {
+			return ""
+		}
+
+		return fmt.Sprintf("%v", *v)
+	case *int64:
+		if v == nil {
+			return ""
+		}
+
+		return fmt.Sprintf("%v", *v)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }

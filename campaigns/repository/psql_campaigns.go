@@ -9,7 +9,6 @@ import (
 	"gade/srv-gade-point/models"
 	"time"
 
-	"github.com/labstack/gommon/log"
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
@@ -157,7 +156,6 @@ func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, s
 	res, err := m.getCampaign(ctx, query)
 
 	if err != nil {
-		log.Error(err)
 		return nil, err
 	}
 

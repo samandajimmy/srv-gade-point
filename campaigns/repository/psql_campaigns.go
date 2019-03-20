@@ -250,6 +250,7 @@ func (m *psqlCampaignRepository) GetUserPointHistory(ctx context.Context, userID
 				coalesce(c.description, '') campaign_description,
 				coalesce(ct.promo_code_id, 0) promo_code_id,
 				coalesce(pc.promo_code, '') promo_code,
+				coalesce(pc.voucher_id, 0) voucher_id,
 				coalesce(v.name, '') voucher_name,
 				coalesce(v.description, '') voucher_description
 			from
@@ -289,6 +290,7 @@ func (m *psqlCampaignRepository) GetUserPointHistory(ctx context.Context, userID
 			&campaign.Description,
 			&promoCodes.ID,
 			&promoCodes.PromoCode,
+			&voucher.ID,
 			&voucher.Name,
 			&voucher.Description,
 		)
@@ -304,6 +306,11 @@ func (m *psqlCampaignRepository) GetUserPointHistory(ctx context.Context, userID
 
 		if promoCodes.ID != 0 {
 			ct.PromoCode = &promoCodes
+			ct.PromoCode.ID = 0 // remove promo codes ID from the response
+		}
+
+		if voucher.ID != 0 {
+			ct.PromoCode.Voucher = &voucher
 		}
 
 		dataHistory = append(dataHistory, ct)

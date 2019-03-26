@@ -6,6 +6,7 @@ import (
 	"gade/srv-gade-point/middleware"
 	"gade/srv-gade-point/models"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -65,6 +66,9 @@ func main() {
 	// load all middlewares
 	middleware.InitMiddleware(ech, echoGroup)
 
+	// PING
+	ech.GET("/ping", ping)
+
 	// TOKEN
 	tokenRepository := _tokenRepository.NewPsqlTokenRepository(dbConn)
 	tokenUseCase := _tokenUseCase.NewTokenUseCase(tokenRepository, timeoutContext)
@@ -86,6 +90,14 @@ func main() {
 	_userHttpDelivery.NewUserHandler(echoGroup, userUseCase)
 
 	ech.Start(":" + os.Getenv(`PORT`))
+}
+
+func ping(echTx echo.Context) error {
+	response := models.Response{}
+	response.Status = models.StatusSuccess
+	response.Message = "PONG!!"
+
+	return echTx.JSON(http.StatusOK, response)
 }
 
 func getDBConn() *sql.DB {

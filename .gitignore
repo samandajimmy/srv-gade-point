@@ -6,5 +6,6 @@ _*
 engine
 .env
 public/
+public.bak/
 .vscode
 srv-gade-point

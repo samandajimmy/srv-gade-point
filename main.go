@@ -39,6 +39,12 @@ func init() {
 	loadEnv()
 
 	// setup PUBLIC DIRECTORY
+	path := os.Getenv(`VOUCHER_ROUTE_PATH`)
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.MkdirAll(path, os.ModePerm)
+	}
+
 	ech.Static(os.Getenv(`VOUCHER_PATH`), os.Getenv(`VOUCHER_ROUTE_PATH`))
 }
 

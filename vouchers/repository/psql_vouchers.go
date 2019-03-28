@@ -36,10 +36,9 @@ func NewPsqlVoucherRepository(Conn *sql.DB) vouchers.Repository {
 func (m *psqlVoucherRepository) CreateVoucher(ctx context.Context, a *models.Voucher) error {
 	now := time.Now()
 	var lastID int64
-	query := `INSERT INTO vouchers 
-		(name, description, start_date, end_date, point, journal_account, value,
-			image_url, status, stock, prefix_promo_code, validators, created_at) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)  RETURNING id`
+	query := `INSERT INTO vouchers (name, description, start_date, end_date, point, journal_account, value, 
+		image_url, status, stock, prefix_promo_code, validators, terms_and_conditions, how_to_use, created_at) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)  RETURNING id`
 	stmt, err := m.Conn.PrepareContext(ctx, query)
 
 	if err != nil {
@@ -119,7 +118,19 @@ func (m *psqlVoucherRepository) UpdateVoucher(ctx context.Context, id int64, upd
 func (m *psqlVoucherRepository) GetVouchersAdmin(ctx context.Context, name string, status string, startDate string, endDate string, page int, limit int) ([]*models.Voucher, error) {
 	paging := ""
 	where := ""
-	query := `SELECT d.id, d.name, d.description, d.start_date, d.end_date, d.point, d.journal_account, d.value, d.image_url, d.status, d.stock, d.prefix_promo_code, d.amount, CASE WHEN d.end_date::date < now()::date THEN 0 ELSE coalesce(e.available,0) END AS available, coalesce(f.bought,0) bought , coalesce(g.reedem,0) reedem, CASE WHEN coalesce(h.expired,0)-coalesce(g.reedem,0) < 0 THEN 0 ELSE coalesce(h.expired,0)-coalesce(g.reedem,0) END AS expired, d.validators, d.updated_at, d.created_at FROM (SELECT b.id, b.name, b.description, b.start_date, b.end_date, b.point, b.journal_account, b.value, b.image_url, b.status, b.stock, b.prefix_promo_code, count(a.id) as amount, b.validators, b.updated_at, b.created_at FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id	GROUP BY b.id, b.name, b.description, b.start_date, b.end_date, b.point, b.journal_account, b.value, b.image_url, b.status, b.stock, b.prefix_promo_code, b.validators, b.updated_at, b.created_at) as d LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as available FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 0	GROUP BY b.id) as e ON e.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as bought FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 1 GROUP BY b.id) as f ON f.id = d.id	LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as reedem FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 2 GROUP BY b.id) as g ON g.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as expired FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE end_date::date < now()::date GROUP BY b.id) as h ON h.id = d.id	WHERE d.id IS NOT NULL`
+	query := `SELECT d.id, d.name, d.description, d.start_date, d.end_date, d.point, d.journal_account, d.value, d.image_url, d.status, d.stock, d.prefix_promo_code, d.amount, 
+	CASE WHEN d.end_date::date < now()::date THEN 0 ELSE coalesce(e.available, 0) END AS available, coalesce(f.bought, 0) bought, coalesce(g.reedem, 0) reedem, 
+	CASE WHEN coalesce(h.expired, 0) - coalesce(g.reedem, 0) < 0 THEN 0 ELSE coalesce(h.expired, 0) - coalesce(g.reedem, 0) END AS expired, d.validators, 
+	d.terms_and_conditions, d.how_to_use, d.updated_at, d.created_at 
+	FROM (SELECT b.id, b.name, b.description, b.start_date, b.end_date, b.point, b.journal_account, b.value, b.image_url, b.status, b.stock, b.prefix_promo_code, 
+	count(a.id) as amount, b.validators, b.terms_and_conditions, b.how_to_use, b.updated_at, b.created_at 
+	FROM promo_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id GROUP BY b.id, b.name, b.description, b.start_date, b.end_date, b.point, b.journal_account, 
+	b.value, b.image_url, b.status, b.stock, b.prefix_promo_code, b.validators, b.terms_and_conditions, b.how_to_use, b.updated_at, b.created_at) as d 
+	LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as available 
+	FROM promo_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id WHERE a.status = 0 GROUP BY b.id) as e ON e.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as bought 
+	FROM promo_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id WHERE a.status = 1 GROUP BY b.id) as f ON f.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as reedem 
+	FROM promo_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id WHERE a.status = 2 GROUP BY b.id) as g ON g.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as expired 
+	FROM promo_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id WHERE end_date::date < now()::date GROUP BY b.id) as h ON h.id = d.id WHERE d.id IS NOT NULL`
 
 	if page > 0 || limit > 0 {
 		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
@@ -186,6 +197,8 @@ func (m *psqlVoucherRepository) getVouchersAdmin(ctx context.Context, query stri
 			&t.Redeemed,
 			&t.Expired,
 			&validator,
+			&t.TermsAndCondition,
+			&t.HowToUse,
 			&updateDate,
 			&createDate,
 		)
@@ -209,7 +222,17 @@ func (m *psqlVoucherRepository) GetVoucherAdmin(ctx context.Context, voucherID s
 	var validator json.RawMessage
 	var createDate, updateDate pq.NullTime
 	result := new(models.Voucher)
-	query := `SELECT d.id, d.name, d.description, d.start_date, d.end_date, d.point, d.journal_account, d.value, d.image_url, d.status, d.stock, d.prefix_promo_code, d.amount, CASE WHEN d.end_date::date < now()::date THEN 0 ELSE coalesce(e.available,0) END AS available, coalesce(f.bought,0) bought , coalesce(g.reedem,0) reedem, CASE WHEN coalesce(h.expired,0)-coalesce(g.reedem,0) < 0 THEN 0 ELSE coalesce(h.expired,0)-coalesce(g.reedem,0) END AS expired, d.validators, d.updated_at, d.created_at FROM (SELECT b.id, b.name, b.description, b.start_date, b.end_date, b.point, b.journal_account, b.value, b.image_url, b.status, b.stock, b.prefix_promo_code, count(a.id) as amount, b.validators, b.updated_at, b.created_at FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id	GROUP BY b.id, b.name, b.description, b.start_date, b.end_date, b.point, b.journal_account, b.value, b.image_url, b.status, b.stock, b.prefix_promo_code, b.validators, b.updated_at, b.created_at) as d LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as available FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 0	GROUP BY b.id) as e ON e.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as bought FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 1 GROUP BY b.id) as f ON f.id = d.id	LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as reedem FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 2 GROUP BY b.id) as g ON g.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as expired FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE end_date::date < now()::date GROUP BY b.id) as h ON h.id = d.id	WHERE d.id = $1`
+	query := `SELECT d.id, d.name, d.description, d.start_date, d.end_date, d.point, d.journal_account, d.value, d.image_url, d.status, d.stock, d.prefix_promo_code, d.amount, 
+	CASE WHEN d.end_date::date < now()::date THEN 0 ELSE coalesce(e.available, 0) END AS available, coalesce(f.bought, 0) bought , coalesce(g.reedem, 0) reedem, 
+	CASE WHEN coalesce(h.expired, 0) - coalesce(g.reedem, 0) < 0 THEN 0 ELSE coalesce(h.expired, 0) - coalesce(g.reedem, 0) END AS expired, d.validators, d.terms_and_conditions, d.how_to_use, 
+	d.updated_at, d.created_at FROM (SELECT b.id, b.name, b.description, b.start_date, b.end_date, b.point, b.journal_account, b.value, b.image_url, b.status, b.stock, b.prefix_promo_code, 
+	count(a.id) as amount, b.validators, b.terms_and_conditions, b.how_to_use, b.updated_at, b.created_at FROM promo_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id GROUP BY b.id, b.name, 
+	b.description, b.start_date, b.end_date, b.point, b.journal_account, b.value, b.image_url, b.status, b.stock, b.prefix_promo_code, b.validators, b.updated_at, b.created_at) as d 
+	LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as available FROM promo_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id WHERE a.status = 0 GROUP BY b.id) as e ON e.id = d.id 
+	LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as bought FROM promo_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id WHERE a.status = 1 GROUP BY b.id) as f ON f.id = d.id 
+	LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as reedem FROM promo_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id WHERE a.status = 2 GROUP BY b.id) as g ON g.id = d.id 
+	LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as expired FROM promo_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id WHERE end_date::date < now()::date GROUP BY b.id) as h ON h.id = d.id 
+	WHERE d.id = $1`
 
 	err := m.Conn.QueryRowContext(ctx, query, voucherID).Scan(
 		&result.ID,
@@ -230,6 +253,8 @@ func (m *psqlVoucherRepository) GetVoucherAdmin(ctx context.Context, voucherID s
 		&result.Redeemed,
 		&result.Expired,
 		&validator,
+		&result.TermsAndCondition,
+		&result.HowToUse,
 		&updateDate,
 		&createDate)
 
@@ -252,7 +277,9 @@ func (m *psqlVoucherRepository) GetVoucherAdmin(ctx context.Context, voucherID s
 func (m *psqlVoucherRepository) GetVouchers(ctx context.Context, name string, startDate string, endDate string, page int, limit int) ([]*models.Voucher, error) {
 	paging := ""
 	where := ""
-	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, c.value, c.image_url, c.stock, d. available FROM vouchers c LEFT JOIN(SELECT b.id, coalesce(count(a.id), 0) as available FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 0 GROUP BY b.id) d ON d.id = c.id WHERE c.status = 1 AND c.end_date::date >= now() `
+	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, c.value, c.image_url, c.stock, d.available, c.terms_and_conditions, c.how_to_use 
+	FROM vouchers c LEFT JOIN(SELECT b.id, coalesce(count(a.id), 0) as available FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 0 GROUP BY b.id) d 
+	ON d.id = c.id WHERE c.status = 1 AND c.end_date::date >= now()`
 
 	if page > 0 || limit > 0 {
 		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
@@ -294,6 +321,8 @@ func (m *psqlVoucherRepository) GetVouchers(ctx context.Context, name string, st
 			&t.ImageURL,
 			&t.Stock,
 			&t.Available,
+			&t.TermsAndCondition,
+			&t.HowToUse,
 		)
 
 		result = append(result, t)
@@ -304,7 +333,10 @@ func (m *psqlVoucherRepository) GetVouchers(ctx context.Context, name string, st
 
 func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, voucherID string) (*models.Voucher, error) {
 	result := new(models.Voucher)
-	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, c.value, c.image_url, c.stock, d. available FROM vouchers c LEFT JOIN(SELECT b.id, coalesce(count(a.id), 0) as available FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 0 GROUP BY b.id) d ON d.id = c.id WHERE c.id = $1 `
+	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, c.value, c.image_url, c.stock, d.available, c.terms_and_conditions, c.how_to_use 
+	FROM vouchers c LEFT JOIN(SELECT b.id, coalesce(count(a.id), 0) as available FROM promo_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id 
+	WHERE a.status = 0 GROUP BY b.id) d ON d.id = c.id WHERE c.id = $1`
+
 	err := m.Conn.QueryRowContext(ctx, query, voucherID).Scan(
 		&result.ID,
 		&result.Name,
@@ -316,6 +348,8 @@ func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, voucherID string
 		&result.ImageURL,
 		&result.Stock,
 		&result.Available,
+		&result.TermsAndCondition,
+		&result.HowToUse,
 	)
 
 	if err != nil {
@@ -328,7 +362,8 @@ func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, voucherID string
 func (m *psqlVoucherRepository) GetVouchersUser(ctx context.Context, userID string, status string, page int, limit int) ([]models.PromoCode, error) {
 	paging := ""
 	where := ""
-	query := `SELECT a.id, a.promo_code, a.bought_date, b.id, b.name, b.description, b.start_date, b.end_date, b.value, b.image_url FROM promo_codes AS a LEFT JOIN vouchers AS b ON b.id = a.voucher_id WHERE a.promo_code IS NOT NULL`
+	query := `SELECT a.id, a.promo_code, a.bought_date, b.id, b.name, b.description, b.terms_and_conditions, b.how_to_use, b.start_date, b.end_date, b.value, b.image_url 
+	FROM promo_codes AS a LEFT JOIN vouchers AS b ON b.id = a.voucher_id WHERE a.promo_code IS NOT NULL`
 
 	if page > 0 || limit > 0 {
 		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
@@ -364,6 +399,8 @@ func (m *psqlVoucherRepository) GetVouchersUser(ctx context.Context, userID stri
 			&voucher.ID,
 			&voucher.Name,
 			&voucher.Description,
+			&voucher.TermsAndCondition,
+			&voucher.HowToUse,
 			&voucher.StartDate,
 			&voucher.EndDate,
 			&voucher.Value,
@@ -536,9 +573,7 @@ func (m *psqlVoucherRepository) UpdatePromoCodeRedeemed(ctx context.Context, vou
 
 func (m *psqlVoucherRepository) GetVoucherCode(ctx context.Context, voucherCode string, userID string) (*models.PromoCode, error) {
 	result := &models.PromoCode{}
-	query := `SELECT id, promo_code, status, user_id, redeemed_date, bought_date
-		FROM promo_codes
-		WHERE promo_code = $1 AND user_id = $2`
+	query := `SELECT id, promo_code, status, user_id, redeemed_date, bought_date FROM promo_codes WHERE promo_code = $1 AND user_id = $2`
 
 	err := m.Conn.QueryRowContext(ctx, query, voucherCode, userID).Scan(
 		&result.ID,

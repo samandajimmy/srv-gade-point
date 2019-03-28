@@ -15,26 +15,28 @@ type Validators struct {
 
 // Voucher is represent a vouchers model
 type Voucher struct {
-	ID              int64       `json:"id,omitempty"`
-	Name            string      `json:"name,omitempty"`
-	Description     string      `json:"description,omitempty"`
-	StartDate       string      `json:"startDate,omitempty"`
-	EndDate         string      `json:"endDate,omitempty"`
-	Point           *int64      `json:"point,omitempty"`
-	JournalAccount  string      `json:"journalAccount,omitempty"`
-	Value           *float64    `json:"value,omitempty"`
-	ImageURL        string      `json:"imageUrl,omitempty"`
-	Status          *int8       `json:"status,omitempty"`
-	Stock           *int32      `json:"stock,omitempty"`
-	PrefixPromoCode string      `json:"prefixPromoCode,omitempty"`
-	Amount          *int32      `json:"amount,omitempty"`
-	Available       *int32      `json:"available,omitempty"`
-	Bought          *int32      `json:"bought,omitempty"`
-	Redeemed        *int32      `json:"redeemed,omitempty"`
-	Expired         *int32      `json:"expired,omitempty"`
-	Validators      *Validators `json:"validators,omitempty"`
-	UpdatedAt       *time.Time  `json:"updatedAt,omitempty"`
-	CreatedAt       *time.Time  `json:"createdAt,omitempty"`
+	ID                int64       `json:"id,omitempty"`
+	Name              string      `json:"name,omitempty"`
+	Description       string      `json:"description,omitempty"`
+	StartDate         string      `json:"startDate,omitempty"`
+	EndDate           string      `json:"endDate,omitempty"`
+	Point             *int64      `json:"point,omitempty"`
+	JournalAccount    string      `json:"journalAccount,omitempty"`
+	Value             *float64    `json:"value,omitempty"`
+	ImageURL          string      `json:"imageUrl,omitempty"`
+	Status            *int8       `json:"status,omitempty"`
+	Stock             *int32      `json:"stock,omitempty"`
+	PrefixPromoCode   string      `json:"prefixPromoCode,omitempty"`
+	Amount            *int32      `json:"amount,omitempty"`
+	Available         *int32      `json:"available,omitempty"`
+	Bought            *int32      `json:"bought,omitempty"`
+	Redeemed          *int32      `json:"redeemed,omitempty"`
+	Expired           *int32      `json:"expired,omitempty"`
+	TermsAndCondition string      `json:"termsAndCondition,omitempty"`
+	HowToUse          string      `json:"howToUse,omitempty"`
+	Validators        *Validators `json:"validators,omitempty"`
+	UpdatedAt         *time.Time  `json:"updatedAt,omitempty"`
+	CreatedAt         *time.Time  `json:"createdAt,omitempty"`
 }
 
 // UpdateVoucher to store payload for update status

@@ -54,7 +54,7 @@ func (m *psqlVoucherRepository) CreateVoucher(ctx context.Context, a *models.Vou
 
 	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate,
 		a.Point, a.JournalAccount, a.Value, a.ImageURL, a.Status, a.Stock, a.PrefixPromoCode,
-		string(validator), &now).Scan(&lastID)
+		string(validator), a.TermsAndConditions, a.HowToUse, &now).Scan(&lastID)
 
 	if err != nil {
 		return err
@@ -197,7 +197,7 @@ func (m *psqlVoucherRepository) getVouchersAdmin(ctx context.Context, query stri
 			&t.Redeemed,
 			&t.Expired,
 			&validator,
-			&t.TermsAndCondition,
+			&t.TermsAndConditions,
 			&t.HowToUse,
 			&updateDate,
 			&createDate,
@@ -253,7 +253,7 @@ func (m *psqlVoucherRepository) GetVoucherAdmin(ctx context.Context, voucherID s
 		&result.Redeemed,
 		&result.Expired,
 		&validator,
-		&result.TermsAndCondition,
+		&result.TermsAndConditions,
 		&result.HowToUse,
 		&updateDate,
 		&createDate)
@@ -321,7 +321,7 @@ func (m *psqlVoucherRepository) GetVouchers(ctx context.Context, name string, st
 			&t.ImageURL,
 			&t.Stock,
 			&t.Available,
-			&t.TermsAndCondition,
+			&t.TermsAndConditions,
 			&t.HowToUse,
 		)
 
@@ -348,7 +348,7 @@ func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, voucherID string
 		&result.ImageURL,
 		&result.Stock,
 		&result.Available,
-		&result.TermsAndCondition,
+		&result.TermsAndConditions,
 		&result.HowToUse,
 	)
 
@@ -399,7 +399,7 @@ func (m *psqlVoucherRepository) GetVouchersUser(ctx context.Context, userID stri
 			&voucher.ID,
 			&voucher.Name,
 			&voucher.Description,
-			&voucher.TermsAndCondition,
+			&voucher.TermsAndConditions,
 			&voucher.HowToUse,
 			&voucher.StartDate,
 			&voucher.EndDate,

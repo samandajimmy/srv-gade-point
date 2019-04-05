@@ -13,7 +13,7 @@ type Voucher struct {
 	EndDate            string     `json:"endDate,omitempty"`
 	Point              *int64     `json:"point,omitempty"`
 	JournalAccount     string     `json:"journalAccount,omitempty"`
-	Value              *float64   `json:"value,omitempty"`
+	DayPurchaseLimit   *int64     `json:"dayPurchaseLimit,omitempty"`
 	ImageURL           string     `json:"imageUrl,omitempty"`
 	Status             *int8      `json:"status,omitempty"`
 	Stock              *int32     `json:"stock,omitempty"`
@@ -61,6 +61,6 @@ type PayloadVoucherBuy struct {
 
 // ResponseValidateVoucher to store response to validate a voucher
 type ResponseValidateVoucher struct {
-	Discount       *float64 `json:"discount,omitempty"`
-	JournalAccount string   `json:"journalAccount,omitempty"`
+	Discount       *int64 `json:"discount,omitempty"`
+	JournalAccount string `json:"journalAccount,omitempty"`
 }

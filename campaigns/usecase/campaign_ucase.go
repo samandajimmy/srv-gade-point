@@ -2,20 +2,15 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
 	"math"
-	"reflect"
 	"strconv"
 	"time"
 
 	"github.com/jinzhu/copier"
 	"github.com/labstack/gommon/log"
-	govaluate "gopkg.in/Knetic/govaluate.v2"
 )
-
-var floatType = reflect.TypeOf(float64(0))
 
 type campaignUseCase struct {
 	campaignRepo   campaigns.Repository
@@ -100,6 +95,7 @@ func (cmpgn *campaignUseCase) GetCampaign(c context.Context, name string, status
 }
 
 func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetCampaignValue) (*models.UserPoint, error) {
+	var result float64
 	payloadValidator := &models.PayloadValidator{}
 	payloadValidator.Validators = &models.Validator{}
 	now := time.Now()
@@ -141,36 +137,18 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetC
 	latestCampaign := validCampaigns[0]
 
 	// get campaign formula
-	expression, err := govaluate.NewEvaluableExpression(latestCampaign.Validators.Formula)
-
-	if err != nil {
-		log.Error(err)
-
-		return nil, err
+	if payloadValidator.Validators.Formula == "" {
+		result = float64(0)
+	} else {
+		result, err = latestCampaign.Validators.GetFormulaResult(payloadValidator)
 	}
-
-	// get formula parameters
-	parameters := make(map[string]interface{}, 8)
-	parameters["transactionAmount"] = m.TransactionAmount
-	parameters["multiplier"] = *latestCampaign.Validators.Multiplier
-	parameters["value"] = *latestCampaign.Validators.Value
-	result, err := expression.Evaluate(parameters)
-
-	if err != nil {
-		log.Error(err)
-
-		return nil, err
-	}
-
-	// Parse interface to float
-	parseFloat, err := getFloat(result)
 
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	pointAmount := math.Floor(parseFloat)
+	pointAmount := math.Floor(result)
 
 	// store campaign transaction
 	campaignTrx := &models.CampaignTrx{
@@ -220,6 +198,7 @@ func (cmpgn *campaignUseCase) GetUserPointHistory(c context.Context, userID stri
 
 	return dataHistory, nil
 }
+<<<<<<< HEAD
 
 func getFloat(unk interface{}) (float64, error) {
 	v := reflect.ValueOf(unk)
@@ -242,3 +221,5 @@ func (cmpgn *campaignUseCase) UpdateStatusBasedOnStartDate() error {
 	}
 	return nil
 }
+=======
+>>>>>>> add new column dayPurchaseLimit on voucher table and put formula on validator models

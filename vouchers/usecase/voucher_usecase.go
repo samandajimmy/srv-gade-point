@@ -266,6 +266,20 @@ func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVouch
 		return nil, err
 	}
 
+	voucherAmount, err := vchr.voucherRepo.CountBoughtVoucher(c, m.VoucherID, m.UserID)
+
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	err = validateLimitPurchase(*voucherDetail.DayPurchaseLimit, voucherAmount)
+
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
 	promoCode, err := vchr.voucherRepo.UpdatePromoCodeBought(c, m.VoucherID, m.UserID)
 
 	if err != nil {
@@ -338,7 +352,7 @@ func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *
 	}
 
 	responseValid := &models.ResponseValidateVoucher{
-		Discount:       voucher.Value,
+		Discount:       voucher.Validators.Value,
 		JournalAccount: voucher.JournalAccount,
 	}
 
@@ -385,6 +399,18 @@ func validateBuy(voucherPoint *int64, userPoint int64, avaliable *int32) error {
 
 	if userPoint < *voucherPoint {
 		return models.ErrPointDeficit
+	}
+
+	return nil
+}
+
+func validateLimitPurchase(limitPurchase int64, voucherAmount int64) error {
+	if limitPurchase <= 0 {
+		return nil
+	}
+
+	if limitPurchase <= voucherAmount {
+		return models.ErrBuyingVoucherExceeded
 	}
 
 	return nil

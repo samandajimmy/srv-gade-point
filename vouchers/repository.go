@@ -22,6 +22,10 @@ type Repository interface {
 	VoucherCheckExpired(ctx context.Context, voucherID string) error
 	UpdatePromoCodeRedeemed(ctx context.Context, voucherID string, userID string) (*models.PromoCode, error)
 	GetVoucherCode(ctx context.Context, voucherCode string, userID string) (*models.PromoCode, error)
+<<<<<<< HEAD
 	UpdateExpiryDate(ctx context.Context) error
 	UpdateStatusBasedOnStartDate() error
+=======
+	CountBoughtVoucher(ctx context.Context, voucherID string, userID string) (int64, error)
+>>>>>>> add new column dayPurchaseLimit on voucher table and put formula on validator models
 }

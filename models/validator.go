@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/labstack/gommon/log"
+	govaluate "gopkg.in/Knetic/govaluate.v2"
 )
 
 // Validator to store all validator data
@@ -88,6 +90,73 @@ func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
 	return nil
 }
 
+// GetFormulaResult to proccess the formula then get the result
+func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float64, error) {
+	expression, err := govaluate.NewEvaluableExpression(v.Formula)
+
+	if err != nil {
+		log.Error(err)
+
+		return 0, err
+	}
+
+	// Make a Regex to say we only want letters and numbers
+	regex, err := regexp.Compile("[^a-zA-Z0-9]+")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	formulaVarStr := regex.ReplaceAllString(v.Formula, " ")
+	formulaVarStr = strings.TrimLeft(formulaVarStr, " ")
+	formulaVarStr = strings.TrimRight(formulaVarStr, " ")
+	formulaVar := strings.Split(formulaVarStr, " ")
+	remove(formulaVar, "transactionAmount")
+
+	// get formula parameters
+	parameters := make(map[string]interface{}, 8)
+	parameters["transactionAmount"] = payloadValidator.TransactionAmount
+
+	for _, fVar := range formulaVar {
+		parameters[fVar] = v.getField(fVar)
+	}
+
+	result, err := expression.Evaluate(parameters)
+
+	if err != nil {
+		log.Error(err)
+
+		return 0, err
+	}
+
+	// Parse interface to float
+	return getFloat(result)
+}
+
+func (v *Validator) getField(field string) interface{} {
+	r := reflect.ValueOf(v)
+	f := reflect.Indirect(r).FieldByName(strings.Title(field)).Interface()
+
+	if f == nil {
+		return 0
+	}
+
+	switch f.(type) {
+	case *float64:
+		v := getInterfaceValue(f)
+		result, _ := strconv.ParseFloat(v, 64)
+
+		return result
+	case *int64:
+		v := getInterfaceValue(f)
+		result, _ := strconv.ParseInt(v, 10, 64)
+
+		return result
+	}
+
+	return getInterfaceValue(f)
+}
+
 func contains(strings []string, str string) bool {
 	for _, n := range strings {
 		if str == n {
@@ -115,4 +184,26 @@ func getInterfaceValue(intfc interface{}) string {
 	default:
 		return fmt.Sprintf("%v", v)
 	}
+}
+
+func getFloat(unk interface{}) (float64, error) {
+	floatType := reflect.TypeOf(float64(0))
+	v := reflect.ValueOf(unk)
+	v = reflect.Indirect(v)
+
+	if !v.Type().ConvertibleTo(floatType) {
+		return 0, fmt.Errorf("cannot convert %v to float64", v.Type())
+	}
+
+	fv := v.Convert(floatType)
+	return fv.Float(), nil
+}
+
+func remove(s []string, r string) []string {
+	for i, v := range s {
+		if v == r {
+			return append(s[:i], s[i+1:]...)
+		}
+	}
+	return s
 }

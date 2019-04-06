@@ -96,7 +96,7 @@ func (vchr *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		return c.JSON(getStatusCode(err), response)
+		return c.JSON(http.StatusOK, response)
 	}
 
 	response.Status = models.StatusSuccess

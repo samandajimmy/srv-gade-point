@@ -85,10 +85,26 @@ func (vchr *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) 
 }
 
 func (vchr *voucherUseCase) UpdateVoucher(c context.Context, id int64, updateVoucher *models.UpdateVoucher) error {
+	var voucherDetail *models.Voucher
+	now := time.Now()
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
 
 	defer cancel()
-	err := vchr.voucherRepo.UpdateVoucher(ctx, id, updateVoucher)
+
+	voucherDetail, err := vchr.voucherRepo.GetVoucher(ctx, strconv.FormatInt(id, 10))
+
+	if voucherDetail == nil {
+		log.Error(models.ErrVoucherUnavailable)
+		return models.ErrVoucherUnavailable
+	}
+
+	vEndDate, _ := time.Parse(time.RFC3339, voucherDetail.EndDate)
+	if vEndDate.Before(now) {
+		log.Error(models.ErrVoucherExpired)
+		return models.ErrVoucherExpired
+	}
+
+	err = vchr.voucherRepo.UpdateVoucher(ctx, id, updateVoucher)
 
 	if err != nil {
 		return err
@@ -131,6 +147,12 @@ func (vchr *voucherUseCase) GetVouchersAdmin(c context.Context, name string, sta
 	var totalCount int
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
 	defer cancel()
+
+	err = vchr.voucherRepo.UpdateExpiryDate(ctx)
+	if err != nil {
+		log.Warn(err)
+	}
+
 	listVoucher, err = vchr.voucherRepo.GetVouchersAdmin(ctx, name, status, startDate, endDate, page, limit)
 
 	if err != nil {

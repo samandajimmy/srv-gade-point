@@ -331,6 +331,27 @@ func (m *psqlVoucherRepository) GetVouchers(ctx context.Context, name string, st
 	return result, nil
 }
 
+func (m *psqlVoucherRepository) UpdateExpiryDate(ctx context.Context) error {
+	now := time.Now()
+	query := `UPDATE vouchers SET status = 0, updated_at = $1 WHERE end_date::timestamp::date < now()::date`
+	stmt, err := m.Conn.PrepareContext(ctx, query)
+
+	if err != nil {
+		return err
+	}
+	logrus.Debug("Update At: ", &now)
+
+	var lastID int64
+
+	err = stmt.QueryRowContext(ctx, &now).Scan(&lastID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, voucherID string) (*models.Voucher, error) {
 	result := new(models.Voucher)
 	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, c.value, c.image_url, c.stock, d.available, c.terms_and_conditions, c.how_to_use 

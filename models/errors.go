@@ -18,6 +18,9 @@ var (
 	// ErrNoCampaign to store campaign not found error message
 	ErrNoCampaign = errors.New("No campaign avaliable")
 
+	// ErrCampaignExpired to store campaign expired error message
+	ErrCampaignExpired = errors.New("Campaign has been expired")
+
 	// ErrPointDeficit to store point deficit error message
 	ErrPointDeficit = errors.New("Point deficit")
 

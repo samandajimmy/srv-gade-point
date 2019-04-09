@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/labstack/gommon/log"
 	govaluate "gopkg.in/Knetic/govaluate.v2"
 )
 
@@ -40,10 +41,25 @@ func (cmpgn *campaignUseCase) CreateCampaign(c context.Context, m *models.Campai
 }
 
 func (cmpgn *campaignUseCase) UpdateCampaign(c context.Context, id int64, updateCampaign *models.UpdateCampaign) error {
+	var campaignDetail *models.Campaign
+	now := time.Now()
 	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
 
-	err := cmpgn.campaignRepo.UpdateCampaign(ctx, id, updateCampaign)
+	campaignDetail, err := cmpgn.campaignRepo.GetCampaignDetail(ctx, id)
+
+	if campaignDetail == nil {
+		log.Error(models.ErrNoCampaign)
+		return models.ErrNoCampaign
+	}
+
+	vEndDate, _ := time.Parse(time.RFC3339, campaignDetail.EndDate)
+	if vEndDate.Before(now) {
+		log.Error(models.ErrCampaignExpired)
+		return models.ErrCampaignExpired
+	}
+
+	err = cmpgn.campaignRepo.UpdateCampaign(ctx, id, updateCampaign)
 	if err != nil {
 		return err
 	}
@@ -54,6 +70,12 @@ func (cmpgn *campaignUseCase) UpdateCampaign(c context.Context, id int64, update
 func (cmpgn *campaignUseCase) GetCampaign(c context.Context, name string, status string, startDate string, endDate string, page int, limit int) (string, []*models.Campaign, error) {
 	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
+
+	err := cmpgn.campaignRepo.UpdateExpiryDate(ctx)
+
+	if err != nil {
+		log.Warn(err)
+	}
 
 	listCampaign, err := cmpgn.campaignRepo.GetCampaign(ctx, name, status, startDate, endDate, page, limit)
 

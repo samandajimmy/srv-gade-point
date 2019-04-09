@@ -15,4 +15,6 @@ type Repository interface {
 	GetUserPoint(ctx context.Context, UserID string) (float64, error)
 	GetUserPointHistory(ctx context.Context, UserID string) ([]models.CampaignTrx, error)
 	CountCampaign(ctx context.Context, name string, status string, startDate string, endDate string) (int, error)
+	GetCampaignDetail(ctx context.Context, id int64) (*models.Campaign, error)
+	UpdateExpiryDate(ctx context.Context) error
 }

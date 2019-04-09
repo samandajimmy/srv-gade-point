@@ -78,6 +78,28 @@ func (m *psqlCampaignRepository) UpdateCampaign(ctx context.Context, id int64, u
 	return nil
 }
 
+func (m *psqlCampaignRepository) UpdateExpiryDate(ctx context.Context) error {
+	now := time.Now()
+	query := `UPDATE campaigns SET status = 0, updated_at = $1 WHERE end_date::timestamp::date < now()::date`
+	stmt, err := m.Conn.PrepareContext(ctx, query)
+
+	if err != nil {
+		return err
+	}
+
+	logrus.Debug("Update At: ", &now)
+
+	var lastID int64
+
+	err = stmt.QueryRowContext(ctx, &now).Scan(&lastID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, status string, startDate string, endDate string, page int, limit int) ([]*models.Campaign, error) {
 	paging := ""
 	where := ""
@@ -348,4 +370,36 @@ func (m *psqlCampaignRepository) CountCampaign(ctx context.Context, name string,
 	}
 
 	return total, nil
+}
+
+func (m *psqlCampaignRepository) GetCampaignDetail(ctx context.Context, id int64) (*models.Campaign, error) {
+	var validator json.RawMessage
+	var createDate, updateDate pq.NullTime
+	result := new(models.Campaign)
+
+	query := `SELECT id, name, description, start_date, end_date, status, type, validators, updated_at, created_at FROM campaigns WHERE id = $1`
+
+	err := m.Conn.QueryRowContext(ctx, query, id).Scan(
+		&result.ID,
+		&result.Name,
+		&result.Description,
+		&result.StartDate,
+		&result.EndDate,
+		&result.Status,
+		&result.Type,
+		&validator,
+		&createDate,
+		&updateDate,
+	)
+
+	result.CreatedAt = &createDate.Time
+	result.UpdatedAt = &updateDate.Time
+	err = json.Unmarshal([]byte(validator), &result.Validators)
+
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+
+	return result, err
 }

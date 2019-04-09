@@ -429,3 +429,12 @@ func getFloat(unk interface{}) (float64, error) {
 	fv := v.Convert(floatType)
 	return fv.Float(), nil
 }
+
+func (vchr *voucherUseCase) UpdateStartDate() error {
+
+	err := vchr.voucherRepo.UpdateStartDate()
+	if err != nil {
+		return err
+	}
+	return nil
+}

@@ -17,4 +17,5 @@ type Repository interface {
 	CountCampaign(ctx context.Context, name string, status string, startDate string, endDate string) (int, error)
 	GetCampaignDetail(ctx context.Context, id int64) (*models.Campaign, error)
 	UpdateExpiryDate(ctx context.Context) error
+	UpdateStartDate() error
 }

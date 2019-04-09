@@ -3,8 +3,10 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/middleware"
 	"gade/srv-gade-point/models"
+	"gade/srv-gade-point/vouchers"
 	"log"
 	"net/http"
 	"os"
@@ -24,6 +26,7 @@ import (
 	_voucherRepository "gade/srv-gade-point/vouchers/repository"
 	_voucherUseCase "gade/srv-gade-point/vouchers/usecase"
 
+	"github.com/carlescere/scheduler"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -95,7 +98,24 @@ func main() {
 	userUseCase := _userUseCase.NewUserUseCase(userRepository, timeoutContext)
 	_userHttpDelivery.NewUserHandler(echoGroup, userUseCase)
 
+	// Run every day.
+	updateStartDate(campaignUseCase, voucherUseCase)
+
 	ech.Start(":" + os.Getenv(`PORT`))
+
+}
+
+func updateStartDate(cmp campaigns.UseCase, vcr vouchers.UseCase) {
+	scheduler.Every().Day().At(os.Getenv(`STATUS_UPDATE_TIME`)).Run(func() {
+		t := time.Now()
+		log.Println("Run Scheduler! @", t)
+
+		// CAMPAIGN
+		cmp.UpdateStartDate()
+
+		// VOUCHER
+		vcr.UpdateStartDate()
+	})
 }
 
 func ping(echTx echo.Context) error {

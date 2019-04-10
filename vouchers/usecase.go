@@ -19,4 +19,5 @@ type UseCase interface {
 	GetVouchersUser(ctx context.Context, userID string, status string, page int, limit int) ([]models.PromoCode, string, error)
 	VoucherValidate(ctx context.Context, m *models.PayloadValidateVoucher) (*models.ResponseValidateVoucher, error)
 	VoucherRedeem(ctx context.Context, m *models.PayloadValidateVoucher) (*models.PromoCode, error)
+	UpdateStatusBasedOnStartDate() error
 }

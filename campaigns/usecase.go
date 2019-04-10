@@ -13,4 +13,5 @@ type UseCase interface {
 	GetCampaignValue(context.Context, *models.GetCampaignValue) (*models.UserPoint, error)
 	GetUserPoint(ctx context.Context, userID string) (*models.UserPoint, error)
 	GetUserPointHistory(ctx context.Context, userID string) ([]models.CampaignTrx, error)
+	UpdateStatusBasedOnStartDate() error
 }

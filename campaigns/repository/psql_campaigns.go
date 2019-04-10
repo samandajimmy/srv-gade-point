@@ -100,6 +100,28 @@ func (m *psqlCampaignRepository) UpdateExpiryDate(ctx context.Context) error {
 	return nil
 }
 
+func (m *psqlCampaignRepository) UpdateStatusBasedOnStartDate() error {
+	now := time.Now()
+	query := `UPDATE campaigns SET status = 1, updated_at = $1 WHERE start_date::timestamp::date = now()::date`
+	stmt, err := m.Conn.Prepare(query)
+
+	if err != nil {
+		return err
+	}
+
+	logrus.Debug("Update At: ", &now)
+
+	var lastID int64
+
+	err = stmt.QueryRow(&now).Scan(&lastID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, status string, startDate string, endDate string, page int, limit int) ([]*models.Campaign, error) {
 	paging := ""
 	where := ""

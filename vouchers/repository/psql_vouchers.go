@@ -352,6 +352,28 @@ func (m *psqlVoucherRepository) UpdateExpiryDate(ctx context.Context) error {
 	return nil
 }
 
+func (m *psqlVoucherRepository) UpdateStatusBasedOnStartDate() error {
+	now := time.Now()
+	query := `UPDATE vouchers SET status = 1, updated_at = $1 WHERE start_date::timestamp::date = now()::date`
+	stmt, err := m.Conn.Prepare(query)
+
+	if err != nil {
+		return err
+	}
+
+	logrus.Debug("Update At: ", &now)
+
+	var lastID int64
+
+	err = stmt.QueryRow(&now).Scan(&lastID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *psqlVoucherRepository) GetVoucher(ctx context.Context, voucherID string) (*models.Voucher, error) {
 	result := new(models.Voucher)
 	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, c.value, c.image_url, c.stock, d.available, c.terms_and_conditions, c.how_to_use 

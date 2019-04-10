@@ -177,3 +177,12 @@ func getFloat(unk interface{}) (float64, error) {
 	fv := v.Convert(floatType)
 	return fv.Float(), nil
 }
+
+func (cmpgn *campaignUseCase) UpdateStatusBasedOnStartDate() error {
+
+	err := cmpgn.campaignRepo.UpdateStatusBasedOnStartDate()
+	if err != nil {
+		return err
+	}
+	return nil
+}

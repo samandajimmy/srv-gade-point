@@ -337,6 +337,7 @@ func (m *psqlVoucherRepository) UpdateExpiryDate(ctx context.Context) error {
 	stmt, err := m.Conn.PrepareContext(ctx, query)
 
 	if err != nil {
+		log.Debug("Update Status Base on Expiry Date: ", err)
 		return err
 	}
 	logrus.Debug("Update At: ", &now)
@@ -346,6 +347,7 @@ func (m *psqlVoucherRepository) UpdateExpiryDate(ctx context.Context) error {
 	err = stmt.QueryRowContext(ctx, &now).Scan(&lastID)
 
 	if err != nil {
+		log.Debug("Update Status Base on Expiry Date: ", err)
 		return err
 	}
 
@@ -358,6 +360,7 @@ func (m *psqlVoucherRepository) UpdateStatusBasedOnStartDate() error {
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
+		log.Debug("Update Status Base on Start Date: ", err)
 		return err
 	}
 
@@ -368,6 +371,7 @@ func (m *psqlVoucherRepository) UpdateStatusBasedOnStartDate() error {
 	err = stmt.QueryRow(&now).Scan(&lastID)
 
 	if err != nil {
+		log.Debug("Update Status Base on Start Date: ", err)
 		return err
 	}
 

@@ -434,6 +434,7 @@ func (vchr *voucherUseCase) UpdateStatusBasedOnStartDate() error {
 
 	err := vchr.voucherRepo.UpdateStatusBasedOnStartDate()
 	if err != nil {
+		log.Debug("Update Status Base on Start Date: ", err)
 		return err
 	}
 	return nil

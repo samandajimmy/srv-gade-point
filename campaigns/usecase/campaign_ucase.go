@@ -74,7 +74,7 @@ func (cmpgn *campaignUseCase) GetCampaign(c context.Context, name string, status
 	err := cmpgn.campaignRepo.UpdateExpiryDate(ctx)
 
 	if err != nil {
-		log.Warn(err)
+		log.Debug("Update Status Base on Expiry Date: ", err)
 	}
 
 	listCampaign, err := cmpgn.campaignRepo.GetCampaign(ctx, name, status, startDate, endDate, page, limit)
@@ -182,6 +182,7 @@ func (cmpgn *campaignUseCase) UpdateStatusBasedOnStartDate() error {
 
 	err := cmpgn.campaignRepo.UpdateStatusBasedOnStartDate()
 	if err != nil {
+		log.Debug("Update Status Base on Start Date: ", err)
 		return err
 	}
 	return nil

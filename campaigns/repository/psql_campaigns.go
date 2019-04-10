@@ -100,7 +100,7 @@ func (m *psqlCampaignRepository) UpdateExpiryDate(ctx context.Context) error {
 	return nil
 }
 
-func (m *psqlCampaignRepository) UpdateStartDate() error {
+func (m *psqlCampaignRepository) UpdateStatusBasedOnStartDate() error {
 	now := time.Now()
 	query := `UPDATE campaigns SET status = 1, updated_at = $1 WHERE start_date::timestamp::date = now()::date`
 	stmt, err := m.Conn.Prepare(query)

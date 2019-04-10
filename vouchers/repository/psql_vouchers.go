@@ -352,7 +352,7 @@ func (m *psqlVoucherRepository) UpdateExpiryDate(ctx context.Context) error {
 	return nil
 }
 
-func (m *psqlVoucherRepository) UpdateStartDate() error {
+func (m *psqlVoucherRepository) UpdateStatusBasedOnStartDate() error {
 	now := time.Now()
 	query := `UPDATE vouchers SET status = 1, updated_at = $1 WHERE start_date::timestamp::date = now()::date`
 	stmt, err := m.Conn.Prepare(query)

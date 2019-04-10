@@ -99,22 +99,22 @@ func main() {
 	_userHttpDelivery.NewUserHandler(echoGroup, userUseCase)
 
 	// Run every day.
-	updateStartDate(campaignUseCase, voucherUseCase)
+	updateStatusBasedOnStartDate(campaignUseCase, voucherUseCase)
 
 	ech.Start(":" + os.Getenv(`PORT`))
 
 }
 
-func updateStartDate(cmp campaigns.UseCase, vcr vouchers.UseCase) {
+func updateStatusBasedOnStartDate(cmp campaigns.UseCase, vcr vouchers.UseCase) {
 	scheduler.Every().Day().At(os.Getenv(`STATUS_UPDATE_TIME`)).Run(func() {
 		t := time.Now()
 		log.Println("Run Scheduler! @", t)
 
 		// CAMPAIGN
-		cmp.UpdateStartDate()
+		cmp.UpdateStatusBasedOnStartDate()
 
 		// VOUCHER
-		vcr.UpdateStartDate()
+		vcr.UpdateStatusBasedOnStartDate()
 	})
 }
 

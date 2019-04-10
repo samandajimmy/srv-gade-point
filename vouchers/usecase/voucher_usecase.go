@@ -430,9 +430,9 @@ func getFloat(unk interface{}) (float64, error) {
 	return fv.Float(), nil
 }
 
-func (vchr *voucherUseCase) UpdateStartDate() error {
+func (vchr *voucherUseCase) UpdateStatusBasedOnStartDate() error {
 
-	err := vchr.voucherRepo.UpdateStartDate()
+	err := vchr.voucherRepo.UpdateStatusBasedOnStartDate()
 	if err != nil {
 		return err
 	}

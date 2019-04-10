@@ -178,9 +178,9 @@ func getFloat(unk interface{}) (float64, error) {
 	return fv.Float(), nil
 }
 
-func (cmpgn *campaignUseCase) UpdateStartDate() error {
+func (cmpgn *campaignUseCase) UpdateStatusBasedOnStartDate() error {
 
-	err := cmpgn.campaignRepo.UpdateStartDate()
+	err := cmpgn.campaignRepo.UpdateStatusBasedOnStartDate()
 	if err != nil {
 		return err
 	}

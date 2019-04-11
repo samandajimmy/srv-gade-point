@@ -45,7 +45,6 @@ func (cmpgn *campaignUseCase) UpdateCampaign(c context.Context, id int64, update
 	now := time.Now()
 	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
 	defer cancel()
-
 	campaignDetail, err := cmpgn.campaignRepo.GetCampaignDetail(ctx, id)
 
 	if campaignDetail == nil {
@@ -54,13 +53,16 @@ func (cmpgn *campaignUseCase) UpdateCampaign(c context.Context, id int64, update
 	}
 
 	vEndDate, _ := time.Parse(time.RFC3339, campaignDetail.EndDate)
-	if vEndDate.Before(now) {
+
+	if vEndDate.Before(now.Add(time.Hour * -24)) {
 		log.Error(models.ErrCampaignExpired)
 		return models.ErrCampaignExpired
 	}
 
 	err = cmpgn.campaignRepo.UpdateCampaign(ctx, id, updateCampaign)
+
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 

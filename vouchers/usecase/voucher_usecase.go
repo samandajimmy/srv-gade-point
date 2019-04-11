@@ -88,9 +88,7 @@ func (vchr *voucherUseCase) UpdateVoucher(c context.Context, id int64, updateVou
 	var voucherDetail *models.Voucher
 	now := time.Now()
 	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
-
 	defer cancel()
-
 	voucherDetail, err := vchr.voucherRepo.GetVoucher(ctx, strconv.FormatInt(id, 10))
 
 	if voucherDetail == nil {
@@ -99,7 +97,8 @@ func (vchr *voucherUseCase) UpdateVoucher(c context.Context, id int64, updateVou
 	}
 
 	vEndDate, _ := time.Parse(time.RFC3339, voucherDetail.EndDate)
-	if vEndDate.Before(now) {
+
+	if vEndDate.Before(now.Add(time.Hour * -24)) {
 		log.Error(models.ErrVoucherExpired)
 		return models.ErrVoucherExpired
 	}
@@ -107,6 +106,7 @@ func (vchr *voucherUseCase) UpdateVoucher(c context.Context, id int64, updateVou
 	err = vchr.voucherRepo.UpdateVoucher(ctx, id, updateVoucher)
 
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 

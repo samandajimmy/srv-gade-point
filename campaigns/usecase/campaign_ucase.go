@@ -198,19 +198,6 @@ func (cmpgn *campaignUseCase) GetUserPointHistory(c context.Context, userID stri
 
 	return dataHistory, nil
 }
-<<<<<<< HEAD
-
-func getFloat(unk interface{}) (float64, error) {
-	v := reflect.ValueOf(unk)
-	v = reflect.Indirect(v)
-
-	if !v.Type().ConvertibleTo(floatType) {
-		return 0, fmt.Errorf("cannot convert %v to float64", v.Type())
-	}
-
-	fv := v.Convert(floatType)
-	return fv.Float(), nil
-}
 
 func (cmpgn *campaignUseCase) UpdateStatusBasedOnStartDate() error {
 
@@ -221,5 +208,3 @@ func (cmpgn *campaignUseCase) UpdateStatusBasedOnStartDate() error {
 	}
 	return nil
 }
-=======
->>>>>>> add new column dayPurchaseLimit on voucher table and put formula on validator models

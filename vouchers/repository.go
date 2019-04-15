@@ -21,7 +21,7 @@ type Repository interface {
 	CountPromoCode(ctx context.Context, status string, userID string) (int, error)
 	VoucherCheckExpired(ctx context.Context, voucherID string) error
 	UpdatePromoCodeRedeemed(ctx context.Context, voucherID string, userID string) (*models.PromoCode, error)
-	GetVoucherCode(ctx context.Context, voucherCode string, userID string) (*models.PromoCode, error)
+	GetVoucherCode(ctx context.Context, voucherCode string, userID string) (*models.PromoCode, string, error)
 	UpdateExpiryDate(ctx context.Context) error
 	UpdateStatusBasedOnStartDate() error
 }

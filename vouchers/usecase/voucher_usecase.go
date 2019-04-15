@@ -303,20 +303,20 @@ func (vchr *voucherUseCase) VoucherValidate(c context.Context, validateVoucher *
 	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
 	defer cancel()
 
+	// check voucher codes
+	_, voucherID, err := vchr.voucherRepo.GetVoucherCode(c, validateVoucher.PromoCode, validateVoucher.UserID)
+
+	if err != nil {
+		log.Error(err)
+		return nil, models.ErrVoucherCodeUnavailable
+	}
+
 	// get voucher detail
-	voucher, err := vchr.voucherRepo.GetVoucherAdmin(c, validateVoucher.VoucherID)
+	voucher, err := vchr.voucherRepo.GetVoucherAdmin(c, voucherID)
 
 	if err != nil {
 		log.Error(err)
 		return nil, err
-	}
-
-	// check voucher codes
-	_, err = vchr.voucherRepo.GetVoucherCode(c, validateVoucher.PromoCode, validateVoucher.UserID)
-
-	if err != nil {
-		log.Error(models.ErrVoucherCodeUnavailable)
-		return nil, models.ErrVoucherCodeUnavailable
 	}
 
 	vStartDate, _ := time.Parse(time.RFC3339, voucher.StartDate)

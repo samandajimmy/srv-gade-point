@@ -98,6 +98,21 @@ func (cmpgn *campaignUseCase) GetCampaign(c context.Context, name string, status
 	return strconv.Itoa(countCampaign), listCampaign, nil
 }
 
+func (cmpgn *campaignUseCase) GetCampaignDetail(c context.Context, id int64) (*models.Campaign, error) {
+	var campaignDetail *models.Campaign
+	var err error
+	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
+	defer cancel()
+
+	campaignDetail, err = cmpgn.campaignRepo.GetCampaignDetail(ctx, id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return campaignDetail, nil
+}
+
 func (cmpgn *campaignUseCase) GetCampaignValue(c context.Context, m *models.GetCampaignValue) (*models.UserPoint, error) {
 	now := time.Now()
 	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)

@@ -28,6 +28,7 @@ func NewCampaignsHandler(echoGroup models.EchoGroup, us campaigns.UseCase) {
 	echoGroup.Admin.POST("/campaigns", handler.CreateCampaign)
 	echoGroup.Admin.PUT("/campaigns/status/:id", handler.UpdateStatusCampaign)
 	echoGroup.Admin.GET("/campaigns", handler.GetCampaigns)
+	echoGroup.Admin.GET("/campaigns/:id", handler.GetCampaignDetail)
 
 	//End Point For External
 	echoGroup.API.POST("/campaigns/value", handler.GetCampaignValue)
@@ -130,6 +131,33 @@ func (cmpgn *CampaignsHandler) GetCampaigns(c echo.Context) error {
 	response.Message = models.MessageDataSuccess
 	response.TotalCount = countCampaign
 
+	return c.JSON(http.StatusOK, response)
+}
+
+// GetCampaignDetail a handler  to provide and endpoint to get campaign detail
+func (cmpgn *CampaignsHandler) GetCampaignDetail(c echo.Context) error {
+	response = models.Response{}
+	id, _ := strconv.Atoi(c.Param("id"))
+	ctx := c.Request().Context()
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	responseData, err := cmpgn.CampaignUseCase.GetCampaignDetail(ctx, int64(id))
+
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = models.MessageDataNotFound
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	if (&models.Campaign{}) != responseData {
+		response.Data = responseData
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MessagePointSuccess
 	return c.JSON(http.StatusOK, response)
 }
 

@@ -16,10 +16,8 @@ services:
       - DB_NAME=postgres
       - DB_SSLMODE=disable
       - PORT=8080
-      - VOUCHER_UPLOAD_PATH=./public/images/vouchers/
-      - VOUCHER_ROUTE_PATH=public/images/vouchers/
-      - VOUCHER_PATH=/images/vouchers
       - JWT_SECRET=docker-compose-secret
       - JWT_TOKEN_EXP=24
       - BASIC_USERNAME=docker-admin
       - BASIC_PASSWORD=docker-admin123
+      - UPLOAD_IMAGE_URL=http://pds-api.hookiarisan.com/gpoint/voucherimage/add

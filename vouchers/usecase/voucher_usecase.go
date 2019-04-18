@@ -1,24 +1,28 @@
 package usecase
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/vouchers"
 	"io"
+	"io/ioutil"
 	"math"
 	"math/rand"
 	"mime/multipart"
+	"net/http"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"time"
 
 	"github.com/iancoleman/strcase"
 	"github.com/labstack/gommon/log"
+	"github.com/tidwall/gjson"
 )
 
 const (
@@ -121,22 +125,54 @@ func (vchr *voucherUseCase) UploadVoucherImages(file *multipart.FileHeader) (str
 	}
 
 	defer src.Close()
-	ext := filepath.Ext(file.Filename)
-	nsec := time.Now().UnixNano() // number of nanoseconds unix
-	fileName := strconv.FormatInt(nsec, 10) + ext
-	filePathUpload := os.Getenv(`VOUCHER_UPLOAD_PATH`) + fileName
-	filePathPublic := os.Getenv(`VOUCHER_PATH`) + "/" + fileName
-	dst, err := os.Create(filePathUpload)
 
+	// upload image to pds server
+	bodyBuf := &bytes.Buffer{}
+	bodyWriter := multipart.NewWriter(bodyBuf)
+
+	fileWriter, err := bodyWriter.CreateFormFile("file", file.Filename)
+
+	if err != nil {
+		log.Error(err)
+		return "", err
+	}
+
+	_, err = io.Copy(fileWriter, src)
 	if err != nil {
 		return "", err
 	}
 
-	defer dst.Close()
+	contentType := bodyWriter.FormDataContentType()
+	bodyWriter.Close()
 
-	if _, err = io.Copy(dst, src); err != nil {
+	response, err := http.Post(os.Getenv(`UPLOAD_IMAGE_URL`), contentType, bodyBuf)
+
+	if err != nil {
+		log.Error(err)
+
 		return "", err
 	}
+
+	defer response.Body.Close()
+	responseBody, err := ioutil.ReadAll(response.Body)
+
+	if err != nil {
+		log.Error(err)
+
+		return "", err
+	}
+	value := gjson.Get(string(responseBody), "status")
+
+	if value.String() != "success" {
+		value = gjson.Get(string(responseBody), "message")
+		log.Error(errors.New(value.String()))
+
+		return "", errors.New(value.String())
+
+	}
+
+	value = gjson.Get(string(responseBody), "data.filename")
+	filePathPublic := value.String()
 
 	return filePathPublic, nil
 }

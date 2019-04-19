@@ -9,7 +9,9 @@ import (
 	"gade/srv-gade-point/vouchers"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	_campaignHttpDelivery "gade/srv-gade-point/campaigns/delivery/http"
@@ -42,8 +44,14 @@ func init() {
 	ech = echo.New()
 	ech.Debug = true
 	loadEnv()
+	logrus.SetReportCaller(true)
 	formatter := &logrus.TextFormatter{
 		FullTimestamp: true,
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			tmp := strings.Split(f.File, "/")
+			filename := tmp[len(tmp)-1]
+			return "", fmt.Sprintf("%s:%d", filename, f.Line)
+		},
 	}
 
 	logrus.SetFormatter(formatter)

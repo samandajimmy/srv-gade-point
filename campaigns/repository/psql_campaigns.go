@@ -9,6 +9,7 @@ import (
 	"gade/srv-gade-point/models"
 	"time"
 
+	"github.com/labstack/echo"
 	"github.com/labstack/gommon/log"
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -27,52 +28,61 @@ func NewPsqlCampaignRepository(Conn *sql.DB) campaigns.Repository {
 	return &psqlCampaignRepository{Conn}
 }
 
-func (m *psqlCampaignRepository) CreateCampaign(ctx context.Context, a *models.Campaign) error {
+func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models.Campaign) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
 	query := `INSERT INTO campaigns (name, description, start_date, end_date, status, type, validators, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)  RETURNING id`
-	stmt, err := m.Conn.PrepareContext(ctx, query)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
+	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return err
 	}
-
-	logrus.Debug("Created At: ", &now)
 
 	var lastID int64
-	validator, err := json.Marshal(a.Validators)
+	validator, err := json.Marshal(campaign.Validators)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return err
 	}
 
-	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate, a.Status, a.Type, string(validator), &now).Scan(&lastID)
+	err = stmt.QueryRow(campaign.Name, campaign.Description, campaign.StartDate, campaign.EndDate, campaign.Status, campaign.Type, string(validator), &now).Scan(&lastID)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return err
 	}
 
-	a.ID = lastID
-	a.CreatedAt = &now
+	campaign.ID = lastID
+	campaign.CreatedAt = &now
 	return nil
 }
 
-func (m *psqlCampaignRepository) UpdateCampaign(ctx context.Context, id int64, updateCampaign *models.UpdateCampaign) error {
+func (m *psqlCampaignRepository) UpdateCampaign(c echo.Context, id int64, updateCampaign *models.UpdateCampaign) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
 	query := `UPDATE campaigns SET status = $1, updated_at = $2 WHERE id = $3 RETURNING id`
-	stmt, err := m.Conn.PrepareContext(ctx, query)
+	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return err
 	}
 
-	logrus.Debug("Update At: ", &now)
-
 	var lastID int64
-
-	err = stmt.QueryRowContext(ctx, updateCampaign.Status, &now, id).Scan(&lastID)
+	err = stmt.QueryRow(updateCampaign.Status, &now, id).Scan(&lastID)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return err
 	}
 
@@ -399,14 +409,16 @@ func (m *psqlCampaignRepository) CountCampaign(ctx context.Context, name string,
 	return total, nil
 }
 
-func (m *psqlCampaignRepository) GetCampaignDetail(ctx context.Context, id int64) (*models.Campaign, error) {
+func (m *psqlCampaignRepository) GetCampaignDetail(c echo.Context, id int64) (*models.Campaign, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
 	var validator json.RawMessage
 	var createDate, updateDate pq.NullTime
 	result := new(models.Campaign)
 
 	query := `SELECT id, name, description, start_date, end_date, status, type, validators, updated_at, created_at FROM campaigns WHERE id = $1`
 
-	err := m.Conn.QueryRowContext(ctx, query, id).Scan(
+	err := m.Conn.QueryRow(query, id).Scan(
 		&result.ID,
 		&result.Name,
 		&result.Description,
@@ -419,14 +431,21 @@ func (m *psqlCampaignRepository) GetCampaignDetail(ctx context.Context, id int64
 		&updateDate,
 	)
 
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
 	result.CreatedAt = &createDate.Time
 	result.UpdatedAt = &updateDate.Time
 	err = json.Unmarshal([]byte(validator), &result.Validators)
 
 	if err != nil {
-		logrus.Error(err)
+		requestLogger.Debug(err)
+
 		return nil, err
 	}
 
-	return result, err
+	return result, nil
 }

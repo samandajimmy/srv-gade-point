@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
@@ -10,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/labstack/echo"
 	"github.com/labstack/gommon/log"
 	govaluate "gopkg.in/Knetic/govaluate.v2"
 )
@@ -29,41 +31,55 @@ func NewCampaignUseCase(cmpgn campaigns.Repository, timeout time.Duration) campa
 	}
 }
 
-func (cmpgn *campaignUseCase) CreateCampaign(c context.Context, m *models.Campaign) error {
-	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
-	defer cancel()
+func (cmpgn *campaignUseCase) CreateCampaign(c echo.Context, campaign *models.Campaign) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	err := cmpgn.campaignRepo.CreateCampaign(c, campaign)
 
-	err := cmpgn.campaignRepo.CreateCampaign(ctx, m)
 	if err != nil {
-		return err
+		requestLogger.Debug(models.ErrCampaignFailed)
+
+		return models.ErrCampaignFailed
 	}
+
 	return nil
 }
 
-func (cmpgn *campaignUseCase) UpdateCampaign(c context.Context, id int64, updateCampaign *models.UpdateCampaign) error {
+func (cmpgn *campaignUseCase) UpdateCampaign(c echo.Context, id string, updateCampaign *models.UpdateCampaign) error {
 	var campaignDetail *models.Campaign
 	now := time.Now()
-	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
-	defer cancel()
-	campaignDetail, err := cmpgn.campaignRepo.GetCampaignDetail(ctx, id)
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	campaignID, err := strconv.Atoi(id)
 
-	if campaignDetail == nil {
-		log.Error(models.ErrNoCampaign)
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return errors.New("Something went wrong with input ID")
+	}
+
+	campaignDetail, err = cmpgn.campaignRepo.GetCampaignDetail(c, int64(campaignID))
+
+	if err != nil {
+		requestLogger.Debug(models.ErrNoCampaign)
+
 		return models.ErrNoCampaign
 	}
 
 	vEndDate, _ := time.Parse(time.RFC3339, campaignDetail.EndDate)
 
 	if vEndDate.Before(now.Add(time.Hour * -24)) {
-		log.Error(models.ErrCampaignExpired)
+		requestLogger.Debug(models.ErrCampaignExpired)
+
 		return models.ErrCampaignExpired
 	}
 
-	err = cmpgn.campaignRepo.UpdateCampaign(ctx, id, updateCampaign)
+	err = cmpgn.campaignRepo.UpdateCampaign(c, int64(campaignID), updateCampaign)
 
 	if err != nil {
-		log.Error(err)
-		return err
+		requestLogger.Debug(models.ErrCampaignUpdateFailed)
+
+		return models.ErrCampaignUpdateFailed
 	}
 
 	return nil
@@ -98,16 +114,23 @@ func (cmpgn *campaignUseCase) GetCampaign(c context.Context, name string, status
 	return strconv.Itoa(countCampaign), listCampaign, nil
 }
 
-func (cmpgn *campaignUseCase) GetCampaignDetail(c context.Context, id int64) (*models.Campaign, error) {
-	var campaignDetail *models.Campaign
-	var err error
-	ctx, cancel := context.WithTimeout(c, cmpgn.contextTimeout)
-	defer cancel()
-
-	campaignDetail, err = cmpgn.campaignRepo.GetCampaignDetail(ctx, id)
+func (cmpgn *campaignUseCase) GetCampaignDetail(c echo.Context, id string) (*models.Campaign, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	campaignID, err := strconv.Atoi(id)
 
 	if err != nil {
-		return nil, err
+		requestLogger.Debug(err)
+
+		return nil, errors.New("Something went wrong with input ID")
+	}
+
+	campaignDetail, err := cmpgn.campaignRepo.GetCampaignDetail(c, int64(campaignID))
+
+	if err != nil {
+		requestLogger.Debug(models.ErrNoCampaign)
+
+		return nil, models.ErrNoCampaign
 	}
 
 	return campaignDetail, nil

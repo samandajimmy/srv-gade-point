@@ -15,6 +15,12 @@ var (
 	// ErrBadParamInput to store bad parameter error message
 	ErrBadParamInput = errors.New("Given Param is not valid")
 
+	// ErrCampaignFailed to store create campaign failed error message
+	ErrCampaignFailed = errors.New("Failed to create a campaign")
+
+	// ErrCampaignUpdateFailed to store update campaign failed error message
+	ErrCampaignUpdateFailed = errors.New("Failed to update a campaign")
+
 	// ErrNoCampaign to store campaign not found error message
 	ErrNoCampaign = errors.New("No campaign avaliable")
 

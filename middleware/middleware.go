@@ -18,7 +18,6 @@ var echGroup models.EchoGroup
 func InitMiddleware(ech *echo.Echo, echoGroup models.EchoGroup) {
 	cm := &customMiddleware{ech}
 	echGroup = echoGroup
-
 	ech.Use(middleware.RequestIDWithConfig(middleware.DefaultRequestIDConfig))
 
 	ech.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{

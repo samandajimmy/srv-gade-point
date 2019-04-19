@@ -19,7 +19,13 @@ func InitMiddleware(ech *echo.Echo, echoGroup models.EchoGroup) {
 	cm := &customMiddleware{ech}
 	echGroup = echoGroup
 
-	ech.Use(middleware.Logger())
+	ech.Use(middleware.RequestIDWithConfig(middleware.DefaultRequestIDConfig))
+
+	ech.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: "requestID=${id}, method=${method}, status=${status}, uri=${uri}, latency=${latency_human} " +
+			"host=${host}, remote_ip=${remote_ip}, user_agent=${user_agent}, error=${error} \n",
+	}))
+
 	ech.Use(middleware.Recover())
 	cm.cors()
 	cm.basicAuth()

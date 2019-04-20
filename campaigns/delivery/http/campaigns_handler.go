@@ -1,11 +1,9 @@
 package http
 
 import (
-	"context"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/labstack/echo"
@@ -103,21 +101,22 @@ func (cmpgn *CampaignsHandler) UpdateStatusCampaign(c echo.Context) error {
 // GetCampaigns to get list of campaigns data
 func (cmpgn *CampaignsHandler) GetCampaigns(c echo.Context) error {
 	response = models.Response{}
-	name := c.QueryParam("name")
-	status := c.QueryParam("status")
-	startDate := c.QueryParam("startDate")
-	endDate := c.QueryParam("endDate")
-	page, _ := strconv.Atoi(c.QueryParam("page"))
-	limit, _ := strconv.Atoi(c.QueryParam("limit"))
-	ctx := c.Request().Context()
-	response.Data = ""
-	response.TotalCount = ""
-
-	if ctx == nil {
-		ctx = context.Background()
+	payload := map[string]interface{}{
+		"name":      c.QueryParam("name"),
+		"status":    c.QueryParam("status"),
+		"startDate": c.QueryParam("startDate"),
+		"endDate":   c.QueryParam("endDate"),
+		"page":      c.QueryParam("page"),
+		"limit":     c.QueryParam("limit"),
 	}
 
-	countCampaign, res, err := cmpgn.CampaignUseCase.GetCampaign(ctx, name, status, startDate, endDate, int(page), int(limit))
+	logger := models.RequestLogger{
+		Payload: payload,
+	}
+
+	requestLogger := logger.GetRequestLogger(c, nil)
+	requestLogger.Info("Start to get campaigns.")
+	countCampaign, data, err := cmpgn.CampaignUseCase.GetCampaign(c, payload)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -125,13 +124,15 @@ func (cmpgn *CampaignsHandler) GetCampaigns(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	if len(res) > 0 {
-		response.Data = res
+	if len(data) > 0 {
+		response.Data = data
 	}
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessageDataSuccess
 	response.TotalCount = countCampaign
+
+	requestLogger.Info("End of get campaigns.")
 
 	return c.JSON(http.StatusOK, response)
 }
@@ -166,20 +167,17 @@ func (cmpgn *CampaignsHandler) GetCampaignDetail(c echo.Context) error {
 func (cmpgn *CampaignsHandler) GetCampaignValue(c echo.Context) error {
 	var campaignValue models.GetCampaignValue
 	response = models.Response{}
-	ctx := c.Request().Context()
-	err := c.Bind(&campaignValue)
 
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	if err != nil {
+	if err := c.Bind(&campaignValue); err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		return c.JSON(http.StatusUnprocessableEntity, response)
+		return c.JSON(getStatusCode(err), response)
 	}
 
-	userPoint, err := cmpgn.CampaignUseCase.GetCampaignValue(ctx, &campaignValue)
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, campaignValue)
+	requestLogger.Info("Start to get a campaign value.")
+	userPoint, err := cmpgn.CampaignUseCase.GetCampaignValue(c, &campaignValue)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -193,6 +191,8 @@ func (cmpgn *CampaignsHandler) GetCampaignValue(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
+	requestLogger.Info("End of get a campaign value.")
+
 	return c.JSON(http.StatusOK, response)
 }
 
@@ -200,13 +200,17 @@ func (cmpgn *CampaignsHandler) GetCampaignValue(c echo.Context) error {
 func (cmpgn *CampaignsHandler) GetUserPoint(c echo.Context) error {
 	response = models.Response{}
 	userID := c.QueryParam("userId")
-	ctx := c.Request().Context()
-
-	if ctx == nil {
-		ctx = context.Background()
+	payload := map[string]interface{}{
+		"userID": userID,
 	}
 
-	userPoint, err := cmpgn.CampaignUseCase.GetUserPoint(ctx, userID)
+	logger := models.RequestLogger{
+		Payload: payload,
+	}
+
+	requestLogger := logger.GetRequestLogger(c, payload)
+	requestLogger.Info("Start to get user point.")
+	userPoint, err := cmpgn.CampaignUseCase.GetUserPoint(c, userID)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -220,6 +224,8 @@ func (cmpgn *CampaignsHandler) GetUserPoint(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
+	requestLogger.Info("End of get user point.")
+
 	return c.JSON(http.StatusOK, response)
 
 }
@@ -228,13 +234,17 @@ func (cmpgn *CampaignsHandler) GetUserPoint(c echo.Context) error {
 func (cmpgn *CampaignsHandler) GetUserPointHistory(c echo.Context) error {
 	response = models.Response{}
 	userID := c.QueryParam("userId")
-	ctx := c.Request().Context()
-
-	if ctx == nil {
-		ctx = context.Background()
+	payload := map[string]interface{}{
+		"userID": userID,
 	}
 
-	data, err := cmpgn.CampaignUseCase.GetUserPointHistory(ctx, userID)
+	logger := models.RequestLogger{
+		Payload: payload,
+	}
+
+	requestLogger := logger.GetRequestLogger(c, payload)
+	requestLogger.Info("Start to get user point history")
+	data, err := cmpgn.CampaignUseCase.GetUserPointHistory(c, userID)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -248,6 +258,8 @@ func (cmpgn *CampaignsHandler) GetUserPointHistory(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
+	requestLogger.Info("End of get user point history")
+
 	return c.JSON(http.StatusOK, response)
 }
 

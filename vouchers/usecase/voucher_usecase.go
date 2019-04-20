@@ -11,7 +11,6 @@ import (
 	"gade/srv-gade-point/vouchers"
 	"io"
 	"io/ioutil"
-	"math"
 	"math/rand"
 	"mime/multipart"
 	"net/http"
@@ -277,7 +276,8 @@ func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userID string, st
 
 func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVoucherBuy) (*models.PromoCode, error) {
 	var err error
-	now := time.Now()
+	// now := time.Now()
+
 	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
 	defer cancel()
 	err = vchr.voucherRepo.VoucherCheckExpired(c, m.VoucherID)
@@ -292,17 +292,17 @@ func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVouch
 		return nil, err
 	}
 
-	userPoint, err := vchr.campaignRepo.GetUserPoint(c, m.UserID)
+	// userPoint, err := vchr.campaignRepo.GetUserPoint(c, m.UserID)
 
-	if err != nil {
-		return nil, err
-	}
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	err = validateBuy(voucherDetail.Point, int64(userPoint), voucherDetail.Available)
+	// err = validateBuy(voucherDetail.Point, int64(userPoint), voucherDetail.Available)
 
-	if err != nil {
-		return nil, err
-	}
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	promoCode, err := vchr.voucherRepo.UpdatePromoCodeBought(c, m.VoucherID, m.UserID)
 
@@ -311,23 +311,23 @@ func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVouch
 	}
 
 	// Parse interface to float
-	parseFloat, err := getFloat(voucherDetail.Point)
-	pointAmount := math.Floor(parseFloat)
+	// parseFloat, err := getFloat(voucherDetail.Point)
+	// pointAmount := math.Floor(parseFloat)
 
-	campaignTrx := &models.CampaignTrx{
-		UserID:          m.UserID,
-		PointAmount:     &pointAmount,
-		TransactionType: models.TransactionPointTypeKredit,
-		TransactionDate: &now,
-		PromoCode:       promoCode,
-		CreatedAt:       &now,
-	}
+	// campaignTrx := &models.CampaignTrx{
+	// 	UserID:          m.UserID,
+	// 	PointAmount:     &pointAmount,
+	// 	TransactionType: models.TransactionPointTypeKredit,
+	// 	TransactionDate: &now,
+	// 	PromoCode:       promoCode,
+	// 	CreatedAt:       &now,
+	// }
 
-	err = vchr.campaignRepo.SavePoint(c, campaignTrx)
+	// err = vchr.campaignRepo.SavePoint(c, campaignTrx)
 
-	if err != nil {
-		return nil, err
-	}
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	promoCode.Voucher = voucherDetail
 	return promoCode, nil

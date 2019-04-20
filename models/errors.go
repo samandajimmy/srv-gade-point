@@ -24,6 +24,24 @@ var (
 	// ErrNoCampaign to store campaign not found error message
 	ErrNoCampaign = errors.New("No campaign avaliable")
 
+	// ErrGetCampaign to get campaign error message
+	ErrGetCampaign = errors.New("Something went wrong when trying to get campaign")
+
+	// ErrGetCampaignCounter to get campaign counter error message
+	ErrGetCampaignCounter = errors.New("Something went wrong when trying to get campaign counter")
+
+	// ErrCalculateFormulaCampaign to get campaign counter error message
+	ErrCalculateFormulaCampaign = errors.New("Something went wrong when trying to calculate campaign formula")
+
+	// ErrStoreCampaignTrx to get campaign counter error message
+	ErrStoreCampaignTrx = errors.New("Something went wrong when trying to store campaign transaction")
+
+	// ErrGetUserPoint to get user point error message
+	ErrGetUserPoint = errors.New("Something went wrong when trying to get user point")
+
+	// ErrGetUserPointHistory to get user point history error message
+	ErrGetUserPointHistory = errors.New("Something went wrong when trying to get user point histrory")
+
 	// ErrCampaignExpired to store campaign expired error message
 	ErrCampaignExpired = errors.New("Campaign has been expired")
 

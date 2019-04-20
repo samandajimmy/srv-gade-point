@@ -28,7 +28,9 @@ func (rl *RequestLogger) GetRequestLogger(c echo.Context, payload interface{}) *
 		return logrus.WithFields(logrus.Fields{})
 	}
 
-	rl.Payload = string(pl)
+	if payload != nil {
+		rl.Payload = string(pl)
+	}
 
 	return logrus.WithFields(logrus.Fields{"params": structs.Map(rl)})
 }

@@ -39,8 +39,14 @@ var (
 	// ErrGetUserPoint to get user point error message
 	ErrGetUserPoint = errors.New("Something went wrong when trying to get user point")
 
+	// ErrUserPointNA to get user point N/A error message
+	ErrUserPointNA = errors.New("You dont have any points yet")
+
 	// ErrGetUserPointHistory to get user point history error message
 	ErrGetUserPointHistory = errors.New("Something went wrong when trying to get user point histrory")
+
+	// ErrUserPointHistoryNA to get user point history N/A error message
+	ErrUserPointHistoryNA = errors.New("You dont have any points history yet")
 
 	// ErrCampaignExpired to store campaign expired error message
 	ErrCampaignExpired = errors.New("Campaign has been expired")

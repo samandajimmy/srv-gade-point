@@ -231,6 +231,12 @@ func (cmpgn *campaignUseCase) GetUserPoint(c echo.Context, userID string) (*mode
 		return nil, models.ErrGetUserPoint
 	}
 
+	if pointAmount == 0 {
+		requestLogger.Debug(models.ErrUserPointNA)
+
+		return nil, models.ErrUserPointNA
+	}
+
 	p := new(models.UserPoint)
 	p.UserPoint = pointAmount
 
@@ -246,6 +252,12 @@ func (cmpgn *campaignUseCase) GetUserPointHistory(c echo.Context, userID string)
 		requestLogger.Debug(models.ErrGetUserPointHistory)
 
 		return nil, models.ErrGetUserPointHistory
+	}
+
+	if len(dataHistory) == 0 {
+		requestLogger.Debug(models.ErrUserPointHistoryNA)
+
+		return nil, models.ErrUserPointHistoryNA
 	}
 
 	return dataHistory, nil

@@ -16,7 +16,7 @@ COPY go.sum .
 RUN git version
 
 # Get dependancies - will also be cached if we won't change mod/sum
-RUN go get -d -v ./...
+RUN go mod download
 
 # COPY the source code as the last step
 COPY . .

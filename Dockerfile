@@ -1,4 +1,4 @@
-FROM golang:1.12 as build-env
+FROM golang:1.11 as build-env
 # All these steps will be cached
 
 RUN mkdir /srv-gade-point
@@ -12,9 +12,7 @@ COPY go.mod .
 COPY go.sum .
 
 # Get dependancies - will also be cached if we won't change mod/sum
-# RUN go mod download
-
-RUN git version
+RUN go get -d -v ./...
 
 # COPY the source code as the last step
 COPY . .

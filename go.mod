@@ -1,6 +1,6 @@
 module gade/srv-gade-point
 
-go 1.12
+go 1.11
 
 require (
 	github.com/carlescere/scheduler v0.0.0-20170109141437-ee74d2f83d82

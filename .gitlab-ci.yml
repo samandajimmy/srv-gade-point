@@ -7,6 +7,7 @@ variables:
   CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
 
 before_script:
+  - echo $CI_JOB_TOKEN
   - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN 10.251.4.82:5000
 
 build:

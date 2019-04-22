@@ -1,5 +1,5 @@
 FROM golang:1.11 as build-env
-RUN apt-get update && apt-get install -y git=2.18.0
+RUN apt-get update && apt-get install -y git=2.20.1
 # All these steps will be cached
 
 RUN mkdir /srv-gade-point

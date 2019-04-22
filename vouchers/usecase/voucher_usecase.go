@@ -20,6 +20,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/labstack/echo"
+
 	"github.com/iancoleman/strcase"
 	"github.com/labstack/gommon/log"
 	"github.com/tidwall/gjson"
@@ -275,9 +277,10 @@ func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userID string, st
 	return vouchersUser, strconv.Itoa(totalCount), nil
 }
 
-func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVoucherBuy) (*models.PromoCode, error) {
+func (vchr *voucherUseCase) VoucherBuy(c context.Context, ech echo.Context, m *models.PayloadVoucherBuy) (*models.PromoCode, error) {
 	var err error
 	now := time.Now()
+
 	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
 	defer cancel()
 	err = vchr.voucherRepo.VoucherCheckExpired(c, m.VoucherID)
@@ -292,7 +295,7 @@ func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVouch
 		return nil, err
 	}
 
-	userPoint, err := vchr.campaignRepo.GetUserPoint(c, m.UserID)
+	userPoint, err := vchr.campaignRepo.GetUserPoint(ech, m.UserID)
 
 	if err != nil {
 		return nil, err
@@ -323,7 +326,7 @@ func (vchr *voucherUseCase) VoucherBuy(c context.Context, m *models.PayloadVouch
 		CreatedAt:       &now,
 	}
 
-	err = vchr.campaignRepo.SavePoint(c, campaignTrx)
+	err = vchr.campaignRepo.SavePoint(ech, campaignTrx)
 
 	if err != nil {
 		return nil, err

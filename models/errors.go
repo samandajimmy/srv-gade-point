@@ -15,8 +15,38 @@ var (
 	// ErrBadParamInput to store bad parameter error message
 	ErrBadParamInput = errors.New("Given Param is not valid")
 
+	// ErrCampaignFailed to store create campaign failed error message
+	ErrCampaignFailed = errors.New("Failed to create a campaign")
+
+	// ErrCampaignUpdateFailed to store update campaign failed error message
+	ErrCampaignUpdateFailed = errors.New("Failed to update a campaign")
+
 	// ErrNoCampaign to store campaign not found error message
 	ErrNoCampaign = errors.New("No campaign avaliable")
+
+	// ErrGetCampaign to get campaign error message
+	ErrGetCampaign = errors.New("Something went wrong when trying to get campaign")
+
+	// ErrGetCampaignCounter to get campaign counter error message
+	ErrGetCampaignCounter = errors.New("Something went wrong when trying to get campaign counter")
+
+	// ErrCalculateFormulaCampaign to get campaign counter error message
+	ErrCalculateFormulaCampaign = errors.New("Something went wrong when trying to calculate campaign formula")
+
+	// ErrStoreCampaignTrx to get campaign counter error message
+	ErrStoreCampaignTrx = errors.New("Something went wrong when trying to store campaign transaction")
+
+	// ErrGetUserPoint to get user point error message
+	ErrGetUserPoint = errors.New("Something went wrong when trying to get user point")
+
+	// ErrUserPointNA to get user point N/A error message
+	ErrUserPointNA = errors.New("You dont have any points yet")
+
+	// ErrGetUserPointHistory to get user point history error message
+	ErrGetUserPointHistory = errors.New("Something went wrong when trying to get user point histrory")
+
+	// ErrUserPointHistoryNA to get user point history N/A error message
+	ErrUserPointHistoryNA = errors.New("You dont have any points history yet")
 
 	// ErrCampaignExpired to store campaign expired error message
 	ErrCampaignExpired = errors.New("Campaign has been expired")

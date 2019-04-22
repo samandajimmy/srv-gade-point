@@ -305,7 +305,7 @@ func (vchr *VouchersHandler) VoucherBuy(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	responseData, err := vchr.VoucherUseCase.VoucherBuy(ctx, &voucher)
+	responseData, err := vchr.VoucherUseCase.VoucherBuy(ctx, c, &voucher)
 
 	if err != nil {
 		response.Status = models.StatusError

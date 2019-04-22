@@ -1,14 +1,14 @@
 FROM golang:1.12 as build-env
 # All these steps will be cached
 
-RUN mkdir /srv-gade-point 
+RUN mkdir /srv-gade-point
 WORKDIR /srv-gade-point
 
 # Force the go compiler to use modules
-# ENV GO111MODULE=on
+ENV GO111MODULE=on
 
 # COPY go.mod and go.sum files to the workspace
-COPY go.mod . 
+COPY go.mod .
 COPY go.sum .
 
 # Get dependancies - will also be cached if we won't change mod/sum

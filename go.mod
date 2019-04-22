@@ -5,11 +5,8 @@ go 1.12
 require (
 	github.com/carlescere/scheduler v0.0.0-20170109141437-ee74d2f83d82
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/docker/docker v0.7.3-0.20190108045446-77df18c24acf
-	github.com/docker/go-metrics v0.0.0-20181218153428-b84716841b82 // indirect
 	github.com/fatih/structs v1.1.0
 	github.com/golang-migrate/migrate/v4 v4.3.0
-	github.com/gorilla/sessions v1.1.3
 	github.com/iancoleman/strcase v0.0.0-20180726023541-3605ed457bf7
 	github.com/joho/godotenv v1.3.0
 	github.com/kr/pty v1.1.3 // indirect

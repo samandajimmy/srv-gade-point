@@ -11,6 +11,9 @@ ENV GO111MODULE=on
 COPY go.mod .
 COPY go.sum .
 
+# CHECK VERSION OF GIT
+RUN git version
+
 # Get dependancies - will also be cached if we won't change mod/sum
 RUN go get -d -v ./...
 

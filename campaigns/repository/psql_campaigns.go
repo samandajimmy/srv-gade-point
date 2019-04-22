@@ -250,7 +250,7 @@ func (m *psqlCampaignRepository) GetValidatorCampaign(c echo.Context, payload *m
 
 func (m *psqlCampaignRepository) SavePoint(c echo.Context, cmpgnTrx *models.CampaignTrx) error {
 	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
+	requestLogger := logger.GetRequestLogger(c, cmpgnTrx)
 	now := time.Now()
 	var id int64
 	var query string

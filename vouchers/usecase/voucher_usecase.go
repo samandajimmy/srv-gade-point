@@ -90,12 +90,9 @@ func (vchr *voucherUseCase) CreateVoucher(c context.Context, m *models.Voucher) 
 	return nil
 }
 
-func (vchr *voucherUseCase) UpdateVoucher(c context.Context, id int64, updateVoucher *models.UpdateVoucher) error {
-	var voucherDetail *models.Voucher
+func (vchr *voucherUseCase) UpdateVoucher(c echo.Context, id int64, updateVoucher *models.UpdateVoucher) error {
 	now := time.Now()
-	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
-	defer cancel()
-	voucherDetail, err := vchr.voucherRepo.GetVoucher(ctx, strconv.FormatInt(id, 10))
+	voucherDetail, err := vchr.voucherRepo.GetVoucher(c, strconv.FormatInt(id, 10))
 
 	if voucherDetail == nil {
 		log.Error(models.ErrVoucherUnavailable)
@@ -109,7 +106,7 @@ func (vchr *voucherUseCase) UpdateVoucher(c context.Context, id int64, updateVou
 		return models.ErrVoucherExpired
 	}
 
-	err = vchr.voucherRepo.UpdateVoucher(ctx, id, updateVoucher)
+	err = vchr.voucherRepo.UpdateVoucher(c, id, updateVoucher)
 
 	if err != nil {
 		log.Error(err)
@@ -243,12 +240,8 @@ func (vchr *voucherUseCase) GetVouchers(c context.Context, name string, status s
 	return listVoucher, strconv.Itoa(totalCount), nil
 }
 
-func (vchr *voucherUseCase) GetVoucher(c context.Context, voucherID string) (*models.Voucher, error) {
-	var voucherDetail *models.Voucher
-	var err error
-	ctx, cancel := context.WithTimeout(c, vchr.contextTimeout)
-	defer cancel()
-	voucherDetail, err = vchr.voucherRepo.GetVoucher(ctx, voucherID)
+func (vchr *voucherUseCase) GetVoucher(c echo.Context, voucherID string) (*models.Voucher, error) {
+	voucherDetail, err := vchr.voucherRepo.GetVoucher(c, voucherID)
 
 	if err != nil {
 		return nil, err
@@ -277,48 +270,83 @@ func (vchr *voucherUseCase) GetVouchersUser(c context.Context, userID string, st
 	return vouchersUser, strconv.Itoa(totalCount), nil
 }
 
-func (vchr *voucherUseCase) VoucherBuy(c context.Context, ech echo.Context, m *models.PayloadVoucherBuy) (*models.PromoCode, error) {
-	var err error
+func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.PayloadVoucherBuy) (*models.PromoCode, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(ech, nil)
 	now := time.Now()
-
-	c, cancel := context.WithTimeout(c, vchr.contextTimeout)
-	defer cancel()
-	err = vchr.voucherRepo.VoucherCheckExpired(c, m.VoucherID)
+	voucherDetail, err := vchr.voucherRepo.GetVoucher(ech, payload.VoucherID)
 
 	if err != nil {
-		return nil, err
+		requestLogger.Debug(models.ErrVoucherUnavailable)
+
+		return nil, models.ErrVoucherUnavailable
 	}
 
-	voucherDetail, err := vchr.voucherRepo.GetVoucher(c, m.VoucherID)
+	// check date expiry
+	vStartDate, _ := time.Parse(time.RFC3339, voucherDetail.StartDate)
+	vEndDate, _ := time.Parse(time.RFC3339, voucherDetail.EndDate)
 
-	if err != nil {
-		return nil, err
+	if vStartDate.After(now) {
+		requestLogger.Debug(models.ErrVoucherExpired)
+
+		return nil, models.ErrVoucherNotStarted
 	}
 
-	userPoint, err := vchr.campaignRepo.GetUserPoint(ech, m.UserID)
+	if vEndDate.Before(now) {
+		requestLogger.Debug(models.ErrVoucherExpired)
+
+		return nil, models.ErrVoucherExpired
+	}
+
+	userPoint, err := vchr.campaignRepo.GetUserPoint(ech, payload.UserID)
 
 	if err != nil {
-		return nil, err
+		requestLogger.Debug(models.ErrGetUserPoint)
+
+		return nil, models.ErrGetUserPoint
+	}
+
+	if userPoint == 0 {
+		requestLogger.Debug(models.ErrUserPointNA)
+
+		return nil, models.ErrUserPointNA
 	}
 
 	err = validateBuy(voucherDetail.Point, int64(userPoint), voucherDetail.Available)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return nil, err
 	}
 
-	promoCode, err := vchr.voucherRepo.UpdatePromoCodeBought(c, m.VoucherID, m.UserID)
+	promoCode, err := vchr.voucherRepo.UpdatePromoCodeBought(ech, payload.VoucherID, payload.UserID)
 
 	if err != nil {
-		return nil, err
+		requestLogger.Debug(models.ErrUpdatePromoCodes)
+
+		return nil, models.ErrUpdatePromoCodes
 	}
 
 	// Parse interface to float
 	parseFloat, err := getFloat(voucherDetail.Point)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, models.ErrVoucherPoint
+	}
+
+	if math.IsInf(parseFloat, 0) {
+		requestLogger.Debug("the result of formula is infinity and beyond")
+
+		return nil, models.ErrVoucherPoint
+	}
+
 	pointAmount := math.Floor(parseFloat)
 
 	campaignTrx := &models.CampaignTrx{
-		UserID:          m.UserID,
+		UserID:          payload.UserID,
 		PointAmount:     &pointAmount,
 		TransactionType: models.TransactionPointTypeKredit,
 		TransactionDate: &now,
@@ -329,10 +357,16 @@ func (vchr *voucherUseCase) VoucherBuy(c context.Context, ech echo.Context, m *m
 	err = vchr.campaignRepo.SavePoint(ech, campaignTrx)
 
 	if err != nil {
-		return nil, err
+		requestLogger.Debug(models.ErrStoreCampaignTrx)
+
+		return nil, models.ErrStoreCampaignTrx
 	}
 
-	promoCode.Voucher = voucherDetail
+	promoCode.Voucher = &models.Voucher{
+		ID:   voucherDetail.ID,
+		Name: voucherDetail.Name,
+	}
+
 	return promoCode, nil
 }
 
@@ -447,7 +481,7 @@ func randStringBytes(n int) string {
 
 func validateBuy(voucherPoint *int64, userPoint int64, avaliable *int32) error {
 	if *avaliable <= 0 {
-		return models.ErrVoucherUnavailable
+		return models.ErrVoucherOutOfStock
 	}
 
 	if userPoint < *voucherPoint {

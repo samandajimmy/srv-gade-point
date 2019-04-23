@@ -228,7 +228,7 @@ func (m *psqlCampaignRepository) GetValidatorCampaign(c echo.Context, payload *m
 	var validator json.RawMessage
 	result := new(models.Campaign)
 	query := `SELECT id, validators FROM campaigns WHERE status = 1 AND start_date::date <= now()::date
-	AND end_date::date >= now()::date AND validators->>'channel'=$1 AND validators->>'product'=$2 AND validators->>'transactionType'=$3 AND validators->>'unit'=$4 ORDER BY end_date ASC LIMIT 1`
+	AND end_date::date >= now()::date AND validators->>'channel'=$1 AND validators->>'product'=$2 AND validators->>'transactionType'=$3 AND validators->>'unit'=$4 ORDER BY start_date DESC LIMIT 1`
 	err := m.Conn.QueryRow(query, payload.Channel, payload.Product, payload.TransactionType, payload.Unit).Scan(&result.ID, &validator)
 
 	if err != nil {
@@ -256,14 +256,14 @@ func (m *psqlCampaignRepository) SavePoint(c echo.Context, cmpgnTrx *models.Camp
 	var query string
 
 	if cmpgnTrx.TransactionType == models.TransactionPointTypeDebet {
-		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, campaign_id, created_at)
-			VALUES ($1, $2, $3, $4, $5, $6)  RETURNING id`
+		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, reff_core, campaign_id, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)  RETURNING id`
 		id = cmpgnTrx.Campaign.ID
 	}
 
 	if cmpgnTrx.TransactionType == models.TransactionPointTypeKredit {
-		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, promo_code_id, created_at)
-			VALUES ($1, $2, $3, $4, $5, $6)  RETURNING id`
+		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, reff_core, promo_code_id, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)  RETURNING id`
 		id = cmpgnTrx.PromoCode.ID
 	}
 
@@ -277,7 +277,7 @@ func (m *psqlCampaignRepository) SavePoint(c echo.Context, cmpgnTrx *models.Camp
 
 	cmpgnTrx.CreatedAt = &now
 	var lastID int64
-	err = stmt.QueryRow(cmpgnTrx.UserID, cmpgnTrx.PointAmount, cmpgnTrx.TransactionType, cmpgnTrx.TransactionDate, id, cmpgnTrx.CreatedAt).Scan(&lastID)
+	err = stmt.QueryRow(cmpgnTrx.UserID, cmpgnTrx.PointAmount, cmpgnTrx.TransactionType, cmpgnTrx.TransactionDate, cmpgnTrx.ReffCore, id, cmpgnTrx.CreatedAt).Scan(&lastID)
 
 	if err != nil {
 		requestLogger.Debug(err)

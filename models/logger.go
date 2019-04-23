@@ -23,7 +23,7 @@ func (rl *RequestLogger) GetRequestLogger(c echo.Context, payload interface{}) *
 	pl, err := json.Marshal(payload)
 
 	if err != nil {
-		logrus.WithFields(logrus.Fields{"requestID": rl.RequestID}).Error(err)
+		logrus.WithFields(logrus.Fields{"requestID": rl.RequestID}).Debug(err)
 
 		return logrus.WithFields(logrus.Fields{})
 	}

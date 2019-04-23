@@ -181,7 +181,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 	result, err := expression.Evaluate(parameters)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrCalculateFormulaCampaign)
+		requestLogger.Debug(err)
 
 		return nil, models.ErrCalculateFormulaCampaign
 	}
@@ -190,7 +190,13 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 	parseFloat, err := getFloat(result)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrCalculateFormulaCampaign)
+		requestLogger.Debug(err)
+
+		return nil, models.ErrCalculateFormulaCampaign
+	}
+
+	if math.IsInf(parseFloat, 0) {
+		requestLogger.Debug("the result of formula is infinity and beyond")
 
 		return nil, models.ErrCalculateFormulaCampaign
 	}
@@ -202,6 +208,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 		PointAmount:     &pointAmount,
 		TransactionType: models.TransactionPointTypeDebet,
 		TransactionDate: &now,
+		ReffCore:        payload.ReffCore,
 		Campaign:        dataCampaign,
 		CreatedAt:       &now,
 	}

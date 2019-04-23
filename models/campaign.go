@@ -43,6 +43,7 @@ type CampaignTrx struct {
 	PointAmount     *float64   `json:"pointAmount,omitempty"`
 	TransactionType string     `json:"transactionType,omitempty"`
 	TransactionDate *time.Time `json:"transactionDate,omitempty"`
+	ReffCore        string     `json:"reffCore,omitempty"`
 	Campaign        *Campaign  `json:"campaign,omitempty"`
 	PromoCode       *PromoCode `json:"promoCode,omitempty"`
 	UpdatedAt       *time.Time `json:"updatedAt,omitempty"`
@@ -62,6 +63,7 @@ type GetCampaignValue struct {
 	TransactionType   string  `json:"transactionType,omitempty"`
 	Unit              string  `json:"unit,omitempty"`
 	TransactionAmount float64 `json:"transactionAmount,omitempty"`
+	ReffCore          string  `json:"reffCore,omitempty"`
 }
 
 // UserPoint to store payload user point data

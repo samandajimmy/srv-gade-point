@@ -6,9 +6,9 @@ import (
 	"gade/srv-gade-point/vouchers"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo"
-	"github.com/sirupsen/logrus"
 )
 
 var response = models.Response{} // Response represent the response
@@ -50,7 +50,7 @@ func (vchr *VouchersHandler) CreateVoucher(c echo.Context) error {
 	if err := c.Bind(&voucher); err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		return c.JSON(http.StatusUnprocessableEntity, response)
+		return c.JSON(getStatusCode(err), response)
 	}
 
 	if ctx == nil {
@@ -62,7 +62,7 @@ func (vchr *VouchersHandler) CreateVoucher(c echo.Context) error {
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		return c.JSON(http.StatusUnprocessableEntity, response)
+		return c.JSON(getStatusCode(err), response)
 	}
 
 	if (models.Voucher{}) != voucher {
@@ -71,7 +71,7 @@ func (vchr *VouchersHandler) CreateVoucher(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessageSaveSuccess
-	return c.JSON(http.StatusCreated, response)
+	return c.JSON(getStatusCode(err), response)
 }
 
 // UpdateStatusVoucher Update status voucher ACTIVE or INACTIVE
@@ -84,24 +84,24 @@ func (vchr *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 	if err := c.Bind(updateVoucher); err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		return c.JSON(http.StatusUnprocessableEntity, response)
+		return c.JSON(getStatusCode(err), response)
 	}
 
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	err := vchr.VoucherUseCase.UpdateVoucher(ctx, int64(id), updateVoucher)
+	err := vchr.VoucherUseCase.UpdateVoucher(c, int64(id), updateVoucher)
 
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		return c.JSON(http.StatusOK, response)
+		return c.JSON(getStatusCode(err), response)
 	}
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessageUpdateSuccess
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(getStatusCode(err), response)
 }
 
 // UploadVoucherImages Upload image voucher
@@ -135,7 +135,7 @@ func (vchr *VouchersHandler) UploadVoucherImages(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessageUploadSuccess
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(getStatusCode(err), response)
 }
 
 // GetVouchersAdmin Get all voucher by param name, status, start date and end date for admin
@@ -168,7 +168,7 @@ func (vchr *VouchersHandler) GetVouchersAdmin(c echo.Context) error {
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
 	response.TotalCount = totalCount
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(getStatusCode(err), response)
 }
 
 // GetVoucherAdmin Get detail voucher by voucherId for admin
@@ -195,7 +195,7 @@ func (vchr *VouchersHandler) GetVoucherAdmin(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(getStatusCode(err), response)
 }
 
 // GetVouchers Get all voucher by param name, status, start date and end date
@@ -228,20 +228,15 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
 	response.TotalCount = totalCount
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(getStatusCode(err), response)
 }
 
 // GetVoucher Get detail voucher by voucherId
 func (vchr *VouchersHandler) GetVoucher(c echo.Context) error {
 	response = models.Response{}
 	voucherID := c.Param("id")
-	ctx := c.Request().Context()
 
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	responseData, err := vchr.VoucherUseCase.GetVoucher(ctx, voucherID)
+	responseData, err := vchr.VoucherUseCase.GetVoucher(c, voucherID)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -255,7 +250,7 @@ func (vchr *VouchersHandler) GetVoucher(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(getStatusCode(err), response)
 }
 
 // GetVouchersUser Get all promo code voucher by user id and status bought
@@ -286,26 +281,24 @@ func (vchr *VouchersHandler) GetVouchersUser(c echo.Context) error {
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
 	response.TotalCount = totalCount
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(getStatusCode(err), response)
 }
 
 // VoucherBuy is a handler to provide and endpoint to buy voucher with point
 func (vchr *VouchersHandler) VoucherBuy(c echo.Context) error {
 	var voucher models.PayloadVoucherBuy
 	response = models.Response{}
-	ctx := c.Request().Context()
 
 	if err := c.Bind(&voucher); err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		return c.JSON(http.StatusUnprocessableEntity, response)
+		return c.JSON(getStatusCode(err), response)
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	responseData, err := vchr.VoucherUseCase.VoucherBuy(ctx, c, &voucher)
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, voucher)
+	requestLogger.Info("Start to buy a voucher")
+	responseData, err := vchr.VoucherUseCase.VoucherBuy(c, &voucher)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -319,7 +312,9 @@ func (vchr *VouchersHandler) VoucherBuy(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
-	return c.JSON(http.StatusCreated, response)
+	requestLogger.Info("End of buy a voucher")
+
+	return c.JSON(getStatusCode(err), response)
 }
 
 // VoucherValidate is a handler to provide and endpoint to validate voucher before reedem
@@ -331,7 +326,7 @@ func (vchr *VouchersHandler) VoucherValidate(c echo.Context) error {
 	if err := c.Bind(&payloadValidator); err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		return c.JSON(http.StatusUnprocessableEntity, response)
+		return c.JSON(getStatusCode(err), response)
 	}
 
 	if ctx == nil {
@@ -352,7 +347,7 @@ func (vchr *VouchersHandler) VoucherValidate(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(getStatusCode(err), response)
 }
 
 // VoucherRedeem is a handler to provide and endpoint to reedem voucher
@@ -364,7 +359,7 @@ func (vchr *VouchersHandler) VoucherRedeem(c echo.Context) error {
 	if err := c.Bind(&voucher); err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		return c.JSON(http.StatusUnprocessableEntity, response)
+		return c.JSON(getStatusCode(err), response)
 	}
 
 	if ctx == nil {
@@ -385,15 +380,18 @@ func (vchr *VouchersHandler) VoucherRedeem(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(getStatusCode(err), response)
 }
 
 func getStatusCode(err error) int {
-
 	if err == nil {
 		return http.StatusOK
 	}
-	logrus.Error(err)
+
+	if strings.Contains(err.Error(), "400") {
+		return http.StatusBadRequest
+	}
+
 	switch err {
 	case models.ErrInternalServerError:
 		return http.StatusInternalServerError

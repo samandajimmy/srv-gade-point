@@ -52,7 +52,7 @@ var (
 	ErrCampaignExpired = errors.New("Campaign has been expired")
 
 	// ErrPointDeficit to store point deficit error message
-	ErrPointDeficit = errors.New("Point deficit")
+	ErrPointDeficit = errors.New("You dont have enough point to buy this voucher")
 
 	// ErrVoucherExpired to store voucher expired error message
 	ErrVoucherExpired = errors.New("Voucher has been expired")
@@ -62,6 +62,15 @@ var (
 
 	// ErrVoucherUnavailable to store voucher unavailable error message
 	ErrVoucherUnavailable = errors.New("Voucher Unavailable")
+
+	// ErrVoucherOutOfStock to store voucher unavailable error message
+	ErrVoucherOutOfStock = errors.New("Voucher is out of stock")
+
+	// ErrUpdatePromoCodes to update promo codes error message
+	ErrUpdatePromoCodes = errors.New("Something went wrong when trying to update voucher promo codes")
+
+	// ErrVoucherPoint to get voucher point error message
+	ErrVoucherPoint = errors.New("Something went wrong when trying to get voucher point")
 
 	// ErrVoucherCodeUnavailable to store voucher unavailable error message
 	ErrVoucherCodeUnavailable = errors.New("Voucher code unavailable")

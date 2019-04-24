@@ -17,6 +17,9 @@ import (
 	_campaignHttpDelivery "gade/srv-gade-point/campaigns/delivery/http"
 	_campaignRepository "gade/srv-gade-point/campaigns/repository"
 	_campaignUseCase "gade/srv-gade-point/campaigns/usecase"
+	_campaignTrxHttpDelivery "gade/srv-gade-point/campaigntrxs/delivery/http"
+	_campaignTrxRepository "gade/srv-gade-point/campaigntrxs/repository"
+	_campaignTrxUseCase "gade/srv-gade-point/campaigntrxs/usecase"
 	_tokenHttpDelivery "gade/srv-gade-point/tokens/delivery/http"
 	_tokenRepository "gade/srv-gade-point/tokens/repository"
 	_tokenUseCase "gade/srv-gade-point/tokens/usecase"
@@ -94,6 +97,11 @@ func main() {
 	campaignRepository := _campaignRepository.NewPsqlCampaignRepository(dbConn)
 	campaignUseCase := _campaignUseCase.NewCampaignUseCase(campaignRepository, timeoutContext)
 	_campaignHttpDelivery.NewCampaignsHandler(echoGroup, campaignUseCase)
+
+	// CAMPAIGNTRX
+	campaignTrxRepository := _campaignTrxRepository.NewPsqlCampaignTrxRepository(dbConn)
+	campaignTrxUseCase := _campaignTrxUseCase.NewCampaignTrxUseCase(campaignTrxRepository)
+	_campaignTrxHttpDelivery.NewCampaignTrxsHandler(echoGroup, campaignTrxUseCase, campaignUseCase)
 
 	// VOUCHER
 	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn)

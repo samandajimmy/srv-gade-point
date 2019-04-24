@@ -4,6 +4,8 @@ import (
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
 	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/labstack/echo"
@@ -234,8 +236,27 @@ func (cmpgn *CampaignsHandler) GetUserPoint(c echo.Context) error {
 func (cmpgn *CampaignsHandler) GetUserPointHistory(c echo.Context) error {
 	response = models.Response{}
 	userID := c.QueryParam("userId")
+	pageStr := c.QueryParam("page")
+	limitStr := c.QueryParam("limit")
+	startDateRg := c.QueryParam("startDateRg")
+	endDateRg := c.QueryParam("endDateRg")
+
+	// validate page and limit string input
+	if pageStr == "" {
+		pageStr = "0"
+	}
+
+	if limitStr == "" {
+		limitStr = "0"
+	}
+
+	// prepare payload for logger
 	payload := map[string]interface{}{
-		"userID": userID,
+		"userID":      userID,
+		"page":        pageStr,
+		"limit":       limitStr,
+		"startDateRg": startDateRg,
+		"endDateRg":   endDateRg,
 	}
 
 	logger := models.RequestLogger{
@@ -244,7 +265,49 @@ func (cmpgn *CampaignsHandler) GetUserPointHistory(c echo.Context) error {
 
 	requestLogger := logger.GetRequestLogger(c, payload)
 	requestLogger.Info("Start to get user point history")
-	data, err := cmpgn.CampaignUseCase.GetUserPointHistory(c, userID)
+
+	// validate payload values
+	page, err := strconv.Atoi(payload["page"].(string))
+
+	if err != nil {
+		requestLogger.Debug(err)
+		response.Status = models.StatusError
+		response.Message = http.StatusText(http.StatusBadRequest)
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	limit, err := strconv.Atoi(payload["limit"].(string))
+
+	if err != nil {
+		requestLogger.Debug(err)
+		response.Status = models.StatusError
+		response.Message = http.StatusText(http.StatusBadRequest)
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	dateFmtRgx := regexp.MustCompile(models.DateFormatRegex)
+
+	if startDateRg != "" && !dateFmtRgx.MatchString(startDateRg) {
+		requestLogger.Debug(models.ErrStartDateFormat)
+		response.Status = models.StatusError
+		response.Message = models.ErrStartDateFormat.Error()
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	if endDateRg != "" && !dateFmtRgx.MatchString(endDateRg) {
+		requestLogger.Debug(models.ErrEndDateFormat)
+		response.Status = models.StatusError
+		response.Message = models.ErrEndDateFormat.Error()
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	payload["page"] = page
+	payload["limit"] = limit
+	data, counter, err := cmpgn.CampaignUseCase.GetUserPointHistory(c, payload)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -258,6 +321,7 @@ func (cmpgn *CampaignsHandler) GetUserPointHistory(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
+	response.TotalCount = counter
 	requestLogger.Info("End of get user point history")
 
 	return c.JSON(http.StatusOK, response)
@@ -280,6 +344,6 @@ func getStatusCode(err error) int {
 	case models.ErrConflict:
 		return http.StatusConflict
 	default:
-		return http.StatusInternalServerError
+		return http.StatusOK
 	}
 }

@@ -250,24 +250,26 @@ func (cmpgn *campaignUseCase) GetUserPoint(c echo.Context, userID string) (*mode
 	return p, nil
 }
 
-func (cmpgn *campaignUseCase) GetUserPointHistory(c echo.Context, userID string) ([]models.CampaignTrx, error) {
+func (cmpgn *campaignUseCase) GetUserPointHistory(c echo.Context, payload map[string]interface{}) ([]models.CampaignTrx, string, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	dataHistory, err := cmpgn.campaignRepo.GetUserPointHistory(c, userID)
+	counter, err := cmpgn.campaignRepo.CountUserPointHistory(c, payload)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrUserPointHistoryNA)
+
+		return nil, "", models.ErrUserPointHistoryNA
+	}
+
+	dataHistory, err := cmpgn.campaignRepo.GetUserPointHistory(c, payload)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrGetUserPointHistory)
 
-		return nil, models.ErrGetUserPointHistory
+		return nil, "", models.ErrGetUserPointHistory
 	}
 
-	if len(dataHistory) == 0 {
-		requestLogger.Debug(models.ErrUserPointHistoryNA)
-
-		return nil, models.ErrUserPointHistoryNA
-	}
-
-	return dataHistory, nil
+	return dataHistory, counter, nil
 }
 
 func getFloat(unk interface{}) (float64, error) {

@@ -89,4 +89,16 @@ var (
 
 	// ErrTokenExpired to store password error message
 	ErrTokenExpired = errors.New("Your token has been expired")
+
+	// ErrUsersNA to store users not available error message
+	ErrUsersNA = errors.New("Users are not available")
+
+	// ErrGetUsersPoint to store get users point error message
+	ErrGetUsersPoint = errors.New("Something went wrong when trying to get users point")
+
+	// ErrStartDateFormat to store a date format params error message
+	ErrStartDateFormat = errors.New("Start date parameters is not meet the format")
+
+	// ErrEndDateFormat to store a date format params error message
+	ErrEndDateFormat = errors.New("End date parameters is not meet the format")
 )

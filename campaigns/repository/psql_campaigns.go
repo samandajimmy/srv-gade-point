@@ -316,10 +316,14 @@ func (m *psqlCampaignRepository) GetUserPoint(c echo.Context, UserID string) (fl
 	return pointAmount, nil
 }
 
-func (m *psqlCampaignRepository) GetUserPointHistory(c echo.Context, userID string) ([]models.CampaignTrx, error) {
+func (m *psqlCampaignRepository) GetUserPointHistory(c echo.Context, payload map[string]interface{}) ([]models.CampaignTrx, error) {
 	var dataHistory []models.CampaignTrx
+	where := ""
+	paging := ""
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
+	startDateRg := payload["startDateRg"].(string)
+	endDateRg := payload["endDateRg"].(string)
 
 	query := `select
 				ct.id,
@@ -327,6 +331,7 @@ func (m *psqlCampaignRepository) GetUserPointHistory(c echo.Context, userID stri
 				ct.point_amount,
 				ct.transaction_type,
 				ct.transaction_date,
+				coalesce(ct.reff_core, '') reff_core,
 				coalesce(ct.campaign_id, 0) campaign_id,
 				coalesce(c.name, '') campaign_name,
 				coalesce(c.description, '') campaign_description,
@@ -335,20 +340,26 @@ func (m *psqlCampaignRepository) GetUserPointHistory(c echo.Context, userID stri
 				coalesce(pc.voucher_id, 0) voucher_id,
 				coalesce(v.name, '') voucher_name,
 				coalesce(v.description, '') voucher_description
-			from
-				campaign_transactions ct
-			left join campaigns c on
-				ct.campaign_id = c.id
-			left join promo_codes pc on
-				pc.id = ct.promo_code_id
-			left join vouchers v on
-				pc.voucher_id = v.id
-			where
-				ct.user_id = $1
-			order by
-				ct.transaction_date desc;`
+			from campaign_transactions ct
+			left join campaigns c on ct.campaign_id = c.id
+			left join promo_codes pc on pc.id = ct.promo_code_id
+			left join vouchers v on pc.voucher_id = v.id
+			where ct.user_id = $1`
 
-	rows, err := m.Conn.Query(query, userID)
+	if startDateRg != "" {
+		where += " and ct.transaction_date::timestamp::date >= '" + startDateRg + "'"
+	}
+
+	if endDateRg != "" {
+		where += " and ct.transaction_date::timestamp::date <= '" + endDateRg + "'"
+	}
+
+	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
+		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
+	}
+
+	query += where + " order by ct.transaction_date desc" + paging + ";"
+	rows, err := m.Conn.Query(query, payload["userID"].(string))
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -368,6 +379,7 @@ func (m *psqlCampaignRepository) GetUserPointHistory(c echo.Context, userID stri
 			&ct.PointAmount,
 			&ct.TransactionType,
 			&ct.TransactionDate,
+			&ct.ReffCore,
 			&campaign.ID,
 			&campaign.Name,
 			&campaign.Description,
@@ -401,6 +413,34 @@ func (m *psqlCampaignRepository) GetUserPointHistory(c echo.Context, userID stri
 	}
 
 	return dataHistory, nil
+}
+
+func (m *psqlCampaignRepository) CountUserPointHistory(c echo.Context, payload map[string]interface{}) (string, error) {
+	var counter string
+	where := ""
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	query := `select COUNT(*) counter from campaign_transactions where user_id = $1`
+
+	if payload["startDateRg"].(string) != "" {
+		where += " and transaction_date::timestamp::date >= '" + payload["startDateRg"].(string) + "'"
+	}
+
+	if payload["endDateRg"].(string) != "" {
+		where += " and transaction_date::timestamp::date <= '" + payload["endDateRg"].(string) + "'"
+	}
+
+	query += where + ";"
+	err := m.Conn.QueryRow(query, payload["userID"].(string)).Scan(&counter)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return "", err
+	}
+
+	return counter, nil
 }
 
 func (m *psqlCampaignRepository) CountCampaign(c echo.Context, payload map[string]interface{}) (int, error) {

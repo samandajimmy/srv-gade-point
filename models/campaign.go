@@ -4,13 +4,6 @@ import (
 	"time"
 )
 
-var (
-	// TransactionPointTypeDebet to store debet code
-	TransactionPointTypeDebet = "D"
-	// TransactionPointTypeKredit to store kredit code
-	TransactionPointTypeKredit = "K"
-)
-
 // Campaign is represent a campaigns model
 type Campaign struct {
 	ID          int64               `json:"id,omitempty"`
@@ -34,20 +27,6 @@ type ValidatorsCampaign struct {
 	Multiplier      float64 `json:"multiplier,omitempty"`
 	Value           int64   `json:"value,omitempty"`
 	Formula         string  `json:"formula,omitempty"`
-}
-
-// CampaignTrx is represent a campaign_transactions model
-type CampaignTrx struct {
-	ID              int64      `json:"id,omitempty"`
-	UserID          string     `json:"userId,omitempty"`
-	PointAmount     *float64   `json:"pointAmount,omitempty"`
-	TransactionType string     `json:"transactionType,omitempty"`
-	TransactionDate *time.Time `json:"transactionDate,omitempty"`
-	ReffCore        string     `json:"reffCore,omitempty"`
-	Campaign        *Campaign  `json:"campaign,omitempty"`
-	PromoCode       *PromoCode `json:"promoCode,omitempty"`
-	UpdatedAt       *time.Time `json:"updatedAt,omitempty"`
-	CreatedAt       *time.Time `json:"createdAt,omitempty"`
 }
 
 // UpdateCampaign to store payload update campaign

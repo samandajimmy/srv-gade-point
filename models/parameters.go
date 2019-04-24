@@ -44,6 +44,9 @@ var (
 
 	// MicroTimeFormat to store a time format of micro timestamp
 	MicroTimeFormat = "20060102150405.000000"
+
+	// DateFormatRegex to store a regex of dd/mm/yyyy date format
+	DateFormatRegex = "(^\\d{4}\\-(0[1-9]|1[012])\\-(0[1-9]|[12][0-9]|3[01])$)"
 )
 
 // EchoGroup to store routes group

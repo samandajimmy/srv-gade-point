@@ -15,7 +15,8 @@ type Repository interface {
 	GetValidatorCampaign(echo.Context, *models.GetCampaignValue) (*models.Campaign, error)
 	SavePoint(echo.Context, *models.CampaignTrx) error
 	GetUserPoint(echo.Context, string) (float64, error)
-	GetUserPointHistory(echo.Context, string) ([]models.CampaignTrx, error)
+	GetUserPointHistory(echo.Context, map[string]interface{}) ([]models.CampaignTrx, error)
+	CountUserPointHistory(echo.Context, map[string]interface{}) (string, error)
 	CountCampaign(echo.Context, map[string]interface{}) (int, error)
 	UpdateExpiryDate(echo.Context) error
 	UpdateStatusBasedOnStartDate() error

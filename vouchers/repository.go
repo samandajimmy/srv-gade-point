@@ -1,7 +1,6 @@
 package vouchers
 
 import (
-	"context"
 	"gade/srv-gade-point/models"
 
 	"github.com/labstack/echo"
@@ -9,20 +8,20 @@ import (
 
 // Repository represent the voucher's repository contract
 type Repository interface {
-	CreateVoucher(ctx context.Context, a *models.Voucher) error
-	CreatePromoCode(ctx context.Context, promoCode []*models.PromoCode) error
+	CreateVoucher(echo.Context, *models.Voucher) error
+	CreatePromoCode(echo.Context, []*models.PromoCode) error
 	UpdateVoucher(echo.Context, int64, *models.UpdateVoucher) error
-	GetVouchersAdmin(ctx context.Context, name string, status string, startDate string, endDate string, page int, limit int) ([]*models.Voucher, error)
-	GetVoucherAdmin(ctx context.Context, voucherID string) (*models.Voucher, error)
-	GetVouchers(ctx context.Context, name string, startDate string, endDate string, page int, limit int) ([]*models.Voucher, error)
+	GetVouchersAdmin(echo.Context, map[string]interface{}) ([]*models.Voucher, error)
+	GetVoucherAdmin(echo.Context, string) (*models.Voucher, error)
+	GetVouchers(echo.Context, map[string]interface{}) ([]*models.Voucher, error)
 	GetVoucher(echo.Context, string) (*models.Voucher, error)
 	UpdatePromoCodeBought(echo.Context, string, string) (*models.PromoCode, error)
-	GetVouchersUser(ctx context.Context, userID string, status string, page int, limit int) ([]models.PromoCode, error)
-	CountVouchers(ctx context.Context, name string, status string, startDate string, endDate string, expired bool) (int, error)
-	DeleteVoucher(ctx context.Context, id int64) error
-	CountPromoCode(ctx context.Context, status string, userID string) (int, error)
-	UpdatePromoCodeRedeemed(ctx context.Context, voucherID string, userID string) (*models.PromoCode, error)
-	GetVoucherCode(ctx context.Context, voucherCode string, userID string) (*models.PromoCode, string, error)
-	UpdateExpiryDate(ctx context.Context) error
+	GetVouchersUser(echo.Context, map[string]interface{}) ([]models.PromoCode, error)
+	CountVouchers(echo.Context, map[string]interface{}, bool) (int, error)
+	DeleteVoucher(echo.Context, int64) error
+	CountPromoCode(echo.Context, map[string]interface{}) (int, error)
+	UpdatePromoCodeRedeemed(echo.Context, string, string, string) (*models.PromoCode, error)
+	GetVoucherCode(echo.Context, string, string) (*models.PromoCode, string, error)
+	UpdateExpiryDate(echo.Context) error
 	UpdateStatusBasedOnStartDate() error
 }

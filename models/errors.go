@@ -57,6 +57,39 @@ var (
 	// ErrVoucherExpired to store voucher expired error message
 	ErrVoucherExpired = errors.New("Voucher has been expired")
 
+	// ErrVoucherFailed to store create voucher failed error message
+	ErrVoucherFailed = errors.New("Failed to create a voucher")
+
+	// ErrVoucherGenearatePromoCodes to store generate promo codes error message
+	ErrVoucherGenearatePromoCodes = errors.New("Something went wrong on generationg promotion codes")
+
+	// ErrVoucherStorePomoCodes to store generate promo codes error message
+	ErrVoucherStorePomoCodes = errors.New("Something went wrong on store promotion codes")
+
+	// ErrDeleteVoucher to store delete voucher error message
+	ErrDeleteVoucher = errors.New("Something went wrong when deleting a voucher")
+
+	// ErrVoucherUpdateFailed to store update voucher failed error message
+	ErrVoucherUpdateFailed = errors.New("Failed to update a voucher")
+
+	// ErrOpenVoucherImg to store open file image
+	ErrOpenVoucherImg = errors.New("Cannot open uploaded voucher image file")
+
+	// ErrWriteVoucherImg to store open file image
+	ErrWriteVoucherImg = errors.New("Cannot write uploaded voucher image file")
+
+	// ErrCopyVoucherImg to store open file image
+	ErrCopyVoucherImg = errors.New("Cannot copy uploaded voucher image file")
+
+	// ErrGetVouchers to get vouchers error message
+	ErrGetVouchers = errors.New("Something went wrong when trying to get vouchers")
+
+	// ErrGetVoucherCounter to get voucher counter error message
+	ErrGetVoucherCounter = errors.New("Something went wrong when trying to get voucher counter")
+
+	// ErrRedeemVoucher to redeem voucher error message
+	ErrRedeemVoucher = errors.New("Something went wrong when trying to redeem voucher")
+
 	// ErrVoucherNotStarted to store voucher not started error message
 	ErrVoucherNotStarted = errors.New("Voucher has not started yet")
 
@@ -80,6 +113,9 @@ var (
 
 	// ErrValidation to store validation error message
 	ErrValidation = errors.New("Some of your inputs are not valid")
+
+	// ErrValidationTrxAmt to store validation error message
+	ErrValidationTrxAmt = errors.New("Your transaction amount is not enough to use this voucher")
 
 	// ErrUsername to store username error message
 	ErrUsername = errors.New("Username that you input is not valid")

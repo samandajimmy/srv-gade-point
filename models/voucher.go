@@ -34,6 +34,7 @@ type Voucher struct {
 	Expired            *int32      `json:"expired,omitempty"`
 	TermsAndConditions string      `json:"termsAndConditions,omitempty"`
 	HowToUse           string      `json:"howToUse,omitempty"`
+	LimitPerUser       *int        `json:"limitPerUser,omitempty"`
 	Validators         *Validators `json:"validators,omitempty"`
 	UpdatedAt          *time.Time  `json:"updatedAt,omitempty"`
 	CreatedAt          *time.Time  `json:"createdAt,omitempty"`

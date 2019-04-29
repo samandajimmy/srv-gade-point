@@ -63,7 +63,7 @@ func (vchr *voucherUseCase) CreateVoucher(c echo.Context, voucher *models.Vouche
 	if err != nil {
 		requestLogger.Debug(models.ErrVoucherFailed)
 
-		return models.ErrVoucherExpired
+		return models.ErrVoucherFailed
 	}
 
 	code, err := generatePromoCode(voucher.Stock)
@@ -223,9 +223,9 @@ func (vchr *voucherUseCase) GetVouchersAdmin(c echo.Context, payload map[string]
 	totalCount, err = vchr.voucherRepo.CountVouchers(c, payload, false)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrGetVouchers)
+		requestLogger.Debug(models.ErrGetVoucherCounter)
 
-		return nil, "", err
+		return nil, "", models.ErrGetVoucherCounter
 	}
 
 	if totalCount <= 0 {
@@ -271,9 +271,9 @@ func (vchr *voucherUseCase) GetVouchers(c echo.Context, payload map[string]inter
 	totalCount, err = vchr.voucherRepo.CountVouchers(c, payload, false)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrGetVouchers)
+		requestLogger.Debug(models.ErrGetVoucherCounter)
 
-		return nil, "", err
+		return nil, "", models.ErrGetVoucherCounter
 	}
 
 	if totalCount <= 0 {
@@ -312,12 +312,14 @@ func (vchr *voucherUseCase) GetVouchersUser(c echo.Context, payload map[string]i
 		return nil, "", err
 	}
 
+	payload["status"] = "1" // to get the bought status
+	payload["voucherID"] = ""
 	totalCount, err = vchr.voucherRepo.CountPromoCode(c, payload)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrGetVouchers)
+		requestLogger.Debug(models.ErrGetVoucherCounter)
 
-		return nil, "", err
+		return nil, "", models.ErrGetVoucherCounter
 	}
 
 	if totalCount <= 0 {
@@ -357,6 +359,30 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 		return nil, models.ErrVoucherExpired
 	}
 
+	// check voucher limit per user
+	payloadPC := map[string]interface{}{
+		"userID":    payload.UserID,
+		"voucherID": payload.VoucherID,
+		"status":    "", // to get whatever status of promo codes
+	}
+
+	userVchrCodesCount, err := vchr.voucherRepo.CountPromoCode(ech, payloadPC)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrGetVoucherCounter)
+
+		return nil, models.ErrGetVoucherCounter
+	}
+
+	if voucherDetail.LimitPerUser != nil &&
+		*voucherDetail.LimitPerUser > 0 &&
+		*voucherDetail.LimitPerUser <= userVchrCodesCount {
+		requestLogger.Debug(models.ErrExceedBuyLimit)
+
+		return nil, models.ErrExceedBuyLimit
+	}
+
+	// get user current point
 	userPoint, err := vchr.campaignRepo.GetUserPoint(ech, payload.UserID)
 
 	if err != nil {
@@ -371,6 +397,7 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 		return nil, models.ErrUserPointNA
 	}
 
+	// validate voucher to buy
 	err = validateBuy(voucherDetail.Point, int64(userPoint), voucherDetail.Available)
 
 	if err != nil {

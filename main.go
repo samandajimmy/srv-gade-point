@@ -36,7 +36,6 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo"
-	"github.com/labstack/gommon/log"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
@@ -123,7 +122,7 @@ func main() {
 func updateStatusBasedOnStartDate(cmp campaigns.UseCase, vcr vouchers.UseCase) {
 	scheduler.Every().Day().At(os.Getenv(`STATUS_UPDATE_TIME`)).Run(func() {
 		t := time.Now()
-		log.Debug("Run Scheduler! @", t)
+		logrus.Debug("Run Scheduler! @", t)
 
 		// CAMPAIGN
 		cmp.UpdateStatusBasedOnStartDate()
@@ -163,13 +162,13 @@ func getDBConn() *sql.DB {
 	dbConn, err := sql.Open(`postgres`, connection)
 
 	if err != nil {
-		log.Debug(err)
+		logrus.Debug(err)
 	}
 
 	err = dbConn.Ping()
 
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 		os.Exit(1)
 	}
 
@@ -184,11 +183,11 @@ func dataMigrations(dbConn *sql.DB) *migrate.Migrate {
 		os.Getenv(`DB_USER`), driver)
 
 	if err != nil {
-		log.Debug(err)
+		logrus.Debug(err)
 	}
 
 	if err := migrations.Up(); err != nil {
-		log.Debug(err)
+		logrus.Debug(err)
 	}
 
 	return migrations
@@ -203,7 +202,7 @@ func loadEnv() {
 	err := godotenv.Load()
 
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		logrus.Fatal("Error loading .env file")
 	}
 
 	return

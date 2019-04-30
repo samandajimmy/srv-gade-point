@@ -515,6 +515,10 @@ func (vchr *voucherUseCase) VoucherValidate(c echo.Context, validateVoucher *mod
 
 		switch fieldName {
 		case "channel", "product", "transactionType", "unit":
+			if fieldValue.(string) == "" {
+				continue
+			}
+
 			if fieldValue != payloadValidator[fieldName] {
 				customErr := fmt.Errorf("%s on this transaction is not valid to use this voucher", fieldName)
 				requestLogger.Debug(customErr)

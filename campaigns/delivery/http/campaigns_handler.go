@@ -212,13 +212,7 @@ func (cmpgn *CampaignsHandler) GetUserPoint(c echo.Context) error {
 
 	requestLogger := logger.GetRequestLogger(c, payload)
 	requestLogger.Info("Start to get user point.")
-	userPoint, err := cmpgn.CampaignUseCase.GetUserPoint(c, userID)
-
-	if err != nil {
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		return c.JSON(getStatusCode(err), response)
-	}
+	userPoint, _ := cmpgn.CampaignUseCase.GetUserPoint(c, userID)
 
 	if (&models.UserPoint{}) != userPoint {
 		response.Data = userPoint

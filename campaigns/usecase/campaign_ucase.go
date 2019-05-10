@@ -222,7 +222,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 	}
 
 	p := new(models.UserPoint)
-	p.UserPoint = pointAmount
+	p.UserPoint = &pointAmount
 
 	return p, nil
 }
@@ -230,22 +230,25 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 func (cmpgn *campaignUseCase) GetUserPoint(c echo.Context, userID string) (*models.UserPoint, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
+	p := new(models.UserPoint)
+	zero := float64(0)
 	pointAmount, err := cmpgn.campaignRepo.GetUserPoint(c, userID)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrGetUserPoint)
+		p.UserPoint = &zero
 
-		return nil, models.ErrGetUserPoint
+		return p, models.ErrGetUserPoint
 	}
 
 	if pointAmount == 0 {
 		requestLogger.Debug(models.ErrUserPointNA)
+		p.UserPoint = &zero
 
-		return nil, models.ErrUserPointNA
+		return p, models.ErrUserPointNA
 	}
 
-	p := new(models.UserPoint)
-	p.UserPoint = pointAmount
+	p.UserPoint = &pointAmount
 
 	return p, nil
 }

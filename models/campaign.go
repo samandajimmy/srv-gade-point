@@ -47,5 +47,5 @@ type GetCampaignValue struct {
 
 // UserPoint to store payload user point data
 type UserPoint struct {
-	UserPoint float64 `json:"userPoint,omitempty"`
+	UserPoint *float64 `json:"userPoint,omitempty"`
 }

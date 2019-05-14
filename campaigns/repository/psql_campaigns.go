@@ -250,7 +250,7 @@ func (m *psqlCampaignRepository) GetValidatorCampaign(c echo.Context, payload *m
 
 func (m *psqlCampaignRepository) SavePoint(c echo.Context, cmpgnTrx *models.CampaignTrx) error {
 	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, cmpgnTrx)
+	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
 	var id int64
 	var query string
@@ -262,9 +262,9 @@ func (m *psqlCampaignRepository) SavePoint(c echo.Context, cmpgnTrx *models.Camp
 	}
 
 	if cmpgnTrx.TransactionType == models.TransactionPointTypeKredit {
-		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, reff_core, promo_code_id, created_at)
+		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, reff_core, voucher_code_id, created_at)
 			VALUES ($1, $2, $3, $4, $5, $6, $7)  RETURNING id`
-		id = cmpgnTrx.PromoCode.ID
+		id = cmpgnTrx.VoucherCode.ID
 	}
 
 	stmt, err := m.Conn.Prepare(query)
@@ -277,7 +277,7 @@ func (m *psqlCampaignRepository) SavePoint(c echo.Context, cmpgnTrx *models.Camp
 
 	cmpgnTrx.CreatedAt = &now
 	var lastID int64
-	err = stmt.QueryRow(cmpgnTrx.UserID, cmpgnTrx.PointAmount, cmpgnTrx.TransactionType, cmpgnTrx.TransactionDate, cmpgnTrx.ReffCore, id, cmpgnTrx.CreatedAt).Scan(&lastID)
+	err = stmt.QueryRow(cmpgnTrx.UserID, *cmpgnTrx.PointAmount, cmpgnTrx.TransactionType, cmpgnTrx.TransactionDate, cmpgnTrx.ReffCore, id, cmpgnTrx.CreatedAt).Scan(&lastID)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -335,14 +335,14 @@ func (m *psqlCampaignRepository) GetUserPointHistory(c echo.Context, payload map
 				coalesce(ct.campaign_id, 0) campaign_id,
 				coalesce(c.name, '') campaign_name,
 				coalesce(c.description, '') campaign_description,
-				coalesce(ct.promo_code_id, 0) promo_code_id,
+				coalesce(ct.voucher_code_id, 0) voucher_code_id,
 				coalesce(pc.promo_code, '') promo_code,
 				coalesce(pc.voucher_id, 0) voucher_id,
 				coalesce(v.name, '') voucher_name,
 				coalesce(v.description, '') voucher_description
 			from campaign_transactions ct
 			left join campaigns c on ct.campaign_id = c.id
-			left join promo_codes pc on pc.id = ct.promo_code_id
+			left join voucher_codes pc on pc.id = ct.voucher_code_id
 			left join vouchers v on pc.voucher_id = v.id
 			where ct.user_id = $1`
 
@@ -370,7 +370,7 @@ func (m *psqlCampaignRepository) GetUserPointHistory(c echo.Context, payload map
 	for rows.Next() {
 		var ct models.CampaignTrx
 		var campaign models.Campaign
-		var promoCodes models.PromoCode
+		var voucherCodes models.VoucherCode
 		var voucher models.Voucher
 
 		err = rows.Scan(
@@ -383,8 +383,8 @@ func (m *psqlCampaignRepository) GetUserPointHistory(c echo.Context, payload map
 			&campaign.ID,
 			&campaign.Name,
 			&campaign.Description,
-			&promoCodes.ID,
-			&promoCodes.PromoCode,
+			&voucherCodes.ID,
+			&voucherCodes.PromoCode,
 			&voucher.ID,
 			&voucher.Name,
 			&voucher.Description,
@@ -400,13 +400,13 @@ func (m *psqlCampaignRepository) GetUserPointHistory(c echo.Context, payload map
 			ct.Campaign = &campaign
 		}
 
-		if promoCodes.ID != 0 {
-			ct.PromoCode = &promoCodes
-			ct.PromoCode.ID = 0 // remove promo codes ID from the response
+		if voucherCodes.ID != 0 {
+			ct.VoucherCode = &voucherCodes
+			ct.VoucherCode.ID = 0 // remove promo codes ID from the response
 		}
 
 		if voucher.ID != 0 {
-			ct.PromoCode.Voucher = &voucher
+			ct.VoucherCode.Voucher = &voucher
 		}
 
 		dataHistory = append(dataHistory, ct)

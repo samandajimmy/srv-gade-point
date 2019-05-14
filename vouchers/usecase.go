@@ -16,9 +16,9 @@ type UseCase interface {
 	GetVoucherAdmin(echo.Context, string) (*models.Voucher, error)
 	GetVouchers(echo.Context, map[string]interface{}) ([]*models.Voucher, string, error)
 	GetVoucher(echo.Context, string) (*models.Voucher, error)
-	VoucherBuy(echo.Context, *models.PayloadVoucherBuy) (*models.PromoCode, error)
-	GetVouchersUser(echo.Context, map[string]interface{}) ([]models.PromoCode, string, error)
+	VoucherBuy(echo.Context, *models.PayloadVoucherBuy) (*models.VoucherCode, error)
+	GetVouchersUser(echo.Context, map[string]interface{}) ([]models.VoucherCode, string, error)
 	VoucherValidate(echo.Context, *models.PayloadValidateVoucher) (*models.ResponseValidateVoucher, error)
-	VoucherRedeem(echo.Context, *models.PayloadValidateVoucher) (*models.PromoCode, error)
+	VoucherRedeem(echo.Context, *models.PayloadValidateVoucher) (*models.VoucherCode, error)
 	UpdateStatusBasedOnStartDate() error
 }

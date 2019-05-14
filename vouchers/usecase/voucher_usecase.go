@@ -54,7 +54,7 @@ func NewVoucherUseCase(vchrRepo vouchers.Repository, campgnRepo campaigns.Reposi
 
 func (vchr *voucherUseCase) CreateVoucher(c echo.Context, voucher *models.Voucher) error {
 	now := time.Now()
-	promoCode := make([]*models.PromoCode, 0)
+	promoCode := make([]*models.VoucherCode, 0)
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
@@ -77,7 +77,7 @@ func (vchr *voucherUseCase) CreateVoucher(c echo.Context, voucher *models.Vouche
 	// populate promo codes data
 	if len(code) > 0 {
 		for i := 0; i < len(code); i++ {
-			pc := &models.PromoCode{
+			pc := &models.VoucherCode{
 				PromoCode: voucher.PrefixPromoCode + code[i],
 				Voucher:   voucher,
 				CreatedAt: &now,
@@ -299,7 +299,7 @@ func (vchr *voucherUseCase) GetVoucher(c echo.Context, voucherID string) (*model
 	return voucherDetail, nil
 }
 
-func (vchr *voucherUseCase) GetVouchersUser(c echo.Context, payload map[string]interface{}) ([]models.PromoCode, string, error) {
+func (vchr *voucherUseCase) GetVouchersUser(c echo.Context, payload map[string]interface{}) ([]models.VoucherCode, string, error) {
 	var err error
 	var totalCount int
 	logger := models.RequestLogger{}
@@ -331,7 +331,7 @@ func (vchr *voucherUseCase) GetVouchersUser(c echo.Context, payload map[string]i
 	return vouchersUser, strconv.Itoa(totalCount), nil
 }
 
-func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.PayloadVoucherBuy) (*models.PromoCode, error) {
+func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.PayloadVoucherBuy) (*models.VoucherCode, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(ech, nil)
 	now := time.Now()
@@ -406,7 +406,7 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 		return nil, err
 	}
 
-	promoCode, err := vchr.voucherRepo.UpdatePromoCodeBought(ech, payload.VoucherID, payload.UserID)
+	voucherCode, err := vchr.voucherRepo.UpdatePromoCodeBought(ech, payload.VoucherID, payload.UserID)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrUpdatePromoCodes)
@@ -436,7 +436,7 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 		PointAmount:     &pointAmount,
 		TransactionType: models.TransactionPointTypeKredit,
 		TransactionDate: &now,
-		PromoCode:       promoCode,
+		VoucherCode:     voucherCode,
 		CreatedAt:       &now,
 	}
 
@@ -448,12 +448,12 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 		return nil, models.ErrStoreCampaignTrx
 	}
 
-	promoCode.Voucher = &models.Voucher{
+	voucherCode.Voucher = &models.Voucher{
 		ID:   voucherDetail.ID,
 		Name: voucherDetail.Name,
 	}
 
-	return promoCode, nil
+	return voucherCode, nil
 }
 
 func (vchr *voucherUseCase) VoucherValidate(c echo.Context, validateVoucher *models.PayloadValidateVoucher) (*models.ResponseValidateVoucher, error) {
@@ -544,7 +544,7 @@ func (vchr *voucherUseCase) VoucherValidate(c echo.Context, validateVoucher *mod
 	return responseValid, nil
 }
 
-func (vchr *voucherUseCase) VoucherRedeem(c echo.Context, voucherRedeem *models.PayloadValidateVoucher) (*models.PromoCode, error) {
+func (vchr *voucherUseCase) VoucherRedeem(c echo.Context, voucherRedeem *models.PayloadValidateVoucher) (*models.VoucherCode, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	promoCode, err := vchr.voucherRepo.UpdatePromoCodeRedeemed(c, voucherRedeem.VoucherID, voucherRedeem.UserID, voucherRedeem.PromoCode)

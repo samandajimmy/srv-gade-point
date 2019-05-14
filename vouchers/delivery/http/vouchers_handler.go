@@ -497,7 +497,7 @@ func (vchr *VouchersHandler) VoucherBuy(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	if (&models.PromoCode{}) != responseData {
+	if (&models.VoucherCode{}) != responseData {
 		response.Data = responseData
 	}
 
@@ -563,7 +563,7 @@ func (vchr *VouchersHandler) VoucherRedeem(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	if (&models.PromoCode{}) != responseData {
+	if (&models.VoucherCode{}) != responseData {
 		response.Data = responseData
 	}
 

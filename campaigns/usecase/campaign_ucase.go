@@ -195,7 +195,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 		return nil, models.ErrCalculateFormulaCampaign
 	}
 
-	if math.IsInf(parseFloat, 0) {
+	if math.IsInf(parseFloat, 0) || math.IsNaN(parseFloat) {
 		requestLogger.Debug("the result of formula is infinity and beyond")
 
 		return nil, models.ErrCalculateFormulaCampaign

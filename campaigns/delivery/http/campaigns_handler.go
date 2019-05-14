@@ -167,7 +167,7 @@ func (cmpgn *CampaignsHandler) GetCampaignDetail(c echo.Context) error {
 
 // GetCampaignValue to validate point amount available and store the point trx
 func (cmpgn *CampaignsHandler) GetCampaignValue(c echo.Context) error {
-	var campaignValue models.GetCampaignValue
+	campaignValue := models.GetCampaignValue{}
 	response = models.Response{}
 
 	if err := c.Bind(&campaignValue); err != nil {

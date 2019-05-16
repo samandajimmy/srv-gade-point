@@ -47,6 +47,9 @@ var (
 
 	// DateFormatRegex to store a regex of dd/mm/yyyy date format
 	DateFormatRegex = "(^\\d{4}\\-(0[1-9]|1[012])\\-(0[1-9]|[12][0-9]|3[01])$)"
+
+	// BatchSizeVoucherCodes to store a max length of data that need to be inserted for
+	BatchSizeVoucherCodes = 21845
 )
 
 // EchoGroup to store routes group

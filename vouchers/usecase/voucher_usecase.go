@@ -92,7 +92,7 @@ func (vchr *voucherUseCase) CreateVoucher(c echo.Context, voucher *models.Vouche
 	if err != nil {
 		requestLogger.Debug(models.ErrVoucherStorePomoCodes)
 
-		//Delete voucher when failed generate promo code
+		// Delete voucher when failed generate promo code
 		err = vchr.voucherRepo.DeleteVoucher(c, voucher.ID)
 
 		if err != nil {
@@ -560,22 +560,32 @@ func (vchr *voucherUseCase) VoucherRedeem(c echo.Context, voucherRedeem *models.
 
 func generatePromoCode(stock *int32) (code []string, err error) {
 	var arr = make([]string, *stock)
+	arrChecker := map[string]bool{}
 
 	for i := range arr {
-		arr[i] = randStringBytes(lengthCode)
+		arr[i] = randStringBytes(lengthCode, arrChecker)
 	}
 
 	return arr, nil
 }
 
-func randStringBytes(n int) string {
+func randStringBytes(n int, arrChecker map[string]bool) string {
+	var randString string
 	b := make([]byte, n)
 
 	for i := range b {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 
-	return string(b)
+	randString = string(b)
+
+	if arrChecker[randString] {
+		randString = string(randStringBytes(lengthCode, arrChecker))
+	}
+
+	arrChecker[randString] = true
+
+	return randString
 }
 
 func validateBuy(voucherPoint *int64, userPoint int64, avaliable *int32) error {
@@ -603,11 +613,12 @@ func getFloat(unk interface{}) (float64, error) {
 }
 
 func (vchr *voucherUseCase) UpdateStatusBasedOnStartDate() error {
-
 	err := vchr.voucherRepo.UpdateStatusBasedOnStartDate()
+
 	if err != nil {
 		log.Debug("Update Status Base on Start Date: ", err)
 		return err
 	}
+
 	return nil
 }

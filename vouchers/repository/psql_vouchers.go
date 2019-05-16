@@ -75,36 +75,14 @@ func (m *psqlVoucherRepository) CreateVoucher(c echo.Context, voucher *models.Vo
 func (m *psqlVoucherRepository) CreatePromoCode(c echo.Context, promoCodes []*models.VoucherCode) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	var valueStrings []string
-	var valueArgs []interface{}
-	i := 0
+	arrSplitted := arrSpliter(promoCodes)
 
-	for _, promoCode := range promoCodes {
-		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d)", i*fieldInsertPromoCode+count[0], i*fieldInsertPromoCode+count[1], i*fieldInsertPromoCode+count[2]))
-		valueArgs = append(valueArgs, promoCode.PromoCode)
-		valueArgs = append(valueArgs, promoCode.Voucher.ID)
-		valueArgs = append(valueArgs, promoCode.CreatedAt)
-		i++
+	for _, pCodes := range arrSplitted {
+		go m.insertVoucherCodes(c, pCodes)
 	}
 
-	query := fmt.Sprintf("INSERT INTO voucher_codes (promo_code, voucher_id, created_at) VALUES %s", strings.Join(valueStrings, ","))
-	stmt, err := m.Conn.Prepare(query)
+	requestLogger.Debug("Insert voucher codes is concurrently happened!")
 
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return err
-	}
-
-	result, err := stmt.Query(valueArgs...)
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return err
-	}
-
-	requestLogger.Debug("Result created promo code: ", result)
 	return nil
 }
 
@@ -696,4 +674,65 @@ func (m *psqlVoucherRepository) GetVoucherCode(c echo.Context, voucherCode strin
 	}
 
 	return result, voucherID, nil
+}
+
+func (m *psqlVoucherRepository) insertVoucherCodes(c echo.Context, pCodes []*models.VoucherCode) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	i := 0
+	valueArgs := []interface{}{}
+	valueStrings := []string{}
+	counter := len(pCodes)
+
+	for _, promoCode := range pCodes {
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d)", i*fieldInsertPromoCode+count[0], i*fieldInsertPromoCode+count[1], i*fieldInsertPromoCode+count[2]))
+		valueArgs = append(valueArgs, promoCode.PromoCode)
+		valueArgs = append(valueArgs, promoCode.Voucher.ID)
+		valueArgs = append(valueArgs, promoCode.CreatedAt)
+		i++
+	}
+
+	query := fmt.Sprintf("INSERT INTO voucher_codes (promo_code, voucher_id, created_at) VALUES %s", strings.Join(valueStrings, ","))
+	stmt, err := m.Conn.Prepare(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	_, err = stmt.Query(valueArgs...)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	requestLogger.Debugf("%d voucher code(s) are created concurrently!", counter)
+
+	return nil
+}
+
+func arrSpliter(arrSource []*models.VoucherCode) [][]*models.VoucherCode {
+	var divided [][]*models.VoucherCode
+	splitSize := models.BatchSizeVoucherCodes
+
+	if len(arrSource) < splitSize {
+		divided = append(divided, arrSource)
+
+		return divided
+	}
+
+	for i := 0; i < len(arrSource); i += splitSize {
+		end := i + splitSize
+
+		if end > len(arrSource) {
+			end = len(arrSource)
+		}
+
+		divided = append(divided, arrSource[i:end])
+	}
+
+	return divided
 }

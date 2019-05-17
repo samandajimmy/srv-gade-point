@@ -262,18 +262,6 @@ For External End Point :
     }
 
 ### Voucher
-Create directory for public images :
-
-    public/images/vouchers
-
-add .env :
-
-    VOUCHER_UPLOAD_PATH=./public/images/vouchers/
-
-    VOUCHER_ROUTE_PATH=public/images/vouchers/
-
-    VOUCHER_PATH=/images/vouchers
-  
 > **POST**   ${apiUrl}/vouchers
 
     Purposes :

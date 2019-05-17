@@ -1,31 +1,29 @@
 package vouchers
 
 import (
-	"context"
 	"gade/srv-gade-point/models"
+
+	"github.com/labstack/echo"
 )
 
 // Repository represent the voucher's repository contract
 type Repository interface {
-	CreateVoucher(ctx context.Context, a *models.Voucher) error
-	CreatePromoCode(ctx context.Context, promoCode []*models.PromoCode) error
-	UpdateVoucher(ctx context.Context, id int64, updateVoucher *models.UpdateVoucher) error
-	GetVouchersAdmin(ctx context.Context, name string, status string, startDate string, endDate string, page int, limit int) ([]*models.Voucher, error)
-	GetVoucherAdmin(ctx context.Context, voucherID string) (*models.Voucher, error)
-	GetVouchers(ctx context.Context, name string, startDate string, endDate string, page int, limit int) ([]*models.Voucher, error)
-	GetVoucher(ctx context.Context, voucherID string) (*models.Voucher, error)
-	UpdatePromoCodeBought(ctx context.Context, voucherID string, userID string) (*models.PromoCode, error)
-	GetVouchersUser(ctx context.Context, userID string, status string, page int, limit int) ([]models.PromoCode, error)
-	CountVouchers(ctx context.Context, name string, status string, startDate string, endDate string, expired bool) (int, error)
-	DeleteVoucher(ctx context.Context, id int64) error
-	CountPromoCode(ctx context.Context, status string, userID string) (int, error)
-	VoucherCheckExpired(ctx context.Context, voucherID string) error
-	UpdatePromoCodeRedeemed(ctx context.Context, voucherID string, userID string) (*models.PromoCode, error)
-	GetVoucherCode(ctx context.Context, voucherCode string, userID string) (*models.PromoCode, error)
-<<<<<<< HEAD
-	UpdateExpiryDate(ctx context.Context) error
+	CreateVoucher(echo.Context, *models.Voucher) error
+	CreatePromoCode(echo.Context, []*models.VoucherCode) error
+	UpdateVoucher(echo.Context, int64, *models.UpdateVoucher) error
+	GetVouchersAdmin(echo.Context, map[string]interface{}) ([]*models.Voucher, error)
+	GetVoucherAdmin(echo.Context, string) (*models.Voucher, error)
+	GetVouchers(echo.Context, map[string]interface{}) ([]*models.Voucher, error)
+	GetVoucher(echo.Context, string) (*models.Voucher, error)
+	UpdatePromoCodeBought(echo.Context, string, string) (*models.VoucherCode, error)
+	GetVouchersUser(echo.Context, map[string]interface{}) ([]models.VoucherCode, error)
+	CountVouchers(echo.Context, map[string]interface{}, bool) (int, error)
+	DeleteVoucher(echo.Context, int64) error
+	CountPromoCode(echo.Context, map[string]interface{}) (int, error)
+	UpdatePromoCodeRedeemed(echo.Context, string, string, string) (*models.VoucherCode, error)
+	GetVoucherCode(echo.Context, string, string) (*models.VoucherCode, string, error)
+	UpdateExpiryDate(echo.Context) error
 	UpdateStatusBasedOnStartDate() error
-=======
-	CountBoughtVoucher(ctx context.Context, voucherID string, userID string) (int64, error)
->>>>>>> add new column dayPurchaseLimit on voucher table and put formula on validator models
+	CountBoughtVoucher(echo.Context, string, string) (int64, error)
+	// VoucherCheckExpired(ctx context.Context, voucherID string) error
 }

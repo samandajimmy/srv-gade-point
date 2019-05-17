@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -9,6 +8,7 @@ import (
 	"gade/srv-gade-point/models"
 	"time"
 
+	"github.com/labstack/echo"
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
@@ -26,76 +26,86 @@ func NewPsqlCampaignRepository(Conn *sql.DB) campaigns.Repository {
 	return &psqlCampaignRepository{Conn}
 }
 
-func (m *psqlCampaignRepository) CreateCampaign(ctx context.Context, a *models.Campaign) error {
+func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models.Campaign) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
 	query := `INSERT INTO campaigns (name, description, start_date, end_date, status, type, validators, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)  RETURNING id`
-	stmt, err := m.Conn.PrepareContext(ctx, query)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
+	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return err
 	}
-
-	logrus.Debug("Created At: ", &now)
 
 	var lastID int64
-	validator, err := json.Marshal(a.Validators)
+	validator, err := json.Marshal(campaign.Validators)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return err
 	}
 
-	err = stmt.QueryRowContext(ctx, a.Name, a.Description, a.StartDate, a.EndDate, a.Status, a.Type, string(validator), &now).Scan(&lastID)
+	err = stmt.QueryRow(campaign.Name, campaign.Description, campaign.StartDate, campaign.EndDate, campaign.Status, campaign.Type, string(validator), &now).Scan(&lastID)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return err
 	}
 
-	a.ID = lastID
-	a.CreatedAt = &now
+	campaign.ID = lastID
+	campaign.CreatedAt = &now
 	return nil
 }
 
-func (m *psqlCampaignRepository) UpdateCampaign(ctx context.Context, id int64, updateCampaign *models.UpdateCampaign) error {
+func (m *psqlCampaignRepository) UpdateCampaign(c echo.Context, id int64, updateCampaign *models.UpdateCampaign) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
 	query := `UPDATE campaigns SET status = $1, updated_at = $2 WHERE id = $3 RETURNING id`
-	stmt, err := m.Conn.PrepareContext(ctx, query)
+	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return err
 	}
 
-	logrus.Debug("Update At: ", &now)
-
 	var lastID int64
-
-	err = stmt.QueryRowContext(ctx, updateCampaign.Status, &now, id).Scan(&lastID)
+	err = stmt.QueryRow(updateCampaign.Status, &now, id).Scan(&lastID)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return err
 	}
 
 	return nil
 }
 
-func (m *psqlCampaignRepository) UpdateExpiryDate(ctx context.Context) error {
+func (m *psqlCampaignRepository) UpdateExpiryDate(c echo.Context) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
-	query := `UPDATE campaigns SET status = 0, updated_at = $1 WHERE end_date::timestamp::date < now()::date`
-	stmt, err := m.Conn.PrepareContext(ctx, query)
+	query := `UPDATE campaigns SET status = 0, updated_at = $1 WHERE end_date::timestamp::date < now()::date AND status = 1`
+	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
-		log.Debug("Update Status Base on Expiry Date: ", err)
+		requestLogger.Debug("Update Status Base on Expiry Date: ", err)
+
 		return err
 	}
 
-	logrus.Debug("Update At: ", &now)
-
 	var lastID int64
-
-	err = stmt.QueryRowContext(ctx, &now).Scan(&lastID)
+	err = stmt.QueryRow(&now).Scan(&lastID)
 
 	if err != nil {
-		log.Debug("Update Status Base on Expiry Date: ", err)
+		requestLogger.Debug("Update Status Base on Expiry Date: ", err)
+
 		return err
 	}
 
@@ -108,54 +118,56 @@ func (m *psqlCampaignRepository) UpdateStatusBasedOnStartDate() error {
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
-		log.Debug("Update Status Base on Start Date: ", err)
+		logrus.Debug("Update Status Base on Start Date: ", err)
+
 		return err
 	}
 
-	logrus.Debug("Update At: ", &now)
-
 	var lastID int64
-
 	err = stmt.QueryRow(&now).Scan(&lastID)
 
 	if err != nil {
-		log.Debug("Update Status Base on Start Date: ", err)
+		logrus.Debug("Update Status Base on Start Date: ", err)
+
 		return err
 	}
 
 	return nil
 }
 
-func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, status string, startDate string, endDate string, page int, limit int) ([]*models.Campaign, error) {
+func (m *psqlCampaignRepository) GetCampaign(c echo.Context, payload map[string]interface{}) ([]*models.Campaign, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
 	paging := ""
 	where := ""
 	query := `SELECT id, name, description, start_date, end_date, status, type, validators, updated_at, created_at FROM campaigns WHERE id IS NOT NULL`
 
-	if page > 0 || limit > 0 {
-		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
+	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
+		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
 	}
 
-	if name != "" {
-		where += " AND name LIKE '%" + name + "%'"
+	if payload["name"].(string) != "" {
+		where += " AND name LIKE '%" + payload["name"].(string) + "%'"
 	}
 
-	if status != "" {
-		where += " AND status='" + status + "'"
+	if payload["status"].(string) != "" {
+		where += " AND status='" + payload["status"].(string) + "'"
 	}
 
-	if startDate != "" {
-		where += " AND start_date >= '" + startDate + "'"
+	if payload["startDate"].(string) != "" {
+		where += " AND start_date >= '" + payload["startDate"].(string) + "'"
 	}
 
-	if endDate != "" {
-		where += " AND end_date <= '" + endDate + "'"
+	if payload["endDate"].(string) != "" {
+		where += " AND end_date <= '" + payload["endDate"].(string) + "'"
 	}
 
 	query += where + " ORDER BY created_at DESC" + paging
-
-	res, err := m.getCampaign(ctx, query)
+	res, err := m.getCampaign(c, query)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return nil, err
 	}
 
@@ -163,14 +175,17 @@ func (m *psqlCampaignRepository) GetCampaign(ctx context.Context, name string, s
 
 }
 
-func (m *psqlCampaignRepository) getCampaign(ctx context.Context, query string) ([]*models.Campaign, error) {
+func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*models.Campaign, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
 	var validator json.RawMessage
 	result := make([]*models.Campaign, 0)
-	rows, err := m.Conn.QueryContext(ctx, query)
+	rows, err := m.Conn.Query(query)
 	defer rows.Close()
 
 	if err != nil {
-		logrus.Error(err)
+		requestLogger.Debug(err)
+
 		return nil, err
 	}
 
@@ -196,7 +211,8 @@ func (m *psqlCampaignRepository) getCampaign(ctx context.Context, query string) 
 		err = json.Unmarshal([]byte(validator), &t.Validators)
 
 		if err != nil {
-			logrus.Error(err)
+			requestLogger.Debug(err)
+
 			return nil, err
 		}
 
@@ -206,49 +222,85 @@ func (m *psqlCampaignRepository) getCampaign(ctx context.Context, query string) 
 	return result, nil
 }
 
-func (m *psqlCampaignRepository) GetCampaignAvailable(ctx context.Context) ([]*models.Campaign, error) {
+func (m *psqlCampaignRepository) GetCampaignAvailable(c echo.Context) ([]*models.Campaign, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
 	query := `SELECT id, name, description, start_date, end_date, status, type, validators, updated_at, created_at
 		FROM campaigns WHERE status = 1 AND start_date::date <= now()::date 
 		AND end_date::date >= now()::date ORDER BY start_date DESC`
 
-	res, err := m.getCampaign(ctx, query)
+	res, err := m.getCampaign(c, query)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return nil, err
 	}
 
 	return res, err
 }
 
-func (m *psqlCampaignRepository) SavePoint(ctx context.Context, cmpgnTrx *models.CampaignTrx) error {
+func (m *psqlCampaignRepository) GetValidatorCampaign(c echo.Context, payload *models.GetCampaignValue) (*models.Campaign, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	var validator json.RawMessage
+	result := new(models.Campaign)
+	query := `SELECT id, validators FROM campaigns WHERE status = 1 AND start_date::date <= now()::date
+	AND end_date::date >= now()::date AND validators->>'channel'=$1 AND validators->>'product'=$2 AND validators->>'transactionType'=$3 AND validators->>'unit'=$4 ORDER BY start_date DESC LIMIT 1`
+	err := m.Conn.QueryRow(query, payload.Channel, payload.Product, payload.TransactionType, payload.Unit).Scan(&result.ID, &validator)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	err = json.Unmarshal([]byte(validator), &result.Validators)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (m *psqlCampaignRepository) SavePoint(c echo.Context, cmpgnTrx *models.CampaignTrx) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
 	var id int64
 	var query string
 
 	if cmpgnTrx.TransactionType == models.TransactionPointTypeDebet {
-		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, campaign_id, created_at)
-			VALUES ($1, $2, $3, $4, $5, $6)  RETURNING id`
+		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, reff_core, campaign_id, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)  RETURNING id`
 		id = cmpgnTrx.Campaign.ID
 	}
 
 	if cmpgnTrx.TransactionType == models.TransactionPointTypeKredit {
-		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, promo_code_id, created_at)
-			VALUES ($1, $2, $3, $4, $5, $6)  RETURNING id`
-		id = cmpgnTrx.PromoCode.ID
+		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, reff_core, voucher_code_id, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)  RETURNING id`
+		id = cmpgnTrx.VoucherCode.ID
 	}
 
-	stmt, err := m.Conn.PrepareContext(ctx, query)
+	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return err
 	}
 
-	logrus.Debug("Created At: ", &now)
-
+	cmpgnTrx.CreatedAt = &now
 	var lastID int64
-	err = stmt.QueryRowContext(ctx, cmpgnTrx.UserID, cmpgnTrx.PointAmount, cmpgnTrx.TransactionType, cmpgnTrx.TransactionDate, id, cmpgnTrx.CreatedAt).Scan(&lastID)
+	err = stmt.QueryRow(cmpgnTrx.UserID, *cmpgnTrx.PointAmount, cmpgnTrx.TransactionType, cmpgnTrx.TransactionDate, cmpgnTrx.ReffCore, id, cmpgnTrx.CreatedAt).Scan(&lastID)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return err
 	}
 
@@ -256,20 +308,26 @@ func (m *psqlCampaignRepository) SavePoint(ctx context.Context, cmpgnTrx *models
 	return nil
 }
 
-func (m *psqlCampaignRepository) GetUserPoint(ctx context.Context, UserID string) (float64, error) {
+func (m *psqlCampaignRepository) GetUserPoint(c echo.Context, UserID string) (float64, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
 	var pointDebet float64
 	var pointKredit float64
 	queryDebet := `SELECT coalesce(sum(point_amount), 0) as debet FROM public.campaign_transactions WHERE user_id = $1 AND transaction_type = 'D' AND to_char(transaction_date, 'YYYY') = to_char(NOW(), 'YYYY')`
-	err := m.Conn.QueryRowContext(ctx, queryDebet, UserID).Scan(&pointDebet)
+	err := m.Conn.QueryRow(queryDebet, UserID).Scan(&pointDebet)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return 0, err
 	}
 
 	queryKredit := `SELECT coalesce(sum(point_amount), 0) as debet FROM public.campaign_transactions WHERE user_id = $1 AND transaction_type = 'K' AND to_char(transaction_date, 'YYYY') = to_char(NOW(), 'YYYY')`
-	err = m.Conn.QueryRowContext(ctx, queryKredit, UserID).Scan(&pointKredit)
+	err = m.Conn.QueryRow(queryKredit, UserID).Scan(&pointKredit)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return 0, err
 	}
 
@@ -277,8 +335,14 @@ func (m *psqlCampaignRepository) GetUserPoint(ctx context.Context, UserID string
 	return pointAmount, nil
 }
 
-func (m *psqlCampaignRepository) GetUserPointHistory(ctx context.Context, userID string) ([]models.CampaignTrx, error) {
+func (m *psqlCampaignRepository) GetUserPointHistory(c echo.Context, payload map[string]interface{}) ([]models.CampaignTrx, error) {
 	var dataHistory []models.CampaignTrx
+	where := ""
+	paging := ""
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	startDateRg := payload["startDateRg"].(string)
+	endDateRg := payload["endDateRg"].(string)
 
 	query := `select
 				ct.id,
@@ -286,38 +350,46 @@ func (m *psqlCampaignRepository) GetUserPointHistory(ctx context.Context, userID
 				ct.point_amount,
 				ct.transaction_type,
 				ct.transaction_date,
+				coalesce(ct.reff_core, '') reff_core,
 				coalesce(ct.campaign_id, 0) campaign_id,
 				coalesce(c.name, '') campaign_name,
 				coalesce(c.description, '') campaign_description,
-				coalesce(ct.promo_code_id, 0) promo_code_id,
+				coalesce(ct.voucher_code_id, 0) voucher_code_id,
 				coalesce(pc.promo_code, '') promo_code,
 				coalesce(pc.voucher_id, 0) voucher_id,
 				coalesce(v.name, '') voucher_name,
 				coalesce(v.description, '') voucher_description
-			from
-				campaign_transactions ct
-			left join campaigns c on
-				ct.campaign_id = c.id
-			left join promo_codes pc on
-				pc.id = ct.promo_code_id
-			left join vouchers v on
-				pc.voucher_id = v.id
-			where
-				ct.user_id = $1
-			order by
-				ct.transaction_date desc;`
+			from campaign_transactions ct
+			left join campaigns c on ct.campaign_id = c.id
+			left join voucher_codes pc on pc.id = ct.voucher_code_id
+			left join vouchers v on pc.voucher_id = v.id
+			where ct.user_id = $1`
 
-	rows, err := m.Conn.QueryContext(ctx, query, userID)
+	if startDateRg != "" {
+		where += " and ct.transaction_date::timestamp::date >= '" + startDateRg + "'"
+	}
+
+	if endDateRg != "" {
+		where += " and ct.transaction_date::timestamp::date <= '" + endDateRg + "'"
+	}
+
+	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
+		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
+	}
+
+	query += where + " order by ct.transaction_date desc" + paging + ";"
+	rows, err := m.Conn.Query(query, payload["userID"].(string))
 
 	if err != nil {
-		logrus.Error(err)
+		requestLogger.Debug(err)
+
 		return nil, err
 	}
 
 	for rows.Next() {
 		var ct models.CampaignTrx
 		var campaign models.Campaign
-		var promoCodes models.PromoCode
+		var voucherCodes models.VoucherCode
 		var voucher models.Voucher
 
 		err = rows.Scan(
@@ -326,18 +398,20 @@ func (m *psqlCampaignRepository) GetUserPointHistory(ctx context.Context, userID
 			&ct.PointAmount,
 			&ct.TransactionType,
 			&ct.TransactionDate,
+			&ct.ReffCore,
 			&campaign.ID,
 			&campaign.Name,
 			&campaign.Description,
-			&promoCodes.ID,
-			&promoCodes.PromoCode,
+			&voucherCodes.ID,
+			&voucherCodes.PromoCode,
 			&voucher.ID,
 			&voucher.Name,
 			&voucher.Description,
 		)
 
 		if err != nil {
-			logrus.Error(err)
+			requestLogger.Debug(err)
+
 			return nil, err
 		}
 
@@ -345,13 +419,13 @@ func (m *psqlCampaignRepository) GetUserPointHistory(ctx context.Context, userID
 			ct.Campaign = &campaign
 		}
 
-		if promoCodes.ID != 0 {
-			ct.PromoCode = &promoCodes
-			ct.PromoCode.ID = 0 // remove promo codes ID from the response
+		if voucherCodes.ID != 0 {
+			ct.VoucherCode = &voucherCodes
+			ct.VoucherCode.ID = 0 // remove promo codes ID from the response
 		}
 
 		if voucher.ID != 0 {
-			ct.PromoCode.Voucher = &voucher
+			ct.VoucherCode.Voucher = &voucher
 		}
 
 		dataHistory = append(dataHistory, ct)
@@ -360,45 +434,79 @@ func (m *psqlCampaignRepository) GetUserPointHistory(ctx context.Context, userID
 	return dataHistory, nil
 }
 
-func (m *psqlCampaignRepository) CountCampaign(ctx context.Context, name string, status string, startDate string, endDate string) (int, error) {
+func (m *psqlCampaignRepository) CountUserPointHistory(c echo.Context, payload map[string]interface{}) (string, error) {
+	var counter string
+	where := ""
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	query := `select COUNT(*) counter from campaign_transactions where user_id = $1`
+
+	if payload["startDateRg"].(string) != "" {
+		where += " and transaction_date::timestamp::date >= '" + payload["startDateRg"].(string) + "'"
+	}
+
+	if payload["endDateRg"].(string) != "" {
+		where += " and transaction_date::timestamp::date <= '" + payload["endDateRg"].(string) + "'"
+	}
+
+	query += where + ";"
+	err := m.Conn.QueryRow(query, payload["userID"].(string)).Scan(&counter)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return "", err
+	}
+
+	return counter, nil
+}
+
+func (m *psqlCampaignRepository) CountCampaign(c echo.Context, payload map[string]interface{}) (int, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
 	var total int
 	query := `SELECT coalesce(COUNT(id), 0) FROM campaigns WHERE id IS NOT NULL`
 	where := ""
 
-	if name != "" {
-		where += " AND name LIKE '%" + name + "%'"
+	if payload["name"].(string) != "" {
+		where += " AND name LIKE '%" + payload["name"].(string) + "%'"
 	}
 
-	if status != "" {
-		where += " AND status='" + status + "'"
+	if payload["status"].(string) != "" {
+		where += " AND status='" + payload["status"].(string) + "'"
 	}
 
-	if startDate != "" {
-		where += " AND start_date >= '" + startDate + "'"
+	if payload["startDate"].(string) != "" {
+		where += " AND start_date >= '" + payload["startDate"].(string) + "'"
 	}
 
-	if endDate != "" {
-		where += " AND end_date <= '" + endDate + "'"
+	if payload["endDate"].(string) != "" {
+		where += " AND end_date <= '" + payload["endDate"].(string) + "'"
 	}
 
 	query += where
-	err := m.Conn.QueryRowContext(ctx, query).Scan(&total)
+	err := m.Conn.QueryRow(query).Scan(&total)
 
 	if err != nil {
+		requestLogger.Debug(err)
+
 		return 0, err
 	}
 
 	return total, nil
 }
 
-func (m *psqlCampaignRepository) GetCampaignDetail(ctx context.Context, id int64) (*models.Campaign, error) {
+func (m *psqlCampaignRepository) GetCampaignDetail(c echo.Context, id int64) (*models.Campaign, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
 	var validator json.RawMessage
 	var createDate, updateDate pq.NullTime
 	result := new(models.Campaign)
 
 	query := `SELECT id, name, description, start_date, end_date, status, type, validators, updated_at, created_at FROM campaigns WHERE id = $1`
 
-	err := m.Conn.QueryRowContext(ctx, query, id).Scan(
+	err := m.Conn.QueryRow(query, id).Scan(
 		&result.ID,
 		&result.Name,
 		&result.Description,
@@ -411,14 +519,21 @@ func (m *psqlCampaignRepository) GetCampaignDetail(ctx context.Context, id int64
 		&updateDate,
 	)
 
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
 	result.CreatedAt = &createDate.Time
 	result.UpdatedAt = &updateDate.Time
 	err = json.Unmarshal([]byte(validator), &result.Validators)
 
 	if err != nil {
-		logrus.Error(err)
+		requestLogger.Debug(err)
+
 		return nil, err
 	}
 
-	return result, err
+	return result, nil
 }

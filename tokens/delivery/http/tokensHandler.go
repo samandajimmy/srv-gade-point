@@ -4,6 +4,7 @@ import (
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/tokens"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo"
 )
@@ -36,7 +37,7 @@ func (tkn *TokensHandler) createToken(echTx echo.Context) error {
 		response.Status = models.StatusError
 		response.Message = models.MessageUnprocessableEntity
 
-		return echTx.JSON(http.StatusUnprocessableEntity, response)
+		return echTx.JSON(getStatusCode(err), response)
 	}
 
 	err = tkn.TokenUseCase.CreateToken(ctx, &accountToken)
@@ -45,7 +46,7 @@ func (tkn *TokensHandler) createToken(echTx echo.Context) error {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 
-		return echTx.JSON(http.StatusBadRequest, response)
+		return echTx.JSON(getStatusCode(err), response)
 	}
 
 	accountToken.Password = ""
@@ -53,7 +54,7 @@ func (tkn *TokensHandler) createToken(echTx echo.Context) error {
 	response.Message = models.MessageDataSuccess
 	response.Data = accountToken
 
-	return echTx.JSON(http.StatusOK, response)
+	return echTx.JSON(getStatusCode(err), response)
 }
 
 func (tkn *TokensHandler) getToken(echTx echo.Context) error {
@@ -67,14 +68,14 @@ func (tkn *TokensHandler) getToken(echTx echo.Context) error {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 
-		return echTx.JSON(http.StatusBadRequest, response)
+		return echTx.JSON(getStatusCode(err), response)
 	}
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessageDataSuccess
 	response.Data = accToken
 
-	return echTx.JSON(http.StatusOK, response)
+	return echTx.JSON(getStatusCode(err), response)
 }
 
 func (tkn *TokensHandler) refreshToken(echTx echo.Context) error {
@@ -88,12 +89,33 @@ func (tkn *TokensHandler) refreshToken(echTx echo.Context) error {
 		response.Status = models.StatusError
 		response.Message = err.Error()
 
-		return echTx.JSON(http.StatusBadRequest, response)
+		return echTx.JSON(getStatusCode(err), response)
 	}
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessageDataSuccess
 	response.Data = accToken
 
-	return echTx.JSON(http.StatusOK, response)
+	return echTx.JSON(getStatusCode(err), response)
+}
+
+func getStatusCode(err error) int {
+	if err == nil {
+		return http.StatusOK
+	}
+
+	if strings.Contains(err.Error(), "400") {
+		return http.StatusBadRequest
+	}
+
+	switch err {
+	case models.ErrInternalServerError:
+		return http.StatusInternalServerError
+	case models.ErrNotFound:
+		return http.StatusNotFound
+	case models.ErrConflict:
+		return http.StatusConflict
+	default:
+		return http.StatusInternalServerError
+	}
 }

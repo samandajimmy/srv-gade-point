@@ -4,13 +4,6 @@ import (
 	"time"
 )
 
-var (
-	// TransactionPointTypeDebet to store debet code
-	TransactionPointTypeDebet = "D"
-	// TransactionPointTypeKredit to store kredit code
-	TransactionPointTypeKredit = "K"
-)
-
 // Campaign is represent a campaigns model
 type Campaign struct {
 	ID          int64      `json:"id,omitempty"`
@@ -23,19 +16,6 @@ type Campaign struct {
 	Validators  *Validator `json:"validators,omitempty"`
 	UpdatedAt   *time.Time `json:"updatedAt,omitempty"`
 	CreatedAt   *time.Time `json:"createdAt,omitempty"`
-}
-
-// CampaignTrx is represent a campaign_transactions model
-type CampaignTrx struct {
-	ID              int64      `json:"id,omitempty"`
-	UserID          string     `json:"userId,omitempty"`
-	PointAmount     *float64   `json:"pointAmount,omitempty"`
-	TransactionType string     `json:"transactionType,omitempty"`
-	TransactionDate *time.Time `json:"transactionDate,omitempty"`
-	Campaign        *Campaign  `json:"campaign,omitempty"`
-	PromoCode       *PromoCode `json:"promoCode,omitempty"`
-	UpdatedAt       *time.Time `json:"updatedAt,omitempty"`
-	CreatedAt       *time.Time `json:"createdAt,omitempty"`
 }
 
 // UpdateCampaign to store payload update campaign
@@ -52,9 +32,10 @@ type GetCampaignValue struct {
 	Unit              string  `json:"unit,omitempty"`
 	TransactionAmount float64 `json:"transactionAmount,omitempty"`
 	Source            string  `json:"source,omitempty"` // device name that user used
+	ReffCore          string  `json:"reffCore,omitempty"`
 }
 
 // UserPoint to store payload user point data
 type UserPoint struct {
-	UserPoint float64 `json:"userPoint,omitempty"`
+	UserPoint *float64 `json:"userPoint,omitempty"`
 }

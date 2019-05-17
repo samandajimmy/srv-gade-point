@@ -7,15 +7,19 @@ import (
 	"gade/srv-gade-point/middleware"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/vouchers"
-	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	_campaignHttpDelivery "gade/srv-gade-point/campaigns/delivery/http"
 	_campaignRepository "gade/srv-gade-point/campaigns/repository"
 	_campaignUseCase "gade/srv-gade-point/campaigns/usecase"
+	_campaignTrxHttpDelivery "gade/srv-gade-point/campaigntrxs/delivery/http"
+	_campaignTrxRepository "gade/srv-gade-point/campaigntrxs/repository"
+	_campaignTrxUseCase "gade/srv-gade-point/campaigntrxs/usecase"
 	_tokenHttpDelivery "gade/srv-gade-point/tokens/delivery/http"
 	_tokenRepository "gade/srv-gade-point/tokens/repository"
 	_tokenUseCase "gade/srv-gade-point/tokens/usecase"
@@ -33,22 +37,27 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo"
 	_ "github.com/lib/pq"
+	"github.com/sirupsen/logrus"
 )
 
 var ech *echo.Echo
 
 func init() {
 	ech = echo.New()
+	ech.Debug = true
 	loadEnv()
-
-	// setup PUBLIC DIRECTORY
-	path := os.Getenv(`VOUCHER_ROUTE_PATH`)
-
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.MkdirAll(path, os.ModePerm)
+	logrus.SetReportCaller(true)
+	formatter := &logrus.TextFormatter{
+		FullTimestamp: true,
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			tmp := strings.Split(f.File, "/")
+			filename := tmp[len(tmp)-1]
+			return "", fmt.Sprintf("%s:%d", filename, f.Line)
+		},
 	}
 
-	ech.Static(os.Getenv(`VOUCHER_PATH`), os.Getenv(`VOUCHER_ROUTE_PATH`))
+	logrus.SetFormatter(formatter)
+	logrus.SetLevel(logrus.DebugLevel)
 }
 
 func main() {
@@ -88,6 +97,11 @@ func main() {
 	campaignUseCase := _campaignUseCase.NewCampaignUseCase(campaignRepository, timeoutContext)
 	_campaignHttpDelivery.NewCampaignsHandler(echoGroup, campaignUseCase)
 
+	// CAMPAIGNTRX
+	campaignTrxRepository := _campaignTrxRepository.NewPsqlCampaignTrxRepository(dbConn)
+	campaignTrxUseCase := _campaignTrxUseCase.NewCampaignTrxUseCase(campaignTrxRepository)
+	_campaignTrxHttpDelivery.NewCampaignTrxsHandler(echoGroup, campaignTrxUseCase, campaignUseCase)
+
 	// VOUCHER
 	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn)
 	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, campaignRepository, timeoutContext)
@@ -108,7 +122,7 @@ func main() {
 func updateStatusBasedOnStartDate(cmp campaigns.UseCase, vcr vouchers.UseCase) {
 	scheduler.Every().Day().At(os.Getenv(`STATUS_UPDATE_TIME`)).Run(func() {
 		t := time.Now()
-		log.Println("Run Scheduler! @", t)
+		logrus.Debug("Run Scheduler! @", t)
 
 		// CAMPAIGN
 		cmp.UpdateStatusBasedOnStartDate()
@@ -119,9 +133,18 @@ func updateStatusBasedOnStartDate(cmp campaigns.UseCase, vcr vouchers.UseCase) {
 }
 
 func ping(echTx echo.Context) error {
+	res := echTx.Response()
+	rid := res.Header().Get(echo.HeaderXRequestID)
+	params := map[string]interface{}{"rid": rid}
+
+	requestLogger := logrus.WithFields(logrus.Fields{"params": params})
+
+	requestLogger.Info("Start to ping server.")
 	response := models.Response{}
 	response.Status = models.StatusSuccess
 	response.Message = "PONG!!"
+
+	requestLogger.Info("End of ping server.")
 
 	return echTx.JSON(http.StatusOK, response)
 }
@@ -139,13 +162,13 @@ func getDBConn() *sql.DB {
 	dbConn, err := sql.Open(`postgres`, connection)
 
 	if err != nil {
-		log.Println(err)
+		logrus.Debug(err)
 	}
 
 	err = dbConn.Ping()
 
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 		os.Exit(1)
 	}
 
@@ -160,11 +183,11 @@ func dataMigrations(dbConn *sql.DB) *migrate.Migrate {
 		os.Getenv(`DB_USER`), driver)
 
 	if err != nil {
-		log.Println(err)
+		logrus.Debug(err)
 	}
 
 	if err := migrations.Up(); err != nil {
-		log.Println(err)
+		logrus.Debug(err)
 	}
 
 	return migrations
@@ -179,7 +202,7 @@ func loadEnv() {
 	err := godotenv.Load()
 
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		logrus.Fatal("Error loading .env file")
 	}
 
 	return

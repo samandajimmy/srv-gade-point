@@ -1,14 +1,14 @@
 package http
 
 import (
-	"context"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/vouchers"
 	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo"
-	"github.com/sirupsen/logrus"
 )
 
 var response = models.Response{} // Response represent the response
@@ -45,24 +45,23 @@ func NewVouchersHandler(echoGroup models.EchoGroup, us vouchers.UseCase) {
 func (vchr *VouchersHandler) CreateVoucher(c echo.Context) error {
 	var voucher models.Voucher
 	response = models.Response{}
-	ctx := c.Request().Context()
 
 	if err := c.Bind(&voucher); err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		return c.JSON(http.StatusUnprocessableEntity, response)
+		return c.JSON(getStatusCode(err), response)
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, voucher)
+	requestLogger.Info("Start to create a voucher")
 
-	err := vchr.VoucherUseCase.CreateVoucher(ctx, &voucher)
+	err := vchr.VoucherUseCase.CreateVoucher(c, &voucher)
 
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		return c.JSON(http.StatusUnprocessableEntity, response)
+		return c.JSON(getStatusCode(err), response)
 	}
 
 	if (models.Voucher{}) != voucher {
@@ -71,49 +70,40 @@ func (vchr *VouchersHandler) CreateVoucher(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessageSaveSuccess
-	return c.JSON(http.StatusCreated, response)
+	requestLogger.Info("End of create a voucher")
+
+	return c.JSON(getStatusCode(err), response)
 }
 
 // UpdateStatusVoucher Update status voucher ACTIVE or INACTIVE
 func (vchr *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 	response = models.Response{}
 	updateVoucher := new(models.UpdateVoucher)
-	id, _ := strconv.Atoi(c.Param("id"))
-	ctx := c.Request().Context()
+	logger := models.RequestLogger{
+		Payload: map[string]interface{}{
+			"voucherID": c.Param("id"),
+		},
+	}
 
 	if err := c.Bind(updateVoucher); err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		return c.JSON(http.StatusUnprocessableEntity, response)
+		return c.JSON(getStatusCode(err), response)
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	err := vchr.VoucherUseCase.UpdateVoucher(ctx, int64(id), updateVoucher)
+	requestLogger := logger.GetRequestLogger(c, updateVoucher)
+	requestLogger.Info("Start to update a voucher.")
+	id, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
+		requestLogger.Debug(err)
 		response.Status = models.StatusError
-		response.Message = err.Error()
-		return c.JSON(http.StatusOK, response)
+		response.Message = http.StatusText(http.StatusBadRequest)
+
+		return c.JSON(http.StatusBadRequest, response)
 	}
 
-	response.Status = models.StatusSuccess
-	response.Message = models.MessageUpdateSuccess
-	return c.JSON(http.StatusOK, response)
-}
-
-// UploadVoucherImages Upload image voucher
-func (vchr *VouchersHandler) UploadVoucherImages(c echo.Context) error {
-	ctx := c.Request().Context()
-	response = models.Response{}
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	file, err := c.FormFile("file")
+	err = vchr.VoucherUseCase.UpdateVoucher(c, int64(id), updateVoucher)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -121,7 +111,28 @@ func (vchr *VouchersHandler) UploadVoucherImages(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	path, err := vchr.VoucherUseCase.UploadVoucherImages(file)
+	response.Status = models.StatusSuccess
+	response.Message = models.MessageUpdateSuccess
+	requestLogger.Info("End of update a voucher.")
+
+	return c.JSON(getStatusCode(err), response)
+}
+
+// UploadVoucherImages Upload image voucher
+func (vchr *VouchersHandler) UploadVoucherImages(c echo.Context) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	response = models.Response{}
+	file, err := c.FormFile("file")
+
+	requestLogger.Info("Start to upload an voucher image.")
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	path, err := vchr.VoucherUseCase.UploadVoucherImages(c, file)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -135,7 +146,9 @@ func (vchr *VouchersHandler) UploadVoucherImages(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessageUploadSuccess
-	return c.JSON(http.StatusOK, response)
+	requestLogger.Info("End of upload an voucher image.")
+
+	return c.JSON(getStatusCode(err), response)
 }
 
 // GetVouchersAdmin Get all voucher by param name, status, start date and end date for admin
@@ -145,15 +158,77 @@ func (vchr *VouchersHandler) GetVouchersAdmin(c echo.Context) error {
 	status := c.QueryParam("status")
 	startDate := c.QueryParam("startDate")
 	endDate := c.QueryParam("endDate")
-	page, _ := strconv.Atoi(c.QueryParam("page"))
-	limit, _ := strconv.Atoi(c.QueryParam("limit"))
-	ctx := c.Request().Context()
+	pageStr := c.QueryParam("page")
+	limitStr := c.QueryParam("limit")
 
-	if ctx == nil {
-		ctx = context.Background()
+	// validate page and limit string input
+	if pageStr == "" {
+		pageStr = "0"
 	}
 
-	responseData, totalCount, err := vchr.VoucherUseCase.GetVouchersAdmin(ctx, name, status, startDate, endDate, int(page), int(limit))
+	if limitStr == "" {
+		limitStr = "0"
+	}
+
+	// prepare payload for logger
+	payload := map[string]interface{}{
+		"name":      name,
+		"status":    status,
+		"page":      pageStr,
+		"limit":     limitStr,
+		"startDate": startDate,
+		"endDate":   endDate,
+	}
+
+	logger := models.RequestLogger{
+		Payload: payload,
+	}
+
+	requestLogger := logger.GetRequestLogger(c, payload)
+	requestLogger.Info("Start to get all voucher for admin")
+
+	// validate payload values
+	page, err := strconv.Atoi(payload["page"].(string))
+
+	if err != nil {
+		requestLogger.Debug(err)
+		response.Status = models.StatusError
+		response.Message = http.StatusText(http.StatusBadRequest)
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	limit, err := strconv.Atoi(payload["limit"].(string))
+
+	if err != nil {
+		requestLogger.Debug(err)
+		response.Status = models.StatusError
+		response.Message = http.StatusText(http.StatusBadRequest)
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	dateFmtRgx := regexp.MustCompile(models.DateFormatRegex)
+
+	if startDate != "" && !dateFmtRgx.MatchString(startDate) {
+		requestLogger.Debug(models.ErrStartDateFormat)
+		response.Status = models.StatusError
+		response.Message = models.ErrStartDateFormat.Error()
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	if endDate != "" && !dateFmtRgx.MatchString(endDate) {
+		requestLogger.Debug(models.ErrEndDateFormat)
+		response.Status = models.StatusError
+		response.Message = models.ErrEndDateFormat.Error()
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	payload["page"] = page
+	payload["limit"] = limit
+	responseData, totalCount, err := vchr.VoucherUseCase.GetVouchersAdmin(c, payload)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -168,20 +243,23 @@ func (vchr *VouchersHandler) GetVouchersAdmin(c echo.Context) error {
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
 	response.TotalCount = totalCount
-	return c.JSON(http.StatusOK, response)
+	requestLogger.Info("End of get all voucher for admin")
+
+	return c.JSON(getStatusCode(err), response)
 }
 
 // GetVoucherAdmin Get detail voucher by voucherId for admin
 func (vchr *VouchersHandler) GetVoucherAdmin(c echo.Context) error {
 	response = models.Response{}
 	voucherID := c.Param("id")
-	ctx := c.Request().Context()
-
-	if ctx == nil {
-		ctx = context.Background()
+	logger := models.RequestLogger{
+		Payload: map[string]interface{}{
+			"voucherID": voucherID,
+		},
 	}
-
-	responseData, err := vchr.VoucherUseCase.GetVoucherAdmin(ctx, voucherID)
+	requestLogger := logger.GetRequestLogger(c, nil)
+	requestLogger.Info("Start to get voucher detail for admin.")
+	responseData, err := vchr.VoucherUseCase.GetVoucherAdmin(c, voucherID)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -195,25 +273,87 @@ func (vchr *VouchersHandler) GetVoucherAdmin(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
-	return c.JSON(http.StatusOK, response)
+	requestLogger.Info("End of get voucher detail for admin.")
+
+	return c.JSON(getStatusCode(err), response)
 }
 
 // GetVouchers Get all voucher by param name, status, start date and end date
 func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 	response = models.Response{}
 	name := c.QueryParam("name")
-	status := c.QueryParam("status")
 	startDate := c.QueryParam("startDate")
 	endDate := c.QueryParam("endDate")
-	page, _ := strconv.Atoi(c.QueryParam("page"))
-	limit, _ := strconv.Atoi(c.QueryParam("limit"))
-	ctx := c.Request().Context()
+	pageStr := c.QueryParam("page")
+	limitStr := c.QueryParam("limit")
 
-	if ctx == nil {
-		ctx = context.Background()
+	// validate page and limit string input
+	if pageStr == "" {
+		pageStr = "0"
 	}
 
-	responseData, totalCount, err := vchr.VoucherUseCase.GetVouchers(ctx, name, status, startDate, endDate, int(page), int(limit))
+	if limitStr == "" {
+		limitStr = "0"
+	}
+
+	// prepare payload for logger
+	payload := map[string]interface{}{
+		"name":      name,
+		"page":      pageStr,
+		"limit":     limitStr,
+		"startDate": startDate,
+		"endDate":   endDate,
+	}
+
+	logger := models.RequestLogger{
+		Payload: payload,
+	}
+
+	requestLogger := logger.GetRequestLogger(c, payload)
+	requestLogger.Info("Start to get all voucher for client")
+
+	// validate payload values
+	page, err := strconv.Atoi(payload["page"].(string))
+
+	if err != nil {
+		requestLogger.Debug(err)
+		response.Status = models.StatusError
+		response.Message = http.StatusText(http.StatusBadRequest)
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	limit, err := strconv.Atoi(payload["limit"].(string))
+
+	if err != nil {
+		requestLogger.Debug(err)
+		response.Status = models.StatusError
+		response.Message = http.StatusText(http.StatusBadRequest)
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	dateFmtRgx := regexp.MustCompile(models.DateFormatRegex)
+
+	if startDate != "" && !dateFmtRgx.MatchString(startDate) {
+		requestLogger.Debug(models.ErrStartDateFormat)
+		response.Status = models.StatusError
+		response.Message = models.ErrStartDateFormat.Error()
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	if endDate != "" && !dateFmtRgx.MatchString(endDate) {
+		requestLogger.Debug(models.ErrEndDateFormat)
+		response.Status = models.StatusError
+		response.Message = models.ErrEndDateFormat.Error()
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	payload["page"] = page
+	payload["limit"] = limit
+	responseData, totalCount, err := vchr.VoucherUseCase.GetVouchers(c, payload)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -228,20 +368,24 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
 	response.TotalCount = totalCount
-	return c.JSON(http.StatusOK, response)
+	requestLogger.Info("End of get all voucher for client")
+
+	return c.JSON(getStatusCode(err), response)
 }
 
 // GetVoucher Get detail voucher by voucherId
 func (vchr *VouchersHandler) GetVoucher(c echo.Context) error {
 	response = models.Response{}
 	voucherID := c.Param("id")
-	ctx := c.Request().Context()
-
-	if ctx == nil {
-		ctx = context.Background()
+	logger := models.RequestLogger{
+		Payload: map[string]interface{}{
+			"voucherID": voucherID,
+		},
 	}
 
-	responseData, err := vchr.VoucherUseCase.GetVoucher(ctx, voucherID)
+	requestLogger := logger.GetRequestLogger(c, nil)
+	requestLogger.Info("Start to get detail voucher for client")
+	responseData, err := vchr.VoucherUseCase.GetVoucher(c, voucherID)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -255,23 +399,65 @@ func (vchr *VouchersHandler) GetVoucher(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
-	return c.JSON(http.StatusOK, response)
+	requestLogger.Info("End of get detail voucher for client")
+
+	return c.JSON(getStatusCode(err), response)
 }
 
 // GetVouchersUser Get all promo code voucher by user id and status bought
 func (vchr *VouchersHandler) GetVouchersUser(c echo.Context) error {
 	response = models.Response{}
 	userID := c.QueryParam("userId")
-	status := c.QueryParam("status")
-	page, _ := strconv.Atoi(c.QueryParam("page"))
-	limit, _ := strconv.Atoi(c.QueryParam("limit"))
-	ctx := c.Request().Context()
+	pageStr := c.QueryParam("page")
+	limitStr := c.QueryParam("limit")
 
-	if ctx == nil {
-		ctx = context.Background()
+	// validate page and limit string input
+	if pageStr == "" {
+		pageStr = "0"
 	}
 
-	responseData, totalCount, err := vchr.VoucherUseCase.GetVouchersUser(ctx, userID, status, int(page), int(limit))
+	if limitStr == "" {
+		limitStr = "0"
+	}
+
+	// prepare payload for logger
+	payload := map[string]interface{}{
+		"userID": userID,
+		"page":   pageStr,
+		"limit":  limitStr,
+	}
+
+	logger := models.RequestLogger{
+		Payload: payload,
+	}
+
+	requestLogger := logger.GetRequestLogger(c, payload)
+	requestLogger.Info("Start to get all voucher for client")
+
+	// validate payload values
+	page, err := strconv.Atoi(payload["page"].(string))
+
+	if err != nil {
+		requestLogger.Debug(err)
+		response.Status = models.StatusError
+		response.Message = http.StatusText(http.StatusBadRequest)
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	limit, err := strconv.Atoi(payload["limit"].(string))
+
+	if err != nil {
+		requestLogger.Debug(err)
+		response.Status = models.StatusError
+		response.Message = http.StatusText(http.StatusBadRequest)
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	payload["page"] = page
+	payload["limit"] = limit
+	responseData, totalCount, err := vchr.VoucherUseCase.GetVouchersUser(c, payload)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -286,26 +472,24 @@ func (vchr *VouchersHandler) GetVouchersUser(c echo.Context) error {
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
 	response.TotalCount = totalCount
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(getStatusCode(err), response)
 }
 
 // VoucherBuy is a handler to provide and endpoint to buy voucher with point
 func (vchr *VouchersHandler) VoucherBuy(c echo.Context) error {
 	var voucher models.PayloadVoucherBuy
 	response = models.Response{}
-	ctx := c.Request().Context()
 
 	if err := c.Bind(&voucher); err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		return c.JSON(http.StatusUnprocessableEntity, response)
+		return c.JSON(getStatusCode(err), response)
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	responseData, err := vchr.VoucherUseCase.VoucherBuy(ctx, &voucher)
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, voucher)
+	requestLogger.Info("Start to buy a voucher")
+	responseData, err := vchr.VoucherUseCase.VoucherBuy(c, &voucher)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -313,32 +497,32 @@ func (vchr *VouchersHandler) VoucherBuy(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	if (&models.PromoCode{}) != responseData {
+	if (&models.VoucherCode{}) != responseData {
 		response.Data = responseData
 	}
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
-	return c.JSON(http.StatusCreated, response)
+	requestLogger.Info("End of buy a voucher")
+
+	return c.JSON(getStatusCode(err), response)
 }
 
 // VoucherValidate is a handler to provide and endpoint to validate voucher before reedem
 func (vchr *VouchersHandler) VoucherValidate(c echo.Context) error {
 	var payloadValidator models.PayloadValidator
 	response = models.Response{}
-	ctx := c.Request().Context()
 
 	if err := c.Bind(&payloadValidator); err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		return c.JSON(http.StatusUnprocessableEntity, response)
+		return c.JSON(getStatusCode(err), response)
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	responseData, err := vchr.VoucherUseCase.VoucherValidate(ctx, &payloadValidator)
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, payloadValidator)
+	requestLogger.Info("Start to validate a voucher")
+	responseData, err := vchr.VoucherUseCase.VoucherValidate(c, &payloadValidator)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -352,26 +536,26 @@ func (vchr *VouchersHandler) VoucherValidate(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
-	return c.JSON(http.StatusOK, response)
+	requestLogger.Info("End of validate a voucher")
+
+	return c.JSON(getStatusCode(err), response)
 }
 
 // VoucherRedeem is a handler to provide and endpoint to reedem voucher
 func (vchr *VouchersHandler) VoucherRedeem(c echo.Context) error {
 	var voucher models.PayloadValidator
 	response = models.Response{}
-	ctx := c.Request().Context()
 
 	if err := c.Bind(&voucher); err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
-		return c.JSON(http.StatusUnprocessableEntity, response)
+		return c.JSON(getStatusCode(err), response)
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	responseData, err := vchr.VoucherUseCase.VoucherRedeem(ctx, &voucher)
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, voucher)
+	requestLogger.Info("Start to redeem a voucher")
+	responseData, err := vchr.VoucherUseCase.VoucherRedeem(c, &voucher)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -379,21 +563,26 @@ func (vchr *VouchersHandler) VoucherRedeem(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	if (&models.PromoCode{}) != responseData {
+	if (&models.VoucherCode{}) != responseData {
 		response.Data = responseData
 	}
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
-	return c.JSON(http.StatusOK, response)
+	requestLogger.Info("End of redeem a voucher")
+
+	return c.JSON(getStatusCode(err), response)
 }
 
 func getStatusCode(err error) int {
-
 	if err == nil {
 		return http.StatusOK
 	}
-	logrus.Error(err)
+
+	if strings.Contains(err.Error(), "400") {
+		return http.StatusBadRequest
+	}
+
 	switch err {
 	case models.ErrInternalServerError:
 		return http.StatusInternalServerError
@@ -402,6 +591,6 @@ func getStatusCode(err error) int {
 	case models.ErrConflict:
 		return http.StatusConflict
 	default:
-		return http.StatusInternalServerError
+		return http.StatusOK
 	}
 }

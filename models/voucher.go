@@ -14,6 +14,7 @@ type Voucher struct {
 	Point              *int64     `json:"point,omitempty"`
 	JournalAccount     string     `json:"journalAccount,omitempty"`
 	DayPurchaseLimit   *int64     `json:"dayPurchaseLimit,omitempty"`
+	Value              *float64   `json:"value,omitempty"`
 	ImageURL           string     `json:"imageUrl,omitempty"`
 	Status             *int8      `json:"status,omitempty"`
 	Stock              *int32     `json:"stock,omitempty"`
@@ -25,6 +26,7 @@ type Voucher struct {
 	Expired            *int32     `json:"expired,omitempty"`
 	TermsAndConditions string     `json:"termsAndConditions,omitempty"`
 	HowToUse           string     `json:"howToUse,omitempty"`
+	LimitPerUser       *int       `json:"limitPerUser,omitempty"`
 	Validators         *Validator `json:"validators,omitempty"`
 	UpdatedAt          *time.Time `json:"updatedAt,omitempty"`
 	CreatedAt          *time.Time `json:"createdAt,omitempty"`
@@ -38,19 +40,6 @@ type UpdateVoucher struct {
 // PathVoucher to store payload for upload voucher
 type PathVoucher struct {
 	ImageURL string `json:"imageUrl,omitempty"`
-}
-
-// PromoCode to store a promo codes data
-type PromoCode struct {
-	ID           int64      `json:"id,omitempty"`
-	PromoCode    string     `json:"promoCode,omitempty"`
-	Status       *int8      `json:"status,omitempty"`
-	UserID       string     `json:"userId,omitempty"`
-	Voucher      *Voucher   `json:"voucher,omitempty"`
-	RedeemedDate *time.Time `json:"redeemedDate,omitempty"`
-	BoughtDate   *time.Time `json:"boughtDate,omitempty"`
-	UpdatedAt    *time.Time `json:"updatedAt,omitempty"`
-	CreatedAt    *time.Time `json:"createdAt,omitempty"`
 }
 
 // PayloadVoucherBuy to store payload to buy a voucher

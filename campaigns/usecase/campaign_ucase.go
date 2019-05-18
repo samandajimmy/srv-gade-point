@@ -10,7 +10,6 @@ import (
 
 	"github.com/jinzhu/copier"
 	"github.com/labstack/echo"
-	"github.com/labstack/gommon/log"
 	"github.com/sirupsen/logrus"
 )
 
@@ -157,7 +156,6 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 	payloadValidator := &models.PayloadValidator{}
 	payloadValidator.Validators = &models.Validator{}
 	now := time.Now()
-	dataCampaign, err := cmpgn.campaignRepo.GetValidatorCampaign(c, payload)
 
 	// get available campaign
 	campaigns, err := cmpgn.campaignRepo.GetCampaignAvailable(c)
@@ -184,7 +182,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 
 	if len(validCampaigns) < 1 {
 		// no valid campaign available
-		log.Error(err)
+		requestLogger.Debug(err)
 
 		return nil, models.ErrNoCampaign
 	}
@@ -193,15 +191,16 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 	latestCampaign := validCampaigns[0]
 
 	// get campaign formula
-	if payloadValidator.Validators.Formula == "" {
+	if latestCampaign.Validators.Formula == "" {
 		result = float64(0)
 	} else {
 		result, err = latestCampaign.Validators.GetFormulaResult(payloadValidator)
 	}
 
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		requestLogger.Debug(err)
+
+		return nil, models.ErrCalculateFormulaCampaign
 	}
 
 	pointAmount := math.Floor(result)
@@ -213,7 +212,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 		TransactionType: models.TransactionPointTypeDebet,
 		TransactionDate: &now,
 		ReffCore:        payload.ReffCore,
-		Campaign:        dataCampaign,
+		Campaign:        latestCampaign,
 		CreatedAt:       &now,
 	}
 

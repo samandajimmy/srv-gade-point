@@ -411,6 +411,7 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 		return nil, err
 	}
 
+	// check limit per day
 	err = validateLimitPurchase(*voucherDetail.DayPurchaseLimit, voucherAmount)
 
 	if err != nil {

@@ -25,5 +25,4 @@ type Repository interface {
 	UpdateExpiryDate(echo.Context) error
 	UpdateStatusBasedOnStartDate() error
 	CountBoughtVoucher(echo.Context, string, string) (int64, error)
-	// VoucherCheckExpired(ctx context.Context, voucherID string) error
 }

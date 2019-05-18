@@ -72,17 +72,15 @@ func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
 			reqValidatorVal := fmt.Sprintf("%v", reqValidator[fieldName])
 
 			if !strings.Contains(fieldValue, reqValidatorVal) {
-				log.Warn(ErrValidation)
+				customErr := fmt.Errorf("%s on this transaction is not valid to use this", fieldName)
 
-				return ErrValidation
+				return customErr
 			}
 		case fieldName == "minimalTransaction":
 			minTrx, _ := strconv.ParseFloat(fieldValue, 64)
 
 			if minTrx > payloadValidator.TransactionAmount {
-				log.Warn(ErrValidation)
-
-				return ErrValidation
+				return ErrValidationTrxAmt
 			}
 		}
 	}

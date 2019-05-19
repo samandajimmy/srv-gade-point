@@ -88,7 +88,7 @@ var (
 	ErrGetVoucherCounter = errors.New("Something went wrong when trying to get voucher counter")
 
 	// ErrRedeemVoucher to store redeem voucher error message
-	ErrRedeemVoucher = errors.New("Something went wrong when trying to redeem voucher")
+	ErrRedeemVoucher = errors.New("Voucher codes is not available to be redeemed")
 
 	// ErrExceedBuyLimit to store exceeded buying limit voucher error message
 	ErrExceedBuyLimit = errors.New("Exceeded buying limit for this voucher")

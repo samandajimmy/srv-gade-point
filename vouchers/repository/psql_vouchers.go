@@ -635,7 +635,7 @@ func (m *psqlVoucherRepository) UpdatePromoCodeRedeemed(c echo.Context, voucherI
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
 	result := new(models.VoucherCode)
-	queryUpdate := `UPDATE voucher_codes SET status = 2, redeemed_date = $1, updated_at = $2 WHERE user_id = $3 AND promo_code = $4 RETURNING promo_code, redeemed_date`
+	queryUpdate := `UPDATE voucher_codes SET status = 2, redeemed_date = $1, updated_at = $2 WHERE user_id = $3 AND promo_code = $4 AND status = 1 RETURNING promo_code, redeemed_date`
 	stmt, err := m.Conn.Prepare(queryUpdate)
 
 	if err != nil {

@@ -2,20 +2,16 @@ package usecase
 
 import (
 	"errors"
-	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
 	"math"
-	"reflect"
 	"strconv"
 	"time"
 
+	"github.com/jinzhu/copier"
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
-	govaluate "gopkg.in/Knetic/govaluate.v2"
 )
-
-var floatType = reflect.TypeOf(float64(0))
 
 type campaignUseCase struct {
 	campaignRepo   campaigns.Repository
@@ -154,10 +150,15 @@ func (cmpgn *campaignUseCase) GetCampaignDetail(c echo.Context, id string) (*mod
 }
 
 func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.GetCampaignValue) (*models.UserPoint, error) {
+	var result float64
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
+	payloadValidator := &models.PayloadValidator{}
+	payloadValidator.Validators = &models.Validator{}
 	now := time.Now()
-	dataCampaign, err := cmpgn.campaignRepo.GetValidatorCampaign(c, payload)
+
+	// get available campaign
+	campaigns, err := cmpgn.campaignRepo.GetCampaignAvailable(c)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrNoCampaign)
@@ -165,20 +166,36 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 		return nil, models.ErrNoCampaign
 	}
 
-	// Calculate point
-	expression, err := govaluate.NewEvaluableExpression(dataCampaign.Validators.Formula)
+	// validate available campaigns
+	validCampaigns := []*models.Campaign{}
+	copier.Copy(payloadValidator, payload)
+	copier.Copy(payloadValidator.Validators, payload)
 
-	if err != nil {
-		requestLogger.Debug(models.ErrCalculateFormulaCampaign)
+	for _, campaign := range campaigns {
+		//  validate each campaign
+		err = campaign.Validators.Validate(payloadValidator)
 
-		return nil, models.ErrCalculateFormulaCampaign
+		if err == nil {
+			validCampaigns = append(validCampaigns, campaign)
+		}
 	}
 
-	parameters := make(map[string]interface{}, 8)
-	parameters["transactionAmount"] = payload.TransactionAmount
-	parameters["multiplier"] = dataCampaign.Validators.Multiplier
-	parameters["value"] = dataCampaign.Validators.Value
-	result, err := expression.Evaluate(parameters)
+	if len(validCampaigns) < 1 {
+		// no valid campaign available
+		requestLogger.Debug(err)
+
+		return nil, models.ErrNoCampaign
+	}
+
+	// get latest campaign
+	latestCampaign := validCampaigns[0]
+
+	// get campaign formula
+	if latestCampaign.Validators.Formula == "" {
+		result = float64(0)
+	} else {
+		result, err = latestCampaign.Validators.GetFormulaResult(payloadValidator)
+	}
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -186,30 +203,16 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 		return nil, models.ErrCalculateFormulaCampaign
 	}
 
-	// Parse interface to float
-	parseFloat, err := getFloat(result)
+	pointAmount := math.Floor(result)
 
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return nil, models.ErrCalculateFormulaCampaign
-	}
-
-	if math.IsInf(parseFloat, 0) || math.IsNaN(parseFloat) {
-		requestLogger.Debug("the result of formula is infinity and beyond")
-
-		return nil, models.ErrCalculateFormulaCampaign
-	}
-
-	pointAmount := math.Floor(parseFloat)
-
+	// store campaign transaction
 	campaignTrx := &models.CampaignTrx{
 		UserID:          payload.UserID,
 		PointAmount:     &pointAmount,
 		TransactionType: models.TransactionPointTypeDebet,
 		TransactionDate: &now,
 		ReffCore:        payload.ReffCore,
-		Campaign:        dataCampaign,
+		Campaign:        latestCampaign,
 		CreatedAt:       &now,
 	}
 
@@ -273,18 +276,6 @@ func (cmpgn *campaignUseCase) GetUserPointHistory(c echo.Context, payload map[st
 	}
 
 	return dataHistory, counter, nil
-}
-
-func getFloat(unk interface{}) (float64, error) {
-	v := reflect.ValueOf(unk)
-	v = reflect.Indirect(v)
-
-	if !v.Type().ConvertibleTo(floatType) {
-		return 0, fmt.Errorf("cannot convert %v to float64", v.Type())
-	}
-
-	fv := v.Convert(floatType)
-	return fv.Float(), nil
 }
 
 func (cmpgn *campaignUseCase) UpdateStatusBasedOnStartDate() error {

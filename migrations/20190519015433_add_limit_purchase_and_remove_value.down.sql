@@ -1,0 +1,3 @@
+ALTER TABLE vouchers
+ADD COLUMN value DECIMAL NOT NULL,
+DROP COLUMN day_purchase_limit SMALLINT;

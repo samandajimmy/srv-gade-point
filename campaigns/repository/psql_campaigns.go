@@ -222,6 +222,25 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 	return result, nil
 }
 
+func (m *psqlCampaignRepository) GetCampaignAvailable(c echo.Context) ([]*models.Campaign, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	query := `SELECT id, name, description, start_date, end_date, status, type, validators, updated_at, created_at
+		FROM campaigns WHERE status = 1 AND start_date::date <= now()::date 
+		AND end_date::date >= now()::date ORDER BY start_date DESC`
+
+	res, err := m.getCampaign(c, query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	return res, err
+}
+
 func (m *psqlCampaignRepository) GetValidatorCampaign(c echo.Context, payload *models.GetCampaignValue) (*models.Campaign, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)

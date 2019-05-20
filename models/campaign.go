@@ -6,27 +6,16 @@ import (
 
 // Campaign is represent a campaigns model
 type Campaign struct {
-	ID          int64               `json:"id,omitempty"`
-	Name        string              `json:"name,omitempty"`
-	Description string              `json:"description,omitempty"`
-	StartDate   string              `json:"startDate,omitempty"`
-	EndDate     string              `json:"endDate,omitempty"`
-	Status      *int8               `json:"status,omitempty"`
-	Type        *int8               `json:"type,omitempty"`
-	Validators  *ValidatorsCampaign `json:"validators,omitempty"`
-	UpdatedAt   *time.Time          `json:"updatedAt,omitempty"`
-	CreatedAt   *time.Time          `json:"createdAt,omitempty"`
-}
-
-// ValidatorsCampaign is represent a validators inside campaign
-type ValidatorsCampaign struct {
-	Channel         string  `json:"channel,omitempty"`
-	Product         string  `json:"product,omitempty"`
-	TransactionType string  `json:"transactionType,omitempty"`
-	Unit            string  `json:"unit,omitempty"`
-	Multiplier      float64 `json:"multiplier,omitempty"`
-	Value           int64   `json:"value,omitempty"`
-	Formula         string  `json:"formula,omitempty"`
+	ID          int64      `json:"id,omitempty"`
+	Name        string     `json:"name,omitempty"`
+	Description string     `json:"description,omitempty"`
+	StartDate   string     `json:"startDate,omitempty"`
+	EndDate     string     `json:"endDate,omitempty"`
+	Status      *int8      `json:"status,omitempty"`
+	Type        *int8      `json:"type,omitempty"`
+	Validators  *Validator `json:"validators,omitempty"`
+	UpdatedAt   *time.Time `json:"updatedAt,omitempty"`
+	CreatedAt   *time.Time `json:"createdAt,omitempty"`
 }
 
 // UpdateCampaign to store payload update campaign
@@ -42,6 +31,7 @@ type GetCampaignValue struct {
 	TransactionType   string  `json:"transactionType,omitempty"`
 	Unit              string  `json:"unit,omitempty"`
 	TransactionAmount float64 `json:"transactionAmount,omitempty"`
+	Source            string  `json:"source,omitempty"` // device name that user used
 	ReffCore          string  `json:"reffCore,omitempty"`
 }
 

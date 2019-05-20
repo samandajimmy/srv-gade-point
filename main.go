@@ -26,6 +26,9 @@ import (
 	_userHttpDelivery "gade/srv-gade-point/users/delivery/http"
 	_userRepository "gade/srv-gade-point/users/repository"
 	_userUseCase "gade/srv-gade-point/users/usecase"
+	_voucherCodeHttpDelivery "gade/srv-gade-point/vouchercodes/delivery/http"
+	_voucherCodeRepository "gade/srv-gade-point/vouchercodes/repository"
+	_voucherCodeUseCase "gade/srv-gade-point/vouchercodes/usecase"
 	_voucherHttpDelivery "gade/srv-gade-point/vouchers/delivery/http"
 	_voucherRepository "gade/srv-gade-point/vouchers/repository"
 	_voucherUseCase "gade/srv-gade-point/vouchers/usecase"
@@ -106,6 +109,11 @@ func main() {
 	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn)
 	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, campaignRepository, timeoutContext)
 	_voucherHttpDelivery.NewVouchersHandler(echoGroup, voucherUseCase)
+
+	// VOUCHERCODE
+	voucherCodeRepository := _voucherCodeRepository.NewPsqlVoucherCodeRepository(dbConn)
+	voucherCodeUseCase := _voucherCodeUseCase.NewVoucherCodeUseCase(voucherCodeRepository)
+	_voucherCodeHttpDelivery.NewVoucherCodesHandler(echoGroup, voucherCodeUseCase)
 
 	// USER
 	userRepository := _userRepository.NewPsqlUserRepository(dbConn)

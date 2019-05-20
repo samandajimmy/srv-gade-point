@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-// PromoCode to store a promo codes data
+// VoucherCode to store a voucher codes data
 type VoucherCode struct {
 	ID           int64      `json:"id,omitempty"`
 	PromoCode    string     `json:"promoCode,omitempty"`

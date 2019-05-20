@@ -726,7 +726,7 @@ func (m *psqlVoucherRepository) CountBoughtVoucher(c echo.Context, voucherID str
 	requestLogger := logger.GetRequestLogger(c, nil)
 
 	query := `SELECT coalesce(COUNT(voucher_id), 0) as voucher_amount 
-			FROM promo_codes WHERE user_id = $1 and voucher_id = $2 and bought_date::timestamp::date = now()::date;`
+			FROM voucher_codes WHERE user_id = $1 and voucher_id = $2 and bought_date::timestamp::date = now()::date;`
 
 	err := m.Conn.QueryRow(query, userID, voucherID).Scan(&voucherAmount)
 
@@ -737,6 +737,54 @@ func (m *psqlVoucherRepository) CountBoughtVoucher(c echo.Context, voucherID str
 	}
 
 	return voucherAmount, nil
+}
+
+func (m *psqlVoucherRepository) GetBadaiEmasVoucher(c echo.Context) ([]*models.Voucher, error) {
+	var vouchers []*models.Voucher
+	var validator json.RawMessage
+
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	query := `SELECT id, validators FROM vouchers WHERE validators->>'campaignCode' = 'badai-emas' AND status = 1
+				AND now()::date >= start_date::timestamp::date AND now()::date <= end_date::timestamp::date
+				order by start_date desc`
+
+	rows, err := m.Conn.Query(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var voucher models.Voucher
+		err = rows.Scan(
+			&voucher.ID,
+			&validator,
+		)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		err = json.Unmarshal([]byte(validator), &voucher.Validators)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		vouchers = append(vouchers, &voucher)
+	}
+
+	return vouchers, nil
 }
 
 func arrSpliter(arrSource []*models.VoucherCode) [][]*models.VoucherCode {

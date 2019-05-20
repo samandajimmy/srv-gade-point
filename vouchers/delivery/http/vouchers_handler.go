@@ -24,29 +24,21 @@ func NewVouchersHandler(echoGroup models.EchoGroup, us vouchers.UseCase) {
 		VoucherUseCase: us,
 	}
 
-	// End Point For CMS
+	//End Point For CMS
 	echoGroup.Admin.POST("/vouchers", handler.CreateVoucher)
 	echoGroup.Admin.GET("/vouchers", handler.GetVouchersAdmin)
 	echoGroup.Admin.GET("/vouchers/:id", handler.GetVoucherAdmin)
 	echoGroup.Admin.POST("/vouchers/upload", handler.UploadVoucherImages)
 	echoGroup.Admin.PUT("/vouchers/status/:id", handler.UpdateStatusVoucher)
 
-	// End Point For External
+	//End Point For External
 	echoGroup.API.GET("/vouchers", handler.GetVouchers)
 	echoGroup.API.GET("/vouchers/:id", handler.GetVoucher)
+	echoGroup.API.POST("/vouchers/badai-emas-gift", handler.BadaiEmasGift)
 	echoGroup.API.POST("/vouchers/buy", handler.VoucherBuy)
 	echoGroup.API.POST("/vouchers/redeem", handler.VoucherRedeem)
 	echoGroup.API.GET("/vouchers/user", handler.GetVouchersUser)
 	echoGroup.API.POST("/vouchers/validate", handler.VoucherValidate)
-	echoGroup.API.POST("/vouchers/badai-emas/gift", handler.VoucherValidate)
-}
-
-// BadaiEmasGift function to give client the right badai emas voucher
-func (vchr *VouchersHandler) BadaiEmasGift(c echo.Context) error {
-	var err error
-	response = models.Response{}
-
-	return c.JSON(getStatusCode(err), response)
 }
 
 // CreateVoucher Create new voucher and generate promo code by stock
@@ -512,6 +504,39 @@ func (vchr *VouchersHandler) VoucherBuy(c echo.Context) error {
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
 	requestLogger.Info("End of buy a voucher")
+
+	return c.JSON(getStatusCode(err), response)
+}
+
+// BadaiEmasGift function to give client the right badai emas voucher
+func (vchr *VouchersHandler) BadaiEmasGift(c echo.Context) error {
+	var plValidator models.PayloadValidator
+	response = models.Response{}
+
+	if err := c.Bind(&plValidator); err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, plValidator)
+	requestLogger.Info("Start to execute badai emas gift process")
+	responseData, err := vchr.VoucherUseCase.BadaiEmasGift(c, &plValidator)
+
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	if (&models.VoucherCode{}) != responseData {
+		response.Data = responseData
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MessagePointSuccess
+	requestLogger.Info("End of execute badai emas gift process")
 
 	return c.JSON(getStatusCode(err), response)
 }

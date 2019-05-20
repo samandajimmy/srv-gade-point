@@ -540,6 +540,57 @@ func (vchr *voucherUseCase) VoucherRedeem(c echo.Context, voucherRedeem *models.
 	return promoCode, nil
 }
 
+func (vchr *voucherUseCase) BadaiEmasGift(c echo.Context, plValidator *models.PayloadValidator) (*models.VoucherCode, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	// get badai emas voucher
+	vouchers, err := vchr.voucherRepo.GetBadaiEmasVoucher(c)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, models.ErrGetVouchers
+	}
+
+	// validate voucher by loan amount
+	validVouchers := []*models.Voucher{}
+
+	for _, voucher := range vouchers {
+		err = voucher.Validators.Validate(plValidator)
+
+		if err == nil {
+			validVouchers = append(validVouchers, voucher)
+		}
+	}
+
+	if len(validVouchers) < 1 {
+		// no valid voucher available
+		requestLogger.Debug(err)
+
+		return nil, models.ErrVoucherUnavailable
+	}
+
+	// get latest voucher
+	latestVoucher := validVouchers[0]
+
+	// give the voucher to userID
+	payloadVoucherBuy := &models.PayloadVoucherBuy{
+		VoucherID: strconv.FormatInt(latestVoucher.ID, 10),
+		UserID:    plValidator.UserID,
+	}
+
+	voucherCode, errMsg := vchr.VoucherBuy(c, payloadVoucherBuy)
+
+	if err != nil {
+		requestLogger.Debug(errMsg)
+
+		return nil, errMsg
+	}
+
+	return voucherCode, nil
+}
+
 func generatePromoCode(stock *int32) (code []string, err error) {
 	var arr = make([]string, *stock)
 	arrChecker := map[string]bool{}

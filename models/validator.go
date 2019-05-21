@@ -15,6 +15,7 @@ import (
 
 // Validator to store all validator data
 type Validator struct {
+	CampaignCode       string   `json:"campaignCode,omitempty"`
 	Channel            string   `json:"channel,omitempty"`
 	Product            string   `json:"product,omitempty"`
 	TransactionType    string   `json:"transactionType,omitempty"`
@@ -24,6 +25,8 @@ type Validator struct {
 	Formula            string   `json:"formula,omitempty"`
 	MinimalTransaction string   `json:"minimalTransaction,omitempty"`
 	Source             string   `json:"source,omitempty"` // device name that user used
+	MinLoanAmount      *float64 `json:"minLoanAmount,omitempty"`
+	MaxLoanAmount      *float64 `json:"maxLoanAmount,omitempty"`
 }
 
 // PayloadValidator to store a payload to validate a request
@@ -33,15 +36,23 @@ type PayloadValidator struct {
 	CampaignID        string     `json:"campaignId,omitempty"`
 	UserID            string     `json:"userId,omitempty"`
 	TransactionAmount float64    `json:"transactionAmount,omitempty"`
+	LoanAmount        float64    `json:"loanAmount,omitempty"`
 	Validators        *Validator `json:"validators,omitempty"`
 }
 
 var skippedValidator = []string{"multiplier", "value", "formula"}
-var compareEqual = []string{"channel", "product", "transactionType", "unit", "source"}
+var compareEqual = []string{"channel", "product", "transactionType", "unit", "source", "campaignCode"}
+var tightenValidator = map[string]string{
+	"minimalTransaction": "transactionAmount",
+	"minLoanAmount":      "loanAmount",
+	"maxLoanAmount":      "loanAmount",
+}
+var customErrMsg = "%s on this transaction is not valid to use the benefit"
 
 // Validate to validate client input with admin input
 func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
 	var reqValidator map[string]interface{}
+	var payloadVal map[string]interface{}
 
 	if v == nil {
 		log.Error(ErrValidatorUnavailable)
@@ -52,6 +63,8 @@ func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
 	vReflector := reflect.ValueOf(v).Elem()
 	tempJSON, _ := json.Marshal(payloadValidator.Validators)
 	json.Unmarshal(tempJSON, &reqValidator)
+	tempJSON, _ = json.Marshal(payloadValidator)
+	json.Unmarshal(tempJSON, &payloadVal)
 
 	for i := 0; i < vReflector.NumField(); i++ {
 		interfaceValue := vReflector.Field(i).Interface()
@@ -72,15 +85,19 @@ func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
 			reqValidatorVal := fmt.Sprintf("%v", reqValidator[fieldName])
 
 			if !strings.Contains(fieldValue, reqValidatorVal) {
-				customErr := fmt.Errorf("%s on this transaction is not valid to use this", fieldName)
-
-				return customErr
+				return fmt.Errorf(customErrMsg, fieldName)
 			}
-		case fieldName == "minimalTransaction":
+		case strings.Contains(fieldName, "min"):
 			minTrx, _ := strconv.ParseFloat(fieldValue, 64)
 
-			if minTrx > payloadValidator.TransactionAmount {
-				return ErrValidationTrxAmt
+			if minTrx > payloadVal[tightenValidator[fieldName]].(float64) {
+				return fmt.Errorf(customErrMsg, tightenValidator[fieldName])
+			}
+		case strings.Contains(fieldName, "max"):
+			maxTrx, _ := strconv.ParseFloat(fieldValue, 64)
+
+			if maxTrx < payloadVal[tightenValidator[fieldName]].(float64) {
+				return fmt.Errorf(customErrMsg, tightenValidator[fieldName])
 			}
 		}
 	}

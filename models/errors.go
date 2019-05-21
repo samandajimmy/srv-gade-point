@@ -100,7 +100,7 @@ var (
 	ErrVoucherUnavailable = errors.New("Voucher Unavailable")
 
 	// ErrBuyingVoucherExceeded to store exceeded error message
-	ErrBuyingVoucherExceeded = errors.New("User cant buy a voucher today")
+	ErrBuyingVoucherExceeded = errors.New("This user cant buy a voucher anymore today")
 
 	// ErrVoucherOutOfStock to store voucher unavailable error message
 	ErrVoucherOutOfStock = errors.New("Voucher is out of stock")

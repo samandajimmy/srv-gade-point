@@ -29,10 +29,10 @@ func (psqlRepo *psqlVoucherCodeRepository) CountVoucherCode(c echo.Context, payl
 	userID := payload["userId"].(string)
 	where := ""
 
-	queryCounter := `SELECT COUNT(ID) counter FROM voucher_codes`
+	queryCounter := `SELECT COUNT(ID) counter FROM voucher_codes where user_id is not null`
 
 	if userID != "" {
-		where += " where user_id = '" + userID + "'"
+		where += " and user_id = '" + userID + "'"
 	}
 
 	queryCounter += where + ";"
@@ -57,17 +57,17 @@ func (psqlRepo *psqlVoucherCodeRepository) GetVoucherCodeHistory(c echo.Context,
 	where := ""
 
 	query := `SELECT vc.id, coalesce(vc.user_id, ''), vc.promo_code, vc.status, vc.bought_date, vc.redeemed_date, vc.updated_at, v.id, v.name
-			FROM voucher_codes vc left join vouchers v on vc.voucher_id = v.id`
+			FROM voucher_codes vc left join vouchers v on vc.voucher_id = v.id where user_id is not null`
 
 	if user != "" {
-		where += " where user_id = '" + user + "'"
+		where += " and user_id = '" + user + "'"
 	}
 
 	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
 		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
 	}
 
-	query += where + " order by vc.updated_at desc" + paging + ";"
+	query += where + " order by vc.updated_at desc, status desc" + paging + ";"
 	rows, err := psqlRepo.Conn.Query(query)
 
 	if err != nil {

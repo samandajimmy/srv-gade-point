@@ -138,6 +138,9 @@ var (
 	// ErrGetUsersPoint to store get users point error message
 	ErrGetUsersPoint = errors.New("Something went wrong when trying to get users point")
 
+	// ErrGetVoucherHistory to store get voucher history error message
+	ErrGetVoucherHistory = errors.New("Something went wrong when trying to get voucher history")
+
 	// ErrStartDateFormat to store a date format params error message
 	ErrStartDateFormat = errors.New("Start date parameters is not meet the format")
 

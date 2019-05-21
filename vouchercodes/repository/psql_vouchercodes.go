@@ -29,8 +29,7 @@ func (psqlRepo *psqlVoucherCodeRepository) CountVoucherCode(c echo.Context, payl
 	userID := payload["userId"].(string)
 	where := ""
 
-	queryCounter := `SELECT COUNT(ID) counter
-						FROM voucher_codes`
+	queryCounter := `SELECT COUNT(ID) counter FROM voucher_codes`
 
 	if userID != "" {
 		where += " where user_id = '" + userID + "'"
@@ -57,19 +56,8 @@ func (psqlRepo *psqlVoucherCodeRepository) GetVoucherCodeHistory(c echo.Context,
 	paging := ""
 	where := ""
 
-	query := `SELECT
-                vc.id,
-				coalesce(vc.user_id, ''),
-				vc.promo_code,
-				vc.status, 
-				vc.bought_date, 
-				vc.redeemed_date, 
-				vc.updated_at, 
-				v.id,
-				v.name
-			FROM voucher_codes vc 
-			left join vouchers v 
-			on vc.voucher_id = v.id`
+	query := `SELECT vc.id, coalesce(vc.user_id, ''), vc.promo_code, vc.status, vc.bought_date, vc.redeemed_date, vc.updated_at, v.id, v.name
+			FROM voucher_codes vc left join vouchers v on vc.voucher_id = v.id`
 
 	if user != "" {
 		where += " where user_id = '" + user + "'"
@@ -105,6 +93,7 @@ func (psqlRepo *psqlVoucherCodeRepository) GetVoucherCodeHistory(c echo.Context,
 			&voucher.ID,
 			&voucher.Name,
 		)
+
 		if err != nil {
 			requestLogger.Debug(err)
 

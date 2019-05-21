@@ -38,7 +38,7 @@ func (m *psqlVoucherRepository) CreateVoucher(c echo.Context, voucher *models.Vo
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
 	var lastID int64
-	query := `INSERT INTO vouchers (name, description, start_date, end_date, point, journal_account, value, 
+	query := `INSERT INTO vouchers (name, description, start_date, end_date, point, journal_account, day_purchase_limit, 
 		image_url, status, stock, prefix_promo_code, validators, terms_and_conditions, how_to_use, limit_per_user, created_at) 
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)  RETURNING id`
 	stmt, err := m.Conn.Prepare(query)
@@ -57,8 +57,14 @@ func (m *psqlVoucherRepository) CreateVoucher(c echo.Context, voucher *models.Vo
 		return err
 	}
 
+	if voucher.DayPurchaseLimit == nil {
+		defLimit := int64(0)
+		voucher.DayPurchaseLimit = &defLimit
+	}
+
 	err = stmt.QueryRow(voucher.Name, voucher.Description, voucher.StartDate, voucher.EndDate,
-		voucher.Point, voucher.JournalAccount, voucher.Value, voucher.ImageURL, voucher.Status, voucher.Stock, voucher.PrefixPromoCode,
+		voucher.Point, voucher.JournalAccount, voucher.DayPurchaseLimit,
+		voucher.ImageURL, voucher.Status, voucher.Stock, voucher.PrefixPromoCode,
 		string(validator), voucher.TermsAndConditions, voucher.HowToUse, voucher.LimitPerUser, &now).Scan(&lastID)
 
 	if err != nil {
@@ -116,14 +122,14 @@ func (m *psqlVoucherRepository) GetVouchersAdmin(c echo.Context, payload map[str
 	requestLogger := logger.GetRequestLogger(c, nil)
 	paging := ""
 	where := ""
-	query := `SELECT d.id, d.name, d.description, d.start_date, d.end_date, d.point, d.journal_account, d.value, d.image_url, d.status, d.stock, d.prefix_promo_code, d.amount, 
+	query := `SELECT d.id, d.name, d.description, d.start_date, d.end_date, d.point, d.journal_account, d.day_purchase_limit, d.image_url, d.status, d.stock, d.prefix_promo_code, d.amount, 
 	CASE WHEN d.end_date::date < now()::date THEN 0 ELSE coalesce(e.available, 0) END AS available, coalesce(f.bought, 0) bought, coalesce(g.reedem, 0) reedem, 
 	CASE WHEN coalesce(h.expired, 0) - coalesce(g.reedem, 0) < 0 THEN 0 ELSE coalesce(h.expired, 0) - coalesce(g.reedem, 0) END AS expired, d.validators, 
 	d.terms_and_conditions, d.how_to_use, d.limit_per_user, d.updated_at, d.created_at 
-	FROM (SELECT b.id, b.name, b.description, b.start_date, b.end_date, b.point, b.journal_account, b.value, b.image_url, b.status, b.stock, b.prefix_promo_code, 
+	FROM (SELECT b.id, b.name, b.description, b.start_date, b.end_date, b.point, b.journal_account, b.day_purchase_limit, b.image_url, b.status, b.stock, b.prefix_promo_code, 
 	count(a.id) as amount, b.validators, b.terms_and_conditions, b.how_to_use, b.limit_per_user, b.updated_at, b.created_at 
 	FROM voucher_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id GROUP BY b.id, b.name, b.description, b.start_date, b.end_date, b.point, b.journal_account, 
-	b.value, b.image_url, b.status, b.stock, b.prefix_promo_code, b.validators, b.terms_and_conditions, b.how_to_use, b.limit_per_user, b.updated_at, b.created_at) as d 
+	b.day_purchase_limit, b.image_url, b.status, b.stock, b.prefix_promo_code, b.validators, b.terms_and_conditions, b.how_to_use, b.limit_per_user, b.updated_at, b.created_at) as d 
 	LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as available 
 	FROM voucher_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id WHERE a.status = 0 GROUP BY b.id) as e ON e.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as bought 
 	FROM voucher_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id WHERE a.status = 1 GROUP BY b.id) as f ON f.id = d.id LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as reedem 
@@ -189,7 +195,7 @@ func (m *psqlVoucherRepository) getVouchersAdmin(c echo.Context, query string) (
 			&t.EndDate,
 			&t.Point,
 			&t.JournalAccount,
-			&t.Value,
+			&t.DayPurchaseLimit,
 			&t.ImageURL,
 			&t.Status,
 			&t.Stock,
@@ -229,12 +235,12 @@ func (m *psqlVoucherRepository) GetVoucherAdmin(c echo.Context, voucherID string
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	result := new(models.Voucher)
-	query := `SELECT d.id, d.name, d.description, d.start_date, d.end_date, d.point, d.journal_account, d.value, d.image_url, d.status, d.stock, d.prefix_promo_code, d.amount, 
+	query := `SELECT d.id, d.name, d.description, d.start_date, d.end_date, d.point, d.journal_account, d.day_purchase_limit, d.image_url, d.status, d.stock, d.prefix_promo_code, d.amount, 
 	CASE WHEN d.end_date::date < now()::date THEN 0 ELSE coalesce(e.available, 0) END AS available, coalesce(f.bought, 0) bought , coalesce(g.reedem, 0) reedem, 
 	CASE WHEN coalesce(h.expired, 0) - coalesce(g.reedem, 0) < 0 THEN 0 ELSE coalesce(h.expired, 0) - coalesce(g.reedem, 0) END AS expired, d.validators, d.terms_and_conditions, d.how_to_use, 
-	d.limit_per_user, d.updated_at, d.created_at FROM (SELECT b.id, b.name, b.description, b.start_date, b.end_date, b.point, b.journal_account, b.value, b.image_url, b.status, b.stock, b.prefix_promo_code, 
+	d.limit_per_user, d.updated_at, d.created_at FROM (SELECT b.id, b.name, b.description, b.start_date, b.end_date, b.point, b.journal_account, b.day_purchase_limit, b.image_url, b.status, b.stock, b.prefix_promo_code, 
 	count(a.id) as amount, b.validators, b.terms_and_conditions, b.how_to_use, b.limit_per_user, b.updated_at, b.created_at FROM voucher_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id GROUP BY b.id, b.name, 
-	b.description, b.start_date, b.end_date, b.point, b.journal_account, b.value, b.image_url, b.status, b.stock, b.prefix_promo_code, b.validators, b.updated_at, b.created_at) as d 
+	b.description, b.start_date, b.end_date, b.point, b.journal_account, b.day_purchase_limit, b.image_url, b.status, b.stock, b.prefix_promo_code, b.validators, b.updated_at, b.created_at) as d 
 	LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as available FROM voucher_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id WHERE a.status = 0 GROUP BY b.id) as e ON e.id = d.id 
 	LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as bought FROM voucher_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id WHERE a.status = 1 GROUP BY b.id) as f ON f.id = d.id 
 	LEFT JOIN (SELECT b.id, coalesce(count(a.id), 0) as reedem FROM voucher_codes a LEFT JOIN vouchers b ON b.id = a.voucher_id WHERE a.status = 2 GROUP BY b.id) as g ON g.id = d.id 
@@ -249,7 +255,7 @@ func (m *psqlVoucherRepository) GetVoucherAdmin(c echo.Context, voucherID string
 		&result.EndDate,
 		&result.Point,
 		&result.JournalAccount,
-		&result.Value,
+		&result.DayPurchaseLimit,
 		&result.ImageURL,
 		&result.Status,
 		&result.Stock,
@@ -290,7 +296,7 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context, payload map[string]i
 	requestLogger := logger.GetRequestLogger(c, nil)
 	paging := ""
 	where := ""
-	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, c.value, c.image_url, c.stock, coalesce(d.available, 0), c.terms_and_conditions, c.how_to_use, c.limit_per_user
+	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, c.day_purchase_limit, c.image_url, c.stock, coalesce(d.available, 0), c.terms_and_conditions, c.how_to_use, c.limit_per_user
 	FROM vouchers c LEFT JOIN(SELECT b.id, coalesce(count(a.id), 0) as available FROM voucher_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 0 GROUP BY b.id) d 
 	ON d.id = c.id WHERE c.status = 1 AND c.end_date::date >= now()`
 
@@ -331,7 +337,7 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context, payload map[string]i
 			&t.StartDate,
 			&t.EndDate,
 			&t.Point,
-			&t.Value,
+			&t.DayPurchaseLimit,
 			&t.ImageURL,
 			&t.Stock,
 			&t.Available,
@@ -405,7 +411,7 @@ func (m *psqlVoucherRepository) GetVoucher(c echo.Context, voucherID string) (*m
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	result := new(models.Voucher)
-	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, c.value, c.image_url, c.stock, coalesce(d.available, 0), c.terms_and_conditions, c.how_to_use, c.limit_per_user
+	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, coalesce(c.day_purchase_limit, 0) as day_purchase_limit, c.image_url, c.stock, coalesce(d.available, 0), c.terms_and_conditions, c.how_to_use, c.limit_per_user
 	FROM vouchers c LEFT JOIN(SELECT b.id, coalesce(count(a.id), 0) as available FROM voucher_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id 
 	WHERE a.status = 0 GROUP BY b.id) d ON d.id = c.id WHERE c.id = $1`
 
@@ -416,7 +422,7 @@ func (m *psqlVoucherRepository) GetVoucher(c echo.Context, voucherID string) (*m
 		&result.StartDate,
 		&result.EndDate,
 		&result.Point,
-		&result.Value,
+		&result.DayPurchaseLimit,
 		&result.ImageURL,
 		&result.Stock,
 		&result.Available,
@@ -439,7 +445,7 @@ func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[stri
 	requestLogger := logger.GetRequestLogger(c, nil)
 	paging := ""
 	where := ""
-	query := `SELECT a.id, a.promo_code, a.bought_date, b.id, b.name, b.description, b.terms_and_conditions, b.how_to_use, b.limit_per_user, b.start_date, b.end_date, b.value, b.image_url 
+	query := `SELECT a.id, a.promo_code, a.bought_date, b.id, b.name, b.description, b.terms_and_conditions, b.how_to_use, b.limit_per_user, b.start_date, b.end_date, b.day_purchase_limit, b.image_url 
 	FROM voucher_codes AS a LEFT JOIN vouchers AS b ON b.id = a.voucher_id WHERE a.promo_code IS NOT NULL AND a.status = 1`
 
 	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
@@ -478,7 +484,7 @@ func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[stri
 			&voucher.LimitPerUser,
 			&voucher.StartDate,
 			&voucher.EndDate,
-			&voucher.Value,
+			&voucher.DayPurchaseLimit,
 			&voucher.ImageURL,
 		)
 
@@ -629,7 +635,7 @@ func (m *psqlVoucherRepository) UpdatePromoCodeRedeemed(c echo.Context, voucherI
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
 	result := new(models.VoucherCode)
-	queryUpdate := `UPDATE voucher_codes SET status = 2, redeemed_date = $1, updated_at = $2 WHERE user_id = $3 AND promo_code = $4 RETURNING promo_code, redeemed_date`
+	queryUpdate := `UPDATE voucher_codes SET status = 2, redeemed_date = $1, updated_at = $2 WHERE user_id = $3 AND promo_code = $4 AND status = 1 RETURNING promo_code, redeemed_date`
 	stmt, err := m.Conn.Prepare(queryUpdate)
 
 	if err != nil {
@@ -712,6 +718,25 @@ func (m *psqlVoucherRepository) insertVoucherCodes(c echo.Context, pCodes []*mod
 	requestLogger.Debugf("%d voucher code(s) are created concurrently!", counter)
 
 	return nil
+}
+
+func (m *psqlVoucherRepository) CountBoughtVoucher(c echo.Context, voucherID string, userID string) (int64, error) {
+	var voucherAmount int64
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	query := `SELECT coalesce(COUNT(voucher_id), 0) as voucher_amount 
+			FROM promo_codes WHERE user_id = $1 and voucher_id = $2 and bought_date::timestamp::date = now()::date;`
+
+	err := m.Conn.QueryRow(query, userID, voucherID).Scan(&voucherAmount)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return 0, err
+	}
+
+	return voucherAmount, nil
 }
 
 func arrSpliter(arrSource []*models.VoucherCode) [][]*models.VoucherCode {

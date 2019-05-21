@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"gade/srv-gade-point/campaigns"
@@ -20,8 +19,6 @@ import (
 	"time"
 
 	"github.com/labstack/echo"
-
-	"github.com/iancoleman/strcase"
 	"github.com/labstack/gommon/log"
 	"github.com/tidwall/gjson"
 )
@@ -406,6 +403,23 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 		return nil, err
 	}
 
+	voucherAmount, err := vchr.voucherRepo.CountBoughtVoucher(ech, payload.VoucherID, payload.UserID)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	// check limit per day
+	err = validateLimitPurchase(*voucherDetail.DayPurchaseLimit, voucherAmount)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
 	voucherCode, err := vchr.voucherRepo.UpdatePromoCodeBought(ech, payload.VoucherID, payload.UserID)
 
 	if err != nil {
@@ -456,8 +470,7 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 	return voucherCode, nil
 }
 
-func (vchr *voucherUseCase) VoucherValidate(c echo.Context, validateVoucher *models.PayloadValidateVoucher) (*models.ResponseValidateVoucher, error) {
-	var payloadValidator map[string]interface{}
+func (vchr *voucherUseCase) VoucherValidate(c echo.Context, validateVoucher *models.PayloadValidator) (*models.ResponseValidateVoucher, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
@@ -497,54 +510,23 @@ func (vchr *voucherUseCase) VoucherValidate(c echo.Context, validateVoucher *mod
 	}
 
 	// voucher validations
-	validator := voucher.Validators
+	err = voucher.Validators.Validate(validateVoucher)
 
-	if validator == nil {
-		requestLogger.Debug(models.ErrValidatorUnavailable)
+	if err != nil {
+		requestLogger.Debug(err)
 
-		return nil, models.ErrValidatorUnavailable
-	}
-
-	vReflector := reflect.ValueOf(validator).Elem()
-	tempJSON, _ := json.Marshal(validateVoucher.Validators)
-	json.Unmarshal(tempJSON, &payloadValidator)
-
-	for i := 0; i < vReflector.NumField(); i++ {
-		fieldName := strcase.ToLowerCamel(vReflector.Type().Field(i).Name)
-		fieldValue := vReflector.Field(i).Interface()
-
-		switch fieldName {
-		case "channel", "product", "transactionType", "unit":
-			if fieldValue.(string) == "" {
-				continue
-			}
-
-			if fieldValue != payloadValidator[fieldName] {
-				customErr := fmt.Errorf("%s on this transaction is not valid to use this voucher", fieldName)
-				requestLogger.Debug(customErr)
-
-				return nil, customErr
-			}
-		case "minimalTransaction":
-			minTrx, _ := strconv.ParseFloat(fieldValue.(string), 64)
-
-			if minTrx > validateVoucher.TransactionAmount {
-				requestLogger.Debug(models.ErrValidationTrxAmt)
-
-				return nil, models.ErrValidationTrxAmt
-			}
-		}
+		return nil, err
 	}
 
 	responseValid := &models.ResponseValidateVoucher{
-		Discount:       voucher.Value,
+		Discount:       voucher.Validators.Value,
 		JournalAccount: voucher.JournalAccount,
 	}
 
 	return responseValid, nil
 }
 
-func (vchr *voucherUseCase) VoucherRedeem(c echo.Context, voucherRedeem *models.PayloadValidateVoucher) (*models.VoucherCode, error) {
+func (vchr *voucherUseCase) VoucherRedeem(c echo.Context, voucherRedeem *models.PayloadValidator) (*models.VoucherCode, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	promoCode, err := vchr.voucherRepo.UpdatePromoCodeRedeemed(c, voucherRedeem.VoucherID, voucherRedeem.UserID, voucherRedeem.PromoCode)
@@ -595,6 +577,18 @@ func validateBuy(voucherPoint *int64, userPoint int64, avaliable *int32) error {
 
 	if userPoint < *voucherPoint {
 		return models.ErrPointDeficit
+	}
+
+	return nil
+}
+
+func validateLimitPurchase(limitPurchase int64, voucherAmount int64) error {
+	if limitPurchase <= 0 {
+		return nil
+	}
+
+	if limitPurchase <= voucherAmount {
+		return models.ErrBuyingVoucherExceeded
 	}
 
 	return nil

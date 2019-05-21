@@ -24,4 +24,5 @@ type Repository interface {
 	GetVoucherCode(echo.Context, string, string) (*models.VoucherCode, string, error)
 	UpdateExpiryDate(echo.Context) error
 	UpdateStatusBasedOnStartDate() error
+	CountBoughtVoucher(echo.Context, string, string) (int64, error)
 }

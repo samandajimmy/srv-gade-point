@@ -8,6 +8,7 @@ require (
 	github.com/fatih/structs v1.1.0
 	github.com/golang-migrate/migrate/v4 v4.2.5
 	github.com/iancoleman/strcase v0.0.0-20180726023541-3605ed457bf7
+	github.com/jinzhu/copier v0.0.0-20180308034124-7e38e58719c3
 	github.com/joho/godotenv v1.3.0
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.2.8

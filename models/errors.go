@@ -84,6 +84,9 @@ var (
 	// ErrGetVouchers to get vouchers error message
 	ErrGetVouchers = errors.New("Something went wrong when trying to get vouchers")
 
+	// ErrGetVoucherCodes to get vouchers error message
+	ErrGetVoucherCodes = errors.New("Something went wrong when trying to get voucher codes")
+
 	// ErrGetVoucherCounter to get voucher counter error message
 	ErrGetVoucherCounter = errors.New("Something went wrong when trying to get voucher counter")
 

@@ -25,9 +25,9 @@ func NewCampaignTrxsHandler(echoGroup models.EchoGroup, cmpTrxUs campaigntrxs.Us
 	cmpHandler := &_campaignHttpDelivery.CampaignsHandler{CampaignUseCase: cmpUs}
 
 	// End Point For CMS
-	echoGroup.Admin.GET("/campaign_trx/users", handler.GetUsers)
-	echoGroup.Admin.GET("/campaign_trx/point", cmpHandler.GetUserPoint)
-	echoGroup.Admin.GET("/campaign_trx/point/history", cmpHandler.GetUserPointHistory)
+	echoGroup.Admin.GET("/campaign-trx/users", handler.GetUsers)
+	echoGroup.Admin.GET("/campaign-trx/point", cmpHandler.GetUserPoint)
+	echoGroup.Admin.GET("/campaign-trx/point/history", cmpHandler.GetUserPointHistory)
 }
 
 // GetUsers a handler to create a campaignTrx

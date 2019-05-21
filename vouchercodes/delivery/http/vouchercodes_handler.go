@@ -24,14 +24,15 @@ func NewVoucherCodesHandler(echoGroup models.EchoGroup, vcu vouchercodes.UseCase
 	}
 
 	//End Point For CMS
-	echoGroup.Admin.GET("/voucher_codes/voucher/history", handler.GetVoucherCodeHistory)
+	echoGroup.Admin.GET("/voucher-codes/voucher/history", handler.GetVoucherCodeHistory)
+	echoGroup.Admin.GET("/voucher-codes/:id", handler.GetVoucherCodes)
 
 	//End Point For External
-	echoGroup.API.GET("/voucher_codes/voucher/history", handler.GetVoucherCodeHistory)
+	echoGroup.API.GET("/voucher-codes/voucher/history", handler.GetVoucherCodeHistory)
 
 }
 
-// GetVoucherCodeHistory a handler to create a vouchercodes
+// GetVoucherCodeHistory a handler to get vouchercodes history
 func (VchrCode *VoucherCodesHandler) GetVoucherCodeHistory(c echo.Context) error {
 	response = models.Response{}
 	userID := c.QueryParam("userId")
@@ -98,6 +99,77 @@ func (VchrCode *VoucherCodesHandler) GetVoucherCodeHistory(c echo.Context) error
 	response.TotalCount = counter
 
 	requestLogger.Info("End of get voucher history.")
+
+	return c.JSON(getStatusCode(err), response)
+}
+
+// GetVoucherCodes a handler to get vouchercodes
+func (VchrCode *VoucherCodesHandler) GetVoucherCodes(c echo.Context) error {
+	response = models.Response{}
+	voucherID := c.Param("id")
+	pageStr := c.QueryParam("page")
+	limitStr := c.QueryParam("limit")
+
+	if pageStr == "" {
+		pageStr = "0"
+	}
+
+	if limitStr == "" {
+		limitStr = "0"
+	}
+
+	payload := map[string]interface{}{
+		"voucherId": voucherID,
+		"page":      pageStr,
+		"limit":     limitStr,
+	}
+
+	logger := models.RequestLogger{
+		Payload: payload,
+	}
+
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	page, err := strconv.Atoi(payload["page"].(string))
+
+	if err != nil {
+		requestLogger.Debug(err)
+		response.Status = models.StatusError
+		response.Message = http.StatusText(http.StatusBadRequest)
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	limit, err := strconv.Atoi(payload["limit"].(string))
+
+	if err != nil {
+		requestLogger.Debug(err)
+		response.Status = models.StatusError
+		response.Message = http.StatusText(http.StatusBadRequest)
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	payload["page"] = page
+	payload["limit"] = limit
+	requestLogger.Info("Start to get voucher codes.")
+	data, counter, err := VchrCode.VoucherCodeUseCase.GetVoucherCodes(c, payload)
+
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	if len(data) > 0 {
+		response.Data = data
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MessageDataSuccess
+	response.TotalCount = counter
+
+	requestLogger.Info("End of get voucher codes.")
 
 	return c.JSON(getStatusCode(err), response)
 }

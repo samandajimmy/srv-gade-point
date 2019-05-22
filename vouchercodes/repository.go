@@ -10,4 +10,6 @@ import (
 type Repository interface {
 	GetVoucherCodeHistory(echo.Context, map[string]interface{}) ([]models.VoucherCode, error)
 	CountVoucherCode(echo.Context, map[string]interface{}) (string, error)
+	GetVoucherCodes(echo.Context, map[string]interface{}) ([]models.VoucherCode, error)
+	CountVoucherCodeByVoucherID(echo.Context, map[string]interface{}) (string, error)
 }

@@ -24,8 +24,9 @@ func NewVoucherCodesHandler(echoGroup models.EchoGroup, vcu vouchercodes.UseCase
 	}
 
 	//End Point For CMS
+	echoGroup.Admin.GET("/voucher-codes/:voucherId", handler.GetVoucherCodes)
+	echoGroup.Admin.POST("/voucher-codes/import", handler.ImportVoucherCodes)
 	echoGroup.Admin.GET("/voucher-codes/voucher/history", handler.GetVoucherCodeHistory)
-	echoGroup.Admin.GET("/voucher-codes/:id", handler.GetVoucherCodes)
 
 	//End Point For External
 	echoGroup.API.GET("/voucher-codes/voucher/history", handler.GetVoucherCodeHistory)
@@ -106,7 +107,7 @@ func (VchrCode *VoucherCodesHandler) GetVoucherCodeHistory(c echo.Context) error
 // GetVoucherCodes a handler to get vouchercodes
 func (VchrCode *VoucherCodesHandler) GetVoucherCodes(c echo.Context) error {
 	response = models.Response{}
-	voucherID := c.Param("id")
+	voucherID := c.Param("voucherId")
 	pageStr := c.QueryParam("page")
 	limitStr := c.QueryParam("limit")
 
@@ -170,6 +171,41 @@ func (VchrCode *VoucherCodesHandler) GetVoucherCodes(c echo.Context) error {
 	response.TotalCount = counter
 
 	requestLogger.Info("End of get voucher codes.")
+
+	return c.JSON(getStatusCode(err), response)
+}
+
+// ImportVoucherCodes a handler to import voucher json file
+func (VchrCode *VoucherCodesHandler) ImportVoucherCodes(c echo.Context) error {
+	response = models.Response{}
+	file, err := c.FormFile("file")
+	voucherID := c.FormValue("voucherId")
+	payload := map[string]interface{}{"voucherId": voucherID}
+	logger := models.RequestLogger{Payload: payload}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	requestLogger.Info("Start to import voucher codes.")
+
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	path, err := VchrCode.VoucherCodeUseCase.ImportVoucherCodes(c, file, voucherID)
+
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	if path != "" {
+		response.Data = models.PathVoucher{ImageURL: path}
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MessageUploadSuccess
+	requestLogger.Info("End of import voucher codes.")
 
 	return c.JSON(getStatusCode(err), response)
 }

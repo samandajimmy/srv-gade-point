@@ -388,12 +388,6 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 		return nil, models.ErrGetUserPoint
 	}
 
-	if userPoint == 0 {
-		requestLogger.Debug(models.ErrUserPointNA)
-
-		return nil, models.ErrUserPointNA
-	}
-
 	// validate voucher to buy
 	err = validateBuy(voucherDetail.Point, int64(userPoint), voucherDetail.Available)
 
@@ -582,7 +576,7 @@ func (vchr *voucherUseCase) BadaiEmasGift(c echo.Context, plValidator *models.Pa
 
 	voucherCode, errMsg := vchr.VoucherBuy(c, payloadVoucherBuy)
 
-	if err != nil {
+	if errMsg != nil {
 		requestLogger.Debug(errMsg)
 
 		return nil, errMsg

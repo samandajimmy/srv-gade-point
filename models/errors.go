@@ -149,4 +149,10 @@ var (
 
 	// ErrEndDateFormat to store a date format params error message
 	ErrEndDateFormat = errors.New("End date parameters is not meet the format")
+
+	// ErrAllowedExtVchrCodesImport to store allowed file ext error message
+	ErrAllowedExtVchrCodesImport = errors.New("Import only allow csv and json file")
+
+	// ErrMappingVchrCodesImport to store allowed file ext error message
+	ErrMappingVchrCodesImport = errors.New("Something went wrong whent trying to map data from imported files")
 )

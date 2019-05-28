@@ -229,7 +229,7 @@ func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeRedeemed(c echo.Cont
 	return result, nil
 }
 
-func (psqlRepo *psqlVoucherCodeRepository) CountVoucherCodeByCriteria(c echo.Context, payload map[string]interface{}) (string, error) {
+func (psqlRepo *psqlVoucherCodeRepository) CountBoughtVoucherCode(c echo.Context, payload map[string]interface{}) (string, error) {
 	var counter string
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
@@ -263,7 +263,7 @@ func (psqlRepo *psqlVoucherCodeRepository) CountVoucherCodeByCriteria(c echo.Con
 	return counter, nil
 }
 
-func (psqlRepo *psqlVoucherCodeRepository) GetVoucherCodeByCriteria(c echo.Context, payload map[string]interface{}) ([]models.VoucherCode, error) {
+func (psqlRepo *psqlVoucherCodeRepository) GetBoughtVoucherCode(c echo.Context, payload map[string]interface{}) ([]models.VoucherCode, error) {
 	var result []models.VoucherCode
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)

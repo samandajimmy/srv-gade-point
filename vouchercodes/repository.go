@@ -13,6 +13,6 @@ type Repository interface {
 	GetVoucherCodes(echo.Context, map[string]interface{}) ([]models.VoucherCode, error)
 	CountVoucherCodeByVoucherID(echo.Context, map[string]interface{}) (string, error)
 	UpdateVoucherCodeRedeemed(echo.Context, string, string, string) (*models.VoucherCode, error)
-	GetVoucherCodeByCriteria(echo.Context, map[string]interface{}) ([]models.VoucherCode, error)
-	CountVoucherCodeByCriteria(echo.Context, map[string]interface{}) (string, error)
+	GetBoughtVoucherCode(echo.Context, map[string]interface{}) ([]models.VoucherCode, error)
+	CountBoughtVoucherCode(echo.Context, map[string]interface{}) (string, error)
 }

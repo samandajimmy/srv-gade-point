@@ -11,5 +11,7 @@ import (
 type UseCase interface {
 	GetVoucherCodeHistory(echo.Context, map[string]interface{}) ([]models.VoucherCode, string, error)
 	GetVoucherCodes(echo.Context, map[string]interface{}) ([]models.VoucherCode, string, error)
+	VoucherCodeRedeem(echo.Context, *models.PayloadValidator) (*models.VoucherCode, error)
+	GetBoughtVoucherCode(echo.Context, map[string]interface{}) ([]models.VoucherCode, string, error)
 	ImportVoucherCodes(echo.Context, *multipart.FileHeader, string) (string, error)
 }

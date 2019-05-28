@@ -37,6 +37,7 @@ type PayloadValidator struct {
 	UserID            string     `json:"userId,omitempty"`
 	TransactionAmount float64    `json:"transactionAmount,omitempty"`
 	LoanAmount        float64    `json:"loanAmount,omitempty"`
+	RedeemedDate      string     `json:"redeemedDate,omitempty"`
 	Validators        *Validator `json:"validators,omitempty"`
 }
 

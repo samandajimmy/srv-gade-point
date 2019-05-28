@@ -80,6 +80,45 @@ func (vchrCodeUs *voucherCodeUseCase) GetVoucherCodes(c echo.Context, payload ma
 	return data, counter, err
 }
 
+func (vchrCodeUs *voucherCodeUseCase) VoucherCodeRedeem(c echo.Context, voucherRedeem *models.PayloadValidator) (*models.VoucherCode, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	promoCode, err := vchrCodeUs.voucherCodeRepo.UpdateVoucherCodeRedeemed(c, voucherRedeem.RedeemedDate, voucherRedeem.UserID, voucherRedeem.PromoCode)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrRedeemVoucher)
+
+		return nil, models.ErrRedeemVoucher
+	}
+
+	return promoCode, nil
+}
+
+func (vchrCodeUs *voucherCodeUseCase) GetBoughtVoucherCode(c echo.Context, payload map[string]interface{}) ([]models.VoucherCode, string, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	// count voucher by criteria
+	counter, err := vchrCodeUs.voucherCodeRepo.CountBoughtVoucherCode(c, payload)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrGetVoucherCodes)
+
+		return nil, "", models.ErrGetVoucherCodes
+	}
+
+	// get voucher codes by criteria
+	data, err := vchrCodeUs.voucherCodeRepo.GetBoughtVoucherCode(c, payload)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrGetVoucherCodes)
+
+		return nil, "", models.ErrGetVoucherCodes
+	}
+
+	return data, counter, err
+}
+
 func (vchrCodeUs *voucherCodeUseCase) ImportVoucherCodes(c echo.Context, file *multipart.FileHeader, voucherID string) (string, error) {
 	var vchrCodes []*models.VoucherCode
 	logger := models.RequestLogger{}

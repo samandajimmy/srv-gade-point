@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/vouchercodes"
+	"time"
 
 	"github.com/labstack/echo"
 )
@@ -190,6 +191,136 @@ func (psqlRepo *psqlVoucherCodeRepository) GetVoucherCodes(c echo.Context, paylo
 		}
 
 		result = append(result, vchrCode)
+	}
+
+	return result, nil
+}
+
+func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeRedeemed(c echo.Context, redeemDate string, userID string, promoCode string) (*models.VoucherCode, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	now := time.Now()
+	result := new(models.VoucherCode)
+	where := ""
+
+	queryUpdate := `UPDATE voucher_codes SET status = 2, redeemed_date = $1, updated_at = $2 `
+
+	if userID != "" && promoCode != "" {
+		where += "where user_id = '" + userID + "' and promo_code = '" + promoCode + "' AND"
+	}
+
+	queryUpdate += where + " status = 1 RETURNING promo_code, redeemed_date;"
+	stmt, err := psqlRepo.Conn.Prepare(queryUpdate)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	err = stmt.QueryRow(&redeemDate, &now).Scan(&result.PromoCode, &result.RedeemedDate)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (psqlRepo *psqlVoucherCodeRepository) CountVoucherCodeByCriteria(c echo.Context, payload map[string]interface{}) (string, error) {
+	var counter string
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	userID := payload["userId"].(string)
+	promoCode := payload["promoCode"].(string)
+	where := "where"
+
+	queryCounter := `SELECT COUNT(ID) counter FROM voucher_codes `
+
+	if userID != "" && promoCode == "" {
+		where += " user_id = '" + userID + "' AND"
+	}
+
+	if promoCode != "" && userID == "" {
+		where += " promo_code = '" + promoCode + "' AND"
+	}
+
+	if userID != "" && promoCode != "" {
+		where += " user_id = '" + userID + "' and promo_code = '" + promoCode + "' AND"
+	}
+
+	queryCounter += where + " user_id is not null;"
+	err := psqlRepo.Conn.QueryRow(queryCounter).Scan(&counter)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return "", err
+	}
+
+	return counter, nil
+}
+
+func (psqlRepo *psqlVoucherCodeRepository) GetVoucherCodeByCriteria(c echo.Context, payload map[string]interface{}) ([]models.VoucherCode, error) {
+	var result []models.VoucherCode
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	userID := payload["userId"].(string)
+	promoCode := payload["promoCode"].(string)
+	where := "where"
+	paging := ""
+
+	query := `SELECT id, coalesce(user_id, ''), promo_code, status, bought_date, redeemed_date FROM voucher_codes `
+
+	if userID != "" && promoCode == "" {
+		where += " user_id = '" + userID + "' AND"
+	}
+
+	if promoCode != "" && userID == "" {
+		where += " promo_code = '" + promoCode + "' AND"
+	}
+
+	if userID != "" && promoCode != "" {
+		where += " user_id = '" + userID + "' and promo_code = '" + promoCode + "' AND"
+	}
+
+	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
+		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
+	}
+
+	query += where + " user_id is not null order by updated_at desc, status desc " + paging + ";"
+	rows, err := psqlRepo.Conn.Query(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		vchrCode := models.VoucherCode{}
+
+		err = rows.Scan(
+			&vchrCode.ID,
+			&vchrCode.UserID,
+			&vchrCode.PromoCode,
+			&vchrCode.Status,
+			&vchrCode.BoughtDate,
+			&vchrCode.RedeemedDate,
+		)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		result = append(result, vchrCode)
+
 	}
 
 	return result, nil

@@ -2,6 +2,7 @@ package http
 
 import (
 	"gade/srv-gade-point/models"
+	"gade/srv-gade-point/services"
 	vouchercodes "gade/srv-gade-point/vouchercodes"
 	"net/http"
 	"strconv"
@@ -180,10 +181,16 @@ func (VchrCode *VoucherCodesHandler) GetVoucherCodes(c echo.Context) error {
 
 // VoucherCodeRedeem is a handler to provide and endpoint to reedem voucher code
 func (VchrCode *VoucherCodesHandler) VoucherCodeRedeem(c echo.Context) error {
+	// metric monitoring
+	go services.AddMetric("redeem_voucher")
+
 	var voucher models.PayloadValidator
 	response = models.Response{}
 
 	if err := c.Bind(&voucher); err != nil {
+		// metric monitoring error
+		go services.AddMetric("redeem_voucher_error")
+
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		return c.JSON(getStatusCode(err), response)
@@ -195,6 +202,9 @@ func (VchrCode *VoucherCodesHandler) VoucherCodeRedeem(c echo.Context) error {
 	responseData, err := VchrCode.VoucherCodeUseCase.VoucherCodeRedeem(c, &voucher)
 
 	if err != nil {
+		// metric monitoring error
+		go services.AddMetric("redeem_voucher_error")
+
 		response.Status = models.StatusError
 		response.Message = err.Error()
 		return c.JSON(getStatusCode(err), response)
@@ -203,6 +213,9 @@ func (VchrCode *VoucherCodesHandler) VoucherCodeRedeem(c echo.Context) error {
 	if (&models.VoucherCode{}) != responseData {
 		response.Data = responseData
 	}
+
+	// metric monitoring success
+	go services.AddMetric("redeem_voucher_success")
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess

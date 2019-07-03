@@ -230,54 +230,6 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 	return p, nil
 }
 
-func (cmpgn *campaignUseCase) GetUserPoint(c echo.Context, userID string) (*models.UserPoint, error) {
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-	p := new(models.UserPoint)
-	zero := float64(0)
-	pointAmount, err := cmpgn.campaignRepo.GetUserPoint(c, userID)
-
-	if err != nil {
-		requestLogger.Debug(models.ErrGetUserPoint)
-		p.UserPoint = &zero
-
-		return p, models.ErrGetUserPoint
-	}
-
-	if pointAmount == 0 {
-		requestLogger.Debug(models.ErrUserPointNA)
-		p.UserPoint = &zero
-
-		return p, models.ErrUserPointNA
-	}
-
-	p.UserPoint = &pointAmount
-
-	return p, nil
-}
-
-func (cmpgn *campaignUseCase) GetUserPointHistory(c echo.Context, payload map[string]interface{}) ([]models.CampaignTrx, string, error) {
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-	counter, err := cmpgn.campaignRepo.CountUserPointHistory(c, payload)
-
-	if err != nil {
-		requestLogger.Debug(models.ErrUserPointHistoryNA)
-
-		return nil, "", models.ErrUserPointHistoryNA
-	}
-
-	dataHistory, err := cmpgn.campaignRepo.GetUserPointHistory(c, payload)
-
-	if err != nil {
-		requestLogger.Debug(models.ErrGetUserPointHistory)
-
-		return nil, "", models.ErrGetUserPointHistory
-	}
-
-	return dataHistory, counter, nil
-}
-
 func (cmpgn *campaignUseCase) UpdateStatusBasedOnStartDate() error {
 	err := cmpgn.campaignRepo.UpdateStatusBasedOnStartDate()
 

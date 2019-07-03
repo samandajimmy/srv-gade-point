@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
+	"gade/srv-gade-point/pointhistories"
 	"gade/srv-gade-point/vouchers"
 	"io"
 	"io/ioutil"
@@ -37,15 +38,15 @@ var (
 type voucherUseCase struct {
 	voucherRepo    vouchers.Repository
 	campaignRepo   campaigns.Repository
-	contextTimeout time.Duration
+	pHistoriesRepo pointhistories.Repository
 }
 
 // NewVoucherUseCase will create new an voucherUseCase object representation of vouchers.UseCase interface
-func NewVoucherUseCase(vchrRepo vouchers.Repository, campgnRepo campaigns.Repository, timeout time.Duration) vouchers.UseCase {
+func NewVoucherUseCase(vchrRepo vouchers.Repository, campgnRepo campaigns.Repository, pHistoriesRepo pointhistories.Repository) vouchers.UseCase {
 	return &voucherUseCase{
 		voucherRepo:    vchrRepo,
 		campaignRepo:   campgnRepo,
-		contextTimeout: timeout,
+		pHistoriesRepo: pHistoriesRepo,
 	}
 }
 
@@ -380,7 +381,7 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 	}
 
 	// get user current point
-	userPoint, err := vchr.campaignRepo.GetUserPoint(ech, payload.UserID)
+	userPoint, err := vchr.pHistoriesRepo.GetUserPoint(ech, payload.UserID)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrGetUserPoint)

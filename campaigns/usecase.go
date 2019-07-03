@@ -13,7 +13,5 @@ type UseCase interface {
 	GetCampaignDetail(echo.Context, string) (*models.Campaign, error)
 	GetCampaign(echo.Context, map[string]interface{}) (string, []*models.Campaign, error)
 	GetCampaignValue(echo.Context, *models.GetCampaignValue) (*models.UserPoint, error)
-	GetUserPoint(echo.Context, string) (*models.UserPoint, error)
-	GetUserPointHistory(echo.Context, map[string]interface{}) ([]models.CampaignTrx, string, error)
 	UpdateStatusBasedOnStartDate() error
 }

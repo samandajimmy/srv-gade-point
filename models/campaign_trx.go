@@ -2,13 +2,6 @@ package models
 
 import "time"
 
-var (
-	// TransactionPointTypeDebet to store debet code
-	TransactionPointTypeDebet = "D"
-	// TransactionPointTypeKredit to store kredit code
-	TransactionPointTypeKredit = "K"
-)
-
 // CampaignTrx is represent a campaign_transactions model
 type CampaignTrx struct {
 	ID              int64        `json:"id,omitempty"`

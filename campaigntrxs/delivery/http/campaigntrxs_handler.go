@@ -2,7 +2,6 @@ package http
 
 import (
 	"gade/srv-gade-point/campaigns"
-	_campaignHttpDelivery "gade/srv-gade-point/campaigns/delivery/http"
 	"gade/srv-gade-point/campaigntrxs"
 	"gade/srv-gade-point/models"
 	"net/http"
@@ -22,12 +21,9 @@ type CampaigntrxsHandler struct {
 // NewCampaignTrxsHandler represent to register campaigntrxs endpoint
 func NewCampaignTrxsHandler(echoGroup models.EchoGroup, cmpTrxUs campaigntrxs.UseCase, cmpUs campaigns.UseCase) {
 	handler := &CampaigntrxsHandler{CampaigntrxUseCase: cmpTrxUs}
-	cmpHandler := &_campaignHttpDelivery.CampaignsHandler{CampaignUseCase: cmpUs}
 
 	// End Point For CMS
 	echoGroup.Admin.GET("/campaign-trx/users", handler.GetUsers)
-	echoGroup.Admin.GET("/campaign-trx/point", cmpHandler.GetUserPoint)
-	echoGroup.Admin.GET("/campaign-trx/point/history", cmpHandler.GetUserPointHistory)
 }
 
 // GetUsers a handler to create a campaignTrx

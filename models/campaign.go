@@ -34,8 +34,3 @@ type GetCampaignValue struct {
 	Source            string  `json:"source,omitempty"` // device name that user used
 	ReffCore          string  `json:"reffCore,omitempty"`
 }
-
-// UserPoint to store payload user point data
-type UserPoint struct {
-	UserPoint *float64 `json:"userPoint,omitempty"`
-}

@@ -4,6 +4,22 @@ import (
 	"time"
 )
 
+var (
+	// RewardTypePoint to store reward type point
+	RewardTypePoint int64
+	// RewardTypeDiscount to store reward type discount
+	RewardTypeDiscount int64 = 1
+	// RewardTypeGoldback to store reward type goldback
+	RewardTypeGoldback int64 = 2
+	// RewardTypeVoucher to store reward type voucher
+	RewardTypeVoucher int64 = 3
+
+	// IsPromoCodeFalse to store is promo code false
+	IsPromoCodeFalse int64
+	// IsPromoCodeTrue to store is promo code true
+	IsPromoCodeTrue int64 = 1
+)
+
 // Reward is represent a point model
 type Reward struct {
 	ID                 int64      `json:"id,omitempty"`
@@ -20,5 +36,6 @@ type Reward struct {
 	UpdatedAt          *time.Time `json:"updatedAt,omitempty"`
 	CreatedAt          *time.Time `json:"createdAt,omitempty"`
 	Campaign           *Campaign  `json:"campaign,omitempty"`
+	Quotas             *[]Quota   `json:"quotas,omitempty"`
 	Vouchers           *[]Voucher `json:"vouchers,omitempty"`
 }

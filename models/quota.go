@@ -1,0 +1,23 @@
+package models
+
+import (
+	"time"
+)
+
+var (
+	// IsPerUserFalse to store is per user false
+	IsPerUserFalse int64
+	// IsPerUserTrue to store is per user true
+	IsPerUserTrue int64 = 1
+)
+
+// Quota is represent a quota model
+type Quota struct {
+	ID           int64      `json:"id,omitempty"`
+	NumberOfDays string     `json:"numberOfDays,omitempty"`
+	Amount       string     `json:"amount,omitempty"`
+	IsPerUser    *int64     `json:"isPerUser,omitempty"`
+	UpdatedAt    *time.Time `json:"updatedAt,omitempty"`
+	CreatedAt    *time.Time `json:"createdAt,omitempty"`
+	Reward       *Reward    `json:"reward,omitempty"`
+}

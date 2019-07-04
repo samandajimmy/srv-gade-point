@@ -7,6 +7,10 @@ var (
 	TransactionPointTypeDebet = "D"
 	// TransactionPointTypeKredit to store kredit code
 	TransactionPointTypeKredit = "K"
+	// PointHistoryStatusPending to status pending point history; nil means zero
+	PointHistoryStatusPending int64
+	// PointHistoryStatusSuccess to status success point history
+	PointHistoryStatusSuccess int64 = 1
 )
 
 // PointHistory is represent a campaign_transactions model

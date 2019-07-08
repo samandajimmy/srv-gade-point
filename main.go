@@ -131,23 +131,12 @@ func main() {
 	metricUseCase := _metricUseCase.NewMetricUseCase(metricRepository, timeoutContext)
 	// Add metric
 	_metricService.NewMetricHandler(metricUseCase)
-	// Send metric
-	sendMetric()
 
 	// Run every day.
 	updateStatusBasedOnStartDate(campaignUseCase, voucherUseCase)
 
 	ech.Start(":" + os.Getenv(`PORT`))
 
-}
-
-func sendMetric() {
-	scheduler.Every(1).Minutes().Run(func() {
-		t := time.Now()
-		logrus.Debug("Run Scheduler Send Metric! @", t)
-
-		services.SendMetric()
-	})
 }
 
 func updateStatusBasedOnStartDate(cmp campaigns.UseCase, vcr vouchers.UseCase) {

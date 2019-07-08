@@ -4,8 +4,6 @@ import (
 	"gade/srv-gade-point/metrics"
 	"gade/srv-gade-point/models"
 	"time"
-
-	"github.com/sirupsen/logrus"
 )
 
 type metricUseCase struct {
@@ -21,46 +19,22 @@ func NewMetricUseCase(met metrics.Repository, timeout time.Duration) metrics.Use
 	}
 }
 
-func (met *metricUseCase) AddMetric(module string) error {
+func (met *metricUseCase) AddMetric(job string) error {
 
-	data, err := met.metricRepo.FindMetric(module)
+	data, err := met.metricRepo.FindMetric(job)
+
 	if data == "" {
-		err = met.metricRepo.CreateMetric(module)
+		err = met.metricRepo.CreateMetric(job)
 
 		if err != nil {
 			return models.ErrCreateMetric
 		}
 	} else {
-		err = met.metricRepo.UpdateMetric(module)
+		err = met.metricRepo.UpdateMetric(job)
 
 		if err != nil {
 			return models.ErrUpdateMetric
 		}
-	}
-
-	return err
-}
-
-func (met *metricUseCase) SendMetric() error {
-
-	list, err := met.metricRepo.GetMetric()
-
-	if list != nil {
-
-		logrus.Debug("Start Send Metric to Prometheus")
-		for i := 0; i < len(list); i++ {
-
-			var counter = list[i].Counter
-			var module = list[i].Module
-
-			err = met.metricRepo.BalanceMetric(*counter, module)
-
-			if err != nil {
-				return models.ErrUpdateMetric
-			}
-
-		}
-		logrus.Debug("End Send Metric to Prometheus")
 	}
 
 	return err

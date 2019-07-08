@@ -20,25 +20,13 @@ func NewMetricHandler(mu metrics.UseCase) {
 }
 
 // AddMetric is to add metric to db
-func AddMetric(module string) error {
+func AddMetric(job string) error {
 
-	err := some.metricUsecase.AddMetric(module)
+	err := some.metricUsecase.AddMetric(job)
 
 	if err != nil {
 		return models.ErrCreateMetric
 	}
 
 	return err
-}
-
-// SendMetric is to add metric to promotheus
-func SendMetric() error {
-	err := some.metricUsecase.SendMetric()
-
-	if err != nil {
-		return models.ErrSendMetric
-	}
-
-	return err
-
 }

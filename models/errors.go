@@ -161,7 +161,4 @@ var (
 
 	// ErrUpdateMetric to store metric error message
 	ErrUpdateMetric = errors.New("Failed to update metric")
-
-	// ErrSendMetric to send metric error message
-	ErrSendMetric = errors.New("Failed to send metric")
 )

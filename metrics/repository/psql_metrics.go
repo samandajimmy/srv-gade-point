@@ -3,7 +3,7 @@ package repository
 import (
 	"database/sql"
 	"gade/srv-gade-point/metrics"
-	"gade/srv-gade-point/models"
+	"time"
 )
 
 type psqlMetricRepository struct {
@@ -15,37 +15,39 @@ func NewPsqlMetricRepository(Conn *sql.DB) metrics.Repository {
 	return &psqlMetricRepository{Conn}
 }
 
-func (m *psqlMetricRepository) FindMetric(module string) (string, error) {
-	var cacing string
+func (m *psqlMetricRepository) FindMetric(job string) (string, error) {
+	var lastID string
 
-	query := `SELECT module FROM metrics where "module" = $1`
+	query := `SELECT id FROM metrics where job = $1`
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
 		return "", err
 	}
 
-	err = stmt.QueryRow(module).Scan(&cacing)
+	err = stmt.QueryRow(&job).Scan(&lastID)
 
 	if err != nil {
 		return "", err
 	}
 
-	return cacing, err
+	return lastID, err
 }
 
-func (m *psqlMetricRepository) CreateMetric(module string) error {
+func (m *psqlMetricRepository) CreateMetric(job string) error {
 	var lastID int64
-	status := int8(1)
+	counter := int8(1)
+	status := int8(0)
+	now := time.Now()
 
-	query := `INSERT INTO metrics ("module", counter) VALUES ($1, $2)  RETURNING id`
+	query := `INSERT INTO metrics (job, counter, status, creation_time) VALUES ($1, $2, $3, $4) RETURNING id`
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
 		return err
 	}
 
-	err = stmt.QueryRow(module, status).Scan(&lastID)
+	err = stmt.QueryRow(&job, &counter, &status, &now).Scan(&lastID)
 
 	if err != nil {
 		return err
@@ -54,75 +56,21 @@ func (m *psqlMetricRepository) CreateMetric(module string) error {
 	return nil
 }
 
-func (m *psqlMetricRepository) UpdateMetric(module string) error {
+func (m *psqlMetricRepository) UpdateMetric(job string) error {
 	var lastID int64
 
-	query := `UPDATE metrics SET counter = counter + 1 WHERE module = $1 RETURNING id`
+	query := `UPDATE metrics SET counter = counter + 1 WHERE job = $1 RETURNING id`
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
 		return err
 	}
 
-	err = stmt.QueryRow(module).Scan(&lastID)
+	err = stmt.QueryRow(&job).Scan(&lastID)
 
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (m *psqlMetricRepository) BalanceMetric(counter int64, module string) error {
-	var lastID int64
-
-	query := `UPDATE metrics SET counter = counter - $1 WHERE module = $2 RETURNING id`
-	stmt, err := m.Conn.Prepare(query)
-
-	if err != nil {
-		return err
-	}
-
-	err = stmt.QueryRow(counter, module).Scan(&lastID)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *psqlMetricRepository) GetMetric() ([]models.Metrics, error) {
-	var result []models.Metrics
-
-	query := `SELECT ID, Module, counter FROM metrics where counter > 0;`
-
-	rows, err := m.Conn.Query(query)
-
-	if err != nil {
-
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		metric := models.Metrics{}
-
-		err = rows.Scan(
-			&metric.ID,
-			&metric.Module,
-			&metric.Counter,
-		)
-
-		if err != nil {
-
-			return nil, err
-		}
-
-		result = append(result, metric)
-
-	}
-
-	return result, nil
 }

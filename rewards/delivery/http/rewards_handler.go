@@ -22,9 +22,10 @@ func NewRewardHandler(echoGroup models.EchoGroup, us rewards.UseCase) {
 		RewardUseCase: us,
 	}
 
-	// Fake End Point
+	// Dummy End Point
 	echoGroup.API.POST("/rewards/inquiry", handler.rewardInquiry)
 	echoGroup.API.POST("/rewards/succeeded", handler.rewardSucceeded)
+	echoGroup.API.POST("/rewards/rejected", handler.rewardRejected)
 }
 
 func (rwd *RewardHandler) rewardInquiry(echTx echo.Context) error {
@@ -39,7 +40,7 @@ func (rwd *RewardHandler) rewardInquiry(echTx echo.Context) error {
 		return echTx.JSON(http.StatusUnprocessableEntity, response)
 	}
 
-	responseData := []byte(`{"status":"Success", "message":"Data Successfully Sent", "data":{"refTrx":"1122334455","rewards":[{"discountAmount":"20%","journalAccount":"1122334455","type":"discount","unit":"rupiah","value":200000},{"journalAccount":"1122334455","type":"discount","unit":"rupiah","value":100000},{"journalAccount":"1122334455","type":"goldback","unit":"gram","value":10},{"journalAccount":"1122334455","type":"voucher","promoCode":"PSN0JLK8","voucherName":"Voucher diskon 1.000 top up tabungan emas"}]}}`)
+	responseData := []byte(`{"status":"Success", "message":"Data Successfully Sent", "data":{"refTrx":"1122334455","rewards":[{"discountAmount":"20%","journalAccount":"1122334455","type":"discount","value":200000},{"journalAccount":"1122334455","type":"discount","value":100000},{"journalAccount":"1122334455","type":"goldback","value":100000},{"journalAccount":"1122334455","type":"voucher","voucherName":"Voucher diskon 1.000 top up tabungan emas"}]}}`)
 	var rawData map[string]interface{}
 	json.Unmarshal(responseData, &rawData)
 	data, _ := json.Marshal(rawData)
@@ -48,6 +49,24 @@ func (rwd *RewardHandler) rewardInquiry(echTx echo.Context) error {
 }
 
 func (rwd *RewardHandler) rewardSucceeded(echTx echo.Context) error {
+	var reward models.Reward
+	response = models.Response{}
+	err := echTx.Bind(&reward)
+
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = models.MessageUnprocessableEntity
+
+		return echTx.JSON(http.StatusUnprocessableEntity, response)
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MessageDataSuccess
+
+	return echTx.JSON(http.StatusOK, response)
+}
+
+func (rwd *RewardHandler) rewardRejected(echTx echo.Context) error {
 	var reward models.Reward
 	response = models.Response{}
 	err := echTx.Bind(&reward)

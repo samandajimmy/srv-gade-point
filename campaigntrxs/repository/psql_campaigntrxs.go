@@ -71,7 +71,7 @@ func (psqlRepo *psqlCampaignTrxRepository) GetUsers(c echo.Context, payload map[
 		var cmpTrx models.CampaignTrx
 
 		err = rows.Scan(
-			&cmpTrx.UserID,
+			&cmpTrx.CIF,
 			&cmpTrx.PointAmount,
 		)
 

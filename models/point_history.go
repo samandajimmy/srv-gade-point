@@ -22,6 +22,7 @@ type PointHistory struct {
 	TransactionDate *time.Time   `json:"transactionDate,omitempty"`
 	UsedFor         string       `json:"usedFor,omitempty"`
 	RefCore         string       `json:"refCore,omitempty"`
+	RefID           string       `json:"refID,omitempty"`
 	Status          *int64       `json:"status,omitempty"`
 	Reward          *Reward      `json:"reward,omitempty"`
 	VoucherCode     *VoucherCode `json:"voucherCode,omitempty"`

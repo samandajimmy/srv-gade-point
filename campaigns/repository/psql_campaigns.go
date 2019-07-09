@@ -2,7 +2,6 @@ package repository
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
@@ -11,10 +10,6 @@ import (
 	"github.com/labstack/echo"
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
-)
-
-const (
-	timeFormat = "2006-01-02T15:04:05.999Z07:00" // reduce precision from RFC3339Nano as date format
 )
 
 type psqlCampaignRepository struct {
@@ -30,8 +25,8 @@ func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
-	query := `INSERT INTO campaigns (name, description, start_date, end_date, status, type, validators, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
+	query := `INSERT INTO campaigns (name, description, start_date, end_date, status, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
@@ -41,7 +36,6 @@ func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models
 	}
 
 	var lastID int64
-	validator, err := json.Marshal(campaign.Validators)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -49,7 +43,7 @@ func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models
 		return err
 	}
 
-	err = stmt.QueryRow(campaign.Name, campaign.Description, campaign.StartDate, campaign.EndDate, campaign.Status, campaign.Type, string(validator), &now).Scan(&lastID)
+	err = stmt.QueryRow(campaign.Name, campaign.Description, campaign.StartDate, campaign.EndDate, campaign.Status, &now).Scan(&lastID)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -62,7 +56,7 @@ func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models
 	return nil
 }
 
-func (m *psqlCampaignRepository) UpdateCampaign(c echo.Context, id int64, updateCampaign *models.UpdateCampaign) error {
+func (m *psqlCampaignRepository) UpdateCampaign(c echo.Context, id int64, updateCampaign *models.Campaign) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
@@ -178,7 +172,6 @@ func (m *psqlCampaignRepository) GetCampaign(c echo.Context, payload map[string]
 func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*models.Campaign, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	var validator json.RawMessage
 	result := make([]*models.Campaign, 0)
 	rows, err := m.Conn.Query(query)
 	defer rows.Close()
@@ -200,15 +193,12 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 			&t.StartDate,
 			&t.EndDate,
 			&t.Status,
-			&t.Type,
-			&validator,
 			&updateDate,
 			&createDate,
 		)
 
 		t.CreatedAt = &createDate.Time
 		t.UpdatedAt = &updateDate.Time
-		err = json.Unmarshal([]byte(validator), &t.Validators)
 
 		if err != nil {
 			requestLogger.Debug(err)
@@ -270,7 +260,7 @@ func (m *psqlCampaignRepository) SavePoint(c echo.Context, cmpgnTrx *models.Camp
 
 	cmpgnTrx.CreatedAt = &now
 	var lastID int64
-	err = stmt.QueryRow(cmpgnTrx.UserID, *cmpgnTrx.PointAmount, cmpgnTrx.TransactionType, cmpgnTrx.TransactionDate, cmpgnTrx.ReffCore, id, cmpgnTrx.CreatedAt).Scan(&lastID)
+	err = stmt.QueryRow(cmpgnTrx.CIF, *cmpgnTrx.PointAmount, cmpgnTrx.TransactionType, cmpgnTrx.TransactionDate, cmpgnTrx.RefCore, id, cmpgnTrx.CreatedAt).Scan(&lastID)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -320,7 +310,6 @@ func (m *psqlCampaignRepository) CountCampaign(c echo.Context, payload map[strin
 func (m *psqlCampaignRepository) GetCampaignDetail(c echo.Context, id int64) (*models.Campaign, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	var validator json.RawMessage
 	var createDate, updateDate pq.NullTime
 	result := new(models.Campaign)
 
@@ -333,8 +322,6 @@ func (m *psqlCampaignRepository) GetCampaignDetail(c echo.Context, id int64) (*m
 		&result.StartDate,
 		&result.EndDate,
 		&result.Status,
-		&result.Type,
-		&validator,
 		&createDate,
 		&updateDate,
 	)
@@ -347,13 +334,31 @@ func (m *psqlCampaignRepository) GetCampaignDetail(c echo.Context, id int64) (*m
 
 	result.CreatedAt = &createDate.Time
 	result.UpdatedAt = &updateDate.Time
-	err = json.Unmarshal([]byte(validator), &result.Validators)
+
+	return result, nil
+}
+
+func (m *psqlCampaignRepository) Delete(c echo.Context, id int64) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	query := `DELETE FROM campaigns WHERE ID = $1`
+	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
 		requestLogger.Debug(err)
 
-		return nil, err
+		return err
 	}
 
-	return result, nil
+	result, err := stmt.Query(id)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	requestLogger.Debug("Result delete campaign: ", result)
+
+	return nil
 }

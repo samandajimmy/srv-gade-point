@@ -15,7 +15,7 @@ var (
 type Quota struct {
 	ID           int64      `json:"id,omitempty"`
 	NumberOfDays string     `json:"numberOfDays,omitempty"`
-	Amount       string     `json:"amount,omitempty"`
+	Amount       *int64     `json:"amount,omitempty"`
 	IsPerUser    *int64     `json:"isPerUser,omitempty"`
 	UpdatedAt    *time.Time `json:"updatedAt,omitempty"`
 	CreatedAt    *time.Time `json:"createdAt,omitempty"`

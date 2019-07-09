@@ -83,7 +83,7 @@ func (vchrCodeUs *voucherCodeUseCase) GetVoucherCodes(c echo.Context, payload ma
 func (vchrCodeUs *voucherCodeUseCase) VoucherCodeRedeem(c echo.Context, voucherRedeem *models.PayloadValidator) (*models.VoucherCode, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	promoCode, err := vchrCodeUs.voucherCodeRepo.UpdateVoucherCodeRedeemed(c, voucherRedeem.RedeemedDate, voucherRedeem.UserID, voucherRedeem.PromoCode)
+	promoCode, err := vchrCodeUs.voucherCodeRepo.UpdateVoucherCodeRedeemed(c, voucherRedeem.RedeemedDate, voucherRedeem.CIF, voucherRedeem.PromoCode)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrRedeemVoucher)

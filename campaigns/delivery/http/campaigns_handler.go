@@ -69,7 +69,7 @@ func (cmpgn *CampaignsHandler) CreateCampaign(c echo.Context) error {
 
 // UpdateStatusCampaign a handler to update campaign status
 func (cmpgn *CampaignsHandler) UpdateStatusCampaign(c echo.Context) error {
-	updateCampaign := models.UpdateCampaign{}
+	updateCampaign := models.Campaign{}
 	response = models.Response{}
 
 	if err := c.Bind(&updateCampaign); err != nil {

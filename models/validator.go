@@ -15,38 +15,38 @@ import (
 
 // Validator to store all validator data
 type Validator struct {
-	CampaignCode       string   `json:"campaignCode,omitempty"`
-	Channel            string   `json:"channel,omitempty"`
-	Product            string   `json:"product,omitempty"`
-	TransactionType    string   `json:"transactionType,omitempty"`
-	Unit               string   `json:"unit,omitempty"`
-	Multiplier         *float64 `json:"multiplier,omitempty"`
-	Value              *int64   `json:"value,omitempty"`
-	Formula            string   `json:"formula,omitempty"`
-	MinimalTransaction string   `json:"minimalTransaction,omitempty"`
-	Source             string   `json:"source,omitempty"` // device name that user used
-	MinLoanAmount      *float64 `json:"minLoanAmount,omitempty"`
-	MaxLoanAmount      *float64 `json:"maxLoanAmount,omitempty"`
+	CampaignCode         string   `json:"campaignCode,omitempty"`
+	Channel              string   `json:"channel,omitempty"`
+	Formula              string   `json:"formula,omitempty"`
+	MaxLoanAmount        *float64 `json:"maxLoanAmount,omitempty"`
+	MinLoanAmount        *float64 `json:"minLoanAmount,omitempty"`
+	MinTransactionAmount *float64 `json:"minTransactionAmount,omitempty"`
+	Multiplier           *float64 `json:"multiplier,omitempty"`
+	Product              string   `json:"product,omitempty"`
+	Source               string   `json:"source,omitempty"` // device name that user used
+	TransactionType      string   `json:"transactionType,omitempty"`
+	Unit                 string   `json:"unit,omitempty"`
+	Value                *float64 `json:"value,omitempty"`
 }
 
 // PayloadValidator to store a payload to validate a request
 type PayloadValidator struct {
-	PromoCode         string     `json:"promoCode,omitempty"`
-	VoucherID         string     `json:"voucherId,omitempty"`
 	CampaignID        string     `json:"campaignId,omitempty"`
-	UserID            string     `json:"userId,omitempty"`
-	TransactionAmount float64    `json:"transactionAmount,omitempty"`
-	LoanAmount        float64    `json:"loanAmount,omitempty"`
+	CIF               string     `json:"cif,omitempty"`
+	LoanAmount        *float64   `json:"loanAmount,omitempty"`
+	PromoCode         string     `json:"promoCode,omitempty"`
 	RedeemedDate      string     `json:"redeemedDate,omitempty"`
+	TransactionAmount *float64   `json:"transactionAmount,omitempty"`
+	VoucherID         string     `json:"voucherId,omitempty"`
 	Validators        *Validator `json:"validators,omitempty"`
 }
 
 var skippedValidator = []string{"multiplier", "value", "formula"}
 var compareEqual = []string{"channel", "product", "transactionType", "unit", "source", "campaignCode"}
 var tightenValidator = map[string]string{
-	"minimalTransaction": "transactionAmount",
-	"minLoanAmount":      "loanAmount",
-	"maxLoanAmount":      "loanAmount",
+	"minTransactionAmount": "transactionAmount",
+	"minLoanAmount":        "loanAmount",
+	"maxLoanAmount":        "loanAmount",
 }
 var customErrMsg = "%s on this transaction is not valid to use the benefit"
 

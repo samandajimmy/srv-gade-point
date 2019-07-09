@@ -4,6 +4,7 @@ import (
 	"errors"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
+	"gade/srv-gade-point/rewards"
 	"math"
 	"strconv"
 	"time"
@@ -14,15 +15,15 @@ import (
 )
 
 type campaignUseCase struct {
-	campaignRepo   campaigns.Repository
-	contextTimeout time.Duration
+	campaignRepo campaigns.Repository
+	rewardUC     rewards.UseCase
 }
 
 // NewCampaignUseCase will create new an campaignUseCase object representation of campaigns.UseCase interface
-func NewCampaignUseCase(cmpgn campaigns.Repository, timeout time.Duration) campaigns.UseCase {
+func NewCampaignUseCase(cmpgn campaigns.Repository, rwd rewards.UseCase) campaigns.UseCase {
 	return &campaignUseCase{
-		campaignRepo:   cmpgn,
-		contextTimeout: timeout,
+		campaignRepo: cmpgn,
+		rewardUC:     rwd,
 	}
 }
 
@@ -37,10 +38,28 @@ func (cmpgn *campaignUseCase) CreateCampaign(c echo.Context, campaign *models.Ca
 		return models.ErrCampaignFailed
 	}
 
+	// create array rewards
+	for _, reward := range *campaign.Rewards {
+		err = cmpgn.rewardUC.CreateReward(c, &reward, campaign.ID)
+
+		if err != nil {
+			break
+		}
+	}
+
+	if err != nil {
+		_ = cmpgn.rewardUC.DeleteByCampaign(c, campaign.ID)
+		_ = cmpgn.campaignRepo.Delete(c, campaign.ID)
+
+		requestLogger.Debug(models.ErrCampaignFailed)
+
+		return models.ErrCreateRewardsFailed
+	}
+
 	return nil
 }
 
-func (cmpgn *campaignUseCase) UpdateCampaign(c echo.Context, id string, updateCampaign *models.UpdateCampaign) error {
+func (cmpgn *campaignUseCase) UpdateCampaign(c echo.Context, id string, updateCampaign *models.Campaign) error {
 	var campaignDetail *models.Campaign
 	now := time.Now()
 	logger := models.RequestLogger{}
@@ -173,7 +192,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 
 	for _, campaign := range campaigns {
 		//  validate each campaign
-		err = campaign.Validators.Validate(payloadValidator)
+		// err = campaign.Validators.Validate(payloadValidator)
 
 		if err == nil {
 			validCampaigns = append(validCampaigns, campaign)
@@ -191,11 +210,12 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 	latestCampaign := validCampaigns[0]
 
 	// get campaign formula
-	if latestCampaign.Validators.Formula == "" {
-		result = float64(0)
-	} else {
-		result, err = latestCampaign.Validators.GetFormulaResult(payloadValidator)
-	}
+	// if latestCampaign.Validators.Formula == "" {
+	// 	result = float64(0)
+	// } else {
+	// 	result, err = latestCampaign.Validators.GetFormulaResult(payloadValidator)
+	// }
+	result = float64(0)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -207,11 +227,11 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 
 	// store campaign transaction
 	campaignTrx := &models.CampaignTrx{
-		UserID:          payload.UserID,
+		CIF:             payload.CIF,
 		PointAmount:     &pointAmount,
 		TransactionType: models.TransactionPointTypeDebet,
 		TransactionDate: &now,
-		ReffCore:        payload.ReffCore,
+		RefCore:         payload.RefCore,
 		Campaign:        latestCampaign,
 		CreatedAt:       &now,
 	}

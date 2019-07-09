@@ -23,6 +23,12 @@ import (
 	_pHistoryHttpDelivery "gade/srv-gade-point/pointhistories/delivery/http"
 	_pHistoryRepository "gade/srv-gade-point/pointhistories/repository"
 	_pHistoryUseCase "gade/srv-gade-point/pointhistories/usecase"
+	_quotaRepository "gade/srv-gade-point/quotas/repository"
+	_quotaUseCase "gade/srv-gade-point/quotas/usecase"
+	_rewardRepository "gade/srv-gade-point/rewards/repository"
+	_rewardUseCase "gade/srv-gade-point/rewards/usecase"
+	_tagRepository "gade/srv-gade-point/tags/repository"
+	_tagUseCase "gade/srv-gade-point/tags/usecase"
 	_tokenHttpDelivery "gade/srv-gade-point/tokens/delivery/http"
 	_tokenRepository "gade/srv-gade-point/tokens/repository"
 	_tokenUseCase "gade/srv-gade-point/tokens/usecase"
@@ -98,9 +104,21 @@ func main() {
 	tokenUseCase := _tokenUseCase.NewTokenUseCase(tokenRepository, timeoutContext)
 	_tokenHttpDelivery.NewTokensHandler(echoGroup, tokenUseCase)
 
+	// TAG
+	tagRepository := _tagRepository.NewPsqlTagRepository(dbConn)
+	tagUseCase := _tagUseCase.NewTagUseCase(tagRepository)
+
+	// QUOTA
+	quotaRepository := _quotaRepository.NewPsqlQuotaRepository(dbConn)
+	quotaUseCase := _quotaUseCase.NewQuotaUseCase(quotaRepository)
+
+	// REWARD
+	rewardRepository := _rewardRepository.NewPsqlRewardRepository(dbConn)
+	rewardUseCase := _rewardUseCase.NewRewardUseCase(rewardRepository, tagUseCase, quotaUseCase)
+
 	// CAMPAIGN
 	campaignRepository := _campaignRepository.NewPsqlCampaignRepository(dbConn)
-	campaignUseCase := _campaignUseCase.NewCampaignUseCase(campaignRepository, timeoutContext)
+	campaignUseCase := _campaignUseCase.NewCampaignUseCase(campaignRepository, rewardUseCase)
 	_campaignHttpDelivery.NewCampaignsHandler(echoGroup, campaignUseCase)
 
 	// CAMPAIGNTRX

@@ -155,4 +155,28 @@ var (
 
 	// ErrMappingVchrCodesImport to store allowed file ext error message
 	ErrMappingVchrCodesImport = errors.New("Something went wrong whent trying to map data from imported files")
+
+	// ErrRewardFailed to store create reward failed error message
+	ErrRewardFailed = errors.New("Failed to create a reward")
+
+	// ErrTagFailed to store create tag failed error message
+	ErrTagFailed = errors.New("Failed to create a tag")
+
+	// ErrQuotaFailed to store create quota failed error message
+	ErrQuotaFailed = errors.New("Failed to create a quota")
+
+	// ErrCreateRewardsFailed to store create rewards failed message
+	ErrCreateRewardsFailed = errors.New("Something went wrong when trying to create rewards")
+
+	// ErrDelRewardFailed to store delete reward error message
+	ErrDelRewardFailed = errors.New("Something went wrong when deleting a reward")
+
+	// ErrDelQuotaFailed to store delete quota error message
+	ErrDelQuotaFailed = errors.New("Something went wrong when deleting a quota")
+
+	// ErrCreateQuotasFailed to store create quotas failed message
+	ErrCreateQuotasFailed = errors.New("Something went wrong when trying to create quotas")
+
+	// ErrCreateTagsFailed to store create tags failed message
+	ErrCreateTagsFailed = errors.New("Something went wrong when trying to create tags")
 )

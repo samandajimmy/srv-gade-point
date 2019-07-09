@@ -45,11 +45,11 @@ type PathVoucher struct {
 // PayloadVoucherBuy to store payload to buy a voucher
 type PayloadVoucherBuy struct {
 	VoucherID string `json:"voucherId,omitempty"`
-	UserID    string `json:"userId,omitempty"`
+	CIF       string `json:"CIF,omitempty"`
 }
 
 // ResponseValidateVoucher to store response to validate a voucher
 type ResponseValidateVoucher struct {
-	Discount       *int64 `json:"discount,omitempty"`
-	JournalAccount string `json:"journalAccount,omitempty"`
+	Discount       *float64 `json:"discount,omitempty"`
+	JournalAccount string   `json:"journalAccount,omitempty"`
 }

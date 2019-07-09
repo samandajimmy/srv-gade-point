@@ -37,5 +37,6 @@ type Reward struct {
 	CreatedAt          *time.Time `json:"createdAt,omitempty"`
 	Campaign           *Campaign  `json:"campaign,omitempty"`
 	Quotas             *[]Quota   `json:"quotas,omitempty"`
+	Tags               *[]Tag     `json:"tags,omitempty"`
 	Vouchers           *[]Voucher `json:"vouchers,omitempty"`
 }

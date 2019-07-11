@@ -155,4 +155,10 @@ var (
 
 	// ErrMappingVchrCodesImport to store allowed file ext error message
 	ErrMappingVchrCodesImport = errors.New("Something went wrong whent trying to map data from imported files")
+
+	// ErrCreateMetric to store metric error message
+	ErrCreateMetric = errors.New("Failed to create metric")
+
+	// ErrUpdateMetric to store metric error message
+	ErrUpdateMetric = errors.New("Failed to update metric")
 )

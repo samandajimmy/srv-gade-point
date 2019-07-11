@@ -10,4 +10,6 @@ import (
 type Repository interface {
 	CreateReward(echo.Context, *models.Reward, int64) error
 	DeleteByCampaign(echo.Context, int64) error
+	CreateRewardTag(echo.Context, *models.Tag, int64) error
+	DeleteRewardTag(echo.Context, int64) error
 }

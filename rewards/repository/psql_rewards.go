@@ -84,3 +84,59 @@ func (rwdRepo *psqlRewardRepository) DeleteByCampaign(c echo.Context, campaignID
 
 	return nil
 }
+
+func (rwdRepo *psqlRewardRepository) CreateRewardTag(c echo.Context, tag *models.Tag, rewardID int64) error {
+	var lastID int64
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	now := time.Now()
+	query := `INSERT INTO reward_tags (reward_id, tag_id, created_at) VALUES ($1, $2, $3) RETURNING id`
+	stmt, err := rwdRepo.Conn.Prepare(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	err = stmt.QueryRow(tag.ID, rewardID, &now).Scan(&lastID)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func (rwdRepo *psqlRewardRepository) DeleteRewardTag(c echo.Context, rewardID int64) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	query := `DELETE FROM reward_tags WHERE reward_id = $1`
+	stmt, err := rwdRepo.Conn.Prepare(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	result, err := stmt.Query(rewardID)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	requestLogger.Debug("reward_tags deleted: ", result)
+
+	return nil
+}

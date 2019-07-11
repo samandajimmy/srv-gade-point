@@ -54,6 +54,7 @@ func (rwd *rewardUseCase) CreateReward(c echo.Context, reward *models.Reward, ca
 	// create array tags
 	for _, tag := range *reward.Tags {
 		err = rwd.tagUC.CreateTag(c, &tag, reward.ID)
+		err = rwd.rewardRepo.CreateRewardTag(c, &tag, reward.ID)
 
 		if err != nil {
 			break
@@ -62,6 +63,7 @@ func (rwd *rewardUseCase) CreateReward(c echo.Context, reward *models.Reward, ca
 
 	if err != nil {
 		_ = rwd.tagUC.DeleteByReward(c, reward.ID)
+		_ = rwd.rewardRepo.DeleteRewardTag(c, reward.ID)
 		requestLogger.Debug(models.ErrCreateTagsFailed)
 
 		return models.ErrCreateTagsFailed

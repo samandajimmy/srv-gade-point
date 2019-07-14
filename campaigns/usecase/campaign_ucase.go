@@ -5,11 +5,9 @@ import (
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewards"
-	"math"
 	"strconv"
 	"time"
 
-	"github.com/jinzhu/copier"
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
 )
@@ -168,16 +166,10 @@ func (cmpgn *campaignUseCase) GetCampaignDetail(c echo.Context, id string) (*mod
 	return campaignDetail, nil
 }
 
-func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.GetCampaignValue) (*models.UserPoint, error) {
-	var result float64
+func (cmpgn *campaignUseCase) GetCampaignAvailable(c echo.Context, today string) ([]*models.Campaign, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	payloadValidator := &models.PayloadValidator{}
-	payloadValidator.Validators = &models.Validator{}
-	now := time.Now()
-
-	// get available campaign
-	campaigns, err := cmpgn.campaignRepo.GetCampaignAvailable(c)
+	campaigns, err := cmpgn.campaignRepo.GetCampaignAvailable(c, today)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrNoCampaign)
@@ -185,69 +177,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 		return nil, models.ErrNoCampaign
 	}
 
-	// validate available campaigns
-	validCampaigns := []*models.Campaign{}
-	copier.Copy(payloadValidator, payload)
-	copier.Copy(payloadValidator.Validators, payload)
-
-	for _, campaign := range campaigns {
-		//  validate each campaign
-		// err = campaign.Validators.Validate(payloadValidator)
-
-		if err == nil {
-			validCampaigns = append(validCampaigns, campaign)
-		}
-	}
-
-	if len(validCampaigns) < 1 {
-		// no valid campaign available
-		requestLogger.Debug(err)
-
-		return nil, models.ErrNoCampaign
-	}
-
-	// get latest campaign
-	latestCampaign := validCampaigns[0]
-
-	// get campaign formula
-	// if latestCampaign.Validators.Formula == "" {
-	// 	result = float64(0)
-	// } else {
-	// 	result, err = latestCampaign.Validators.GetFormulaResult(payloadValidator)
-	// }
-	result = float64(0)
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return nil, models.ErrCalculateFormulaCampaign
-	}
-
-	pointAmount := math.Floor(result)
-
-	// store campaign transaction
-	campaignTrx := &models.CampaignTrx{
-		CIF:             payload.CIF,
-		PointAmount:     &pointAmount,
-		TransactionType: models.TransactionPointTypeDebet,
-		TransactionDate: &now,
-		RefCore:         payload.RefCore,
-		Campaign:        latestCampaign,
-		CreatedAt:       &now,
-	}
-
-	err = cmpgn.campaignRepo.SavePoint(c, campaignTrx)
-
-	if err != nil {
-		requestLogger.Debug(models.ErrStoreCampaignTrx)
-
-		return nil, models.ErrStoreCampaignTrx
-	}
-
-	p := new(models.UserPoint)
-	p.UserPoint = &pointAmount
-
-	return p, nil
+	return campaigns, nil
 }
 
 func (cmpgn *campaignUseCase) UpdateStatusBasedOnStartDate() error {

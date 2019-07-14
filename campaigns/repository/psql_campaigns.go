@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
+	"gade/srv-gade-point/rewards"
 	"time"
 
 	"github.com/labstack/echo"
@@ -13,12 +14,13 @@ import (
 )
 
 type psqlCampaignRepository struct {
-	Conn *sql.DB
+	Conn    *sql.DB
+	rwdRepo rewards.Repository
 }
 
 // NewPsqlCampaignRepository will create an object that represent the campaigns.Repository interface
-func NewPsqlCampaignRepository(Conn *sql.DB) campaigns.Repository {
-	return &psqlCampaignRepository{Conn}
+func NewPsqlCampaignRepository(Conn *sql.DB, rwdRepo rewards.Repository) campaigns.Repository {
+	return &psqlCampaignRepository{Conn, rwdRepo}
 }
 
 func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models.Campaign) error {
@@ -173,6 +175,7 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	result := make([]*models.Campaign, 0)
+
 	rows, err := m.Conn.Query(query)
 	defer rows.Close()
 
@@ -197,8 +200,17 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 			&createDate,
 		)
 
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
 		t.CreatedAt = &createDate.Time
 		t.UpdatedAt = &updateDate.Time
+
+		// get rewards
+		rewards, err := m.rwdRepo.GetRewardByCampaign(c, t.ID)
 
 		if err != nil {
 			requestLogger.Debug(err)
@@ -206,19 +218,21 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 			return nil, err
 		}
 
+		t.Rewards = &rewards
+
 		result = append(result, t)
 	}
 
 	return result, nil
 }
 
-func (m *psqlCampaignRepository) GetCampaignAvailable(c echo.Context) ([]*models.Campaign, error) {
+func (m *psqlCampaignRepository) GetCampaignAvailable(c echo.Context, today string) ([]*models.Campaign, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
-	query := `SELECT id, name, description, start_date, end_date, status, type, validators, updated_at, created_at
-		FROM campaigns WHERE status = 1 AND start_date::date <= now()::date 
-		AND end_date::date >= now()::date ORDER BY start_date DESC`
+	query := fmt.Sprintf(`SELECT id, name, description, start_date, end_date, status, updated_at, created_at
+		FROM campaigns WHERE status = 1 AND start_date::date <= '%s'
+		AND end_date::date >= '%s' ORDER BY start_date DESC`, today, today)
 
 	res, err := m.getCampaign(c, query)
 

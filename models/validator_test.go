@@ -110,6 +110,11 @@ func TestGetRewardValue(t *testing.T) {
 	validator.Value = &zero
 	assert.Equal(t, mltplFunc(float64(100000), nil), mltplFunc(validator.GetRewardValue(&plValidator)))
 
+	// when its a discount percentage reward with nil value
+	validator.Discount = &disc
+	validator.Value = nil
+	assert.Equal(t, mltplFunc(float64(100000), nil), mltplFunc(validator.GetRewardValue(&plValidator)))
+
 	// when its a discount percentage with max value reward
 	validator.MaxValue = &maxValue
 	assert.Equal(t, mltplFunc(float64(15000), nil), mltplFunc(validator.GetRewardValue(&plValidator)))

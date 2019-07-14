@@ -1,10 +1,10 @@
 package http
 
 import (
-	"encoding/json"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewards"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo"
 )
@@ -29,9 +29,9 @@ func NewRewardHandler(echoGroup models.EchoGroup, us rewards.UseCase) {
 }
 
 func (rwd *RewardHandler) rewardInquiry(echTx echo.Context) error {
-	var reward models.Reward
+	var plValidator models.PayloadValidator
 	response = models.Response{}
-	err := echTx.Bind(&reward)
+	err := echTx.Bind(&plValidator)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -40,12 +40,37 @@ func (rwd *RewardHandler) rewardInquiry(echTx echo.Context) error {
 		return echTx.JSON(http.StatusUnprocessableEntity, response)
 	}
 
-	responseData := []byte(`{"status":"Success", "message":"Data Successfully Sent", "data":{"refTrx":"1122334455","rewards":[{"discountAmount":"20%","journalAccount":"1122334455","type":"discount","value":200000},{"journalAccount":"1122334455","type":"discount","value":100000},{"journalAccount":"1122334455","type":"goldback","value":100000},{"journalAccount":"1122334455","type":"voucher","voucherName":"Voucher diskon 1.000 top up tabungan emas"}]}}`)
-	var rawData map[string]interface{}
-	json.Unmarshal(responseData, &rawData)
-	data, _ := json.Marshal(rawData)
+	if err = echTx.Validate(plValidator); err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
 
-	return echTx.JSONBlob(http.StatusOK, data)
+		return echTx.JSON(http.StatusBadRequest, response)
+	}
+
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(echTx, plValidator)
+	requestLogger.Info("Start to inquiry rewards.")
+	responseData, err := rwd.RewardUseCase.Inquiry(echTx, &plValidator)
+
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+
+		return echTx.JSON(getStatusCode(err), response)
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MessagePointSuccess
+
+	if (models.RewardsInquiry{}) != responseData {
+		response.Data = responseData
+	} else {
+		response.Message = models.MessageNoRewards
+	}
+
+	requestLogger.Info("End of inquiry rewards.")
+
+	return echTx.JSON(getStatusCode(err), response)
 }
 
 func (rwd *RewardHandler) rewardSucceeded(echTx echo.Context) error {
@@ -82,4 +107,25 @@ func (rwd *RewardHandler) rewardRejected(echTx echo.Context) error {
 	response.Message = models.MessageDataSuccess
 
 	return echTx.JSON(http.StatusOK, response)
+}
+
+func getStatusCode(err error) int {
+	if err == nil {
+		return http.StatusOK
+	}
+
+	if strings.Contains(err.Error(), "400") {
+		return http.StatusBadRequest
+	}
+
+	switch err {
+	case models.ErrInternalServerError:
+		return http.StatusInternalServerError
+	case models.ErrNotFound:
+		return http.StatusNotFound
+	case models.ErrConflict:
+		return http.StatusConflict
+	default:
+		return http.StatusOK
+	}
 }

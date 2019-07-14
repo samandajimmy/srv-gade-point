@@ -53,10 +53,10 @@ func (tgRepo *psqlTagRepository) CreateTag(c echo.Context, tag *models.Tag, camp
 	return nil
 }
 
-func (tgRepo *psqlTagRepository) DeleteByReward(c echo.Context, rewardID int64) error {
+func (tgRepo *psqlTagRepository) Delete(c echo.Context, tagID int64) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	query := `DELETE FROM tags WHERE reward_id = $1`
+	query := `DELETE FROM tags WHERE id = $1`
 	stmt, err := tgRepo.Conn.Prepare(query)
 
 	if err != nil {
@@ -65,7 +65,7 @@ func (tgRepo *psqlTagRepository) DeleteByReward(c echo.Context, rewardID int64) 
 		return err
 	}
 
-	result, err := stmt.Query(rewardID)
+	result, err := stmt.Query(tagID)
 
 	if err != nil {
 		requestLogger.Debug(err)

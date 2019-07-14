@@ -4,9 +4,19 @@ import (
 	"gade/srv-gade-point/models"
 	"os"
 
+	"gopkg.in/go-playground/validator.v9"
+
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
+
+type customValidator struct {
+	validator *validator.Validate
+}
+
+func (cv *customValidator) Validate(i interface{}) error {
+	return cv.validator.Struct(i)
+}
 
 type customMiddleware struct {
 	e *echo.Echo
@@ -21,7 +31,7 @@ func InitMiddleware(ech *echo.Echo, echoGroup models.EchoGroup) {
 	ech.Use(middleware.RequestIDWithConfig(middleware.DefaultRequestIDConfig))
 
 	ech.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "requestID=${id}, method=${method}, status=${status}, uri=${uri}, latency=${latency_human} " +
+		Format: "requestID=${id}, method=${method}, status=${status}, path=${path}, latency=${latency_human} " +
 			"host=${host}, remote_ip=${remote_ip}, user_agent=${user_agent}, error=${error} \n",
 	}))
 
@@ -29,6 +39,7 @@ func InitMiddleware(ech *echo.Echo, echoGroup models.EchoGroup) {
 	cm.cors()
 	cm.basicAuth()
 	cm.jwtAuth()
+	ech.Validator = &customValidator{validator: validator.New()}
 }
 
 func (cm customMiddleware) cors() {

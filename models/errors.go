@@ -179,4 +179,10 @@ var (
 
 	// ErrCreateTagsFailed to store create tags failed message
 	ErrCreateTagsFailed = errors.New("Something went wrong when trying to create tags")
+
+	// ErrPromoCode to store promo code error message
+	ErrPromoCode = errors.New("Promo code is not available")
+
+	// ErrTrxDateFormat to store a trx date format params error message
+	ErrTrxDateFormat = errors.New("Transaction date parameters is not meet the format")
 )

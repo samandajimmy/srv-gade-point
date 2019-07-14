@@ -20,7 +20,14 @@ var (
 	IsPromoCodeTrue int64 = 1
 )
 
-// Reward is represent a point model
+var rewardType = map[int64]string{
+	RewardTypePoint:    "point",
+	RewardTypeDiscount: "discount",
+	RewardTypeGoldback: "goldback",
+	RewardTypeVoucher:  "voucher",
+}
+
+// Reward is represent a reward model
 type Reward struct {
 	ID                 int64      `json:"id,omitempty"`
 	Name               string     `json:"name,omitempty"`
@@ -32,6 +39,7 @@ type Reward struct {
 	JournalAccount     string     `json:"journalAccount,omitempty"`
 	IsPromoCode        *int64     `json:"isPromoCode,omitempty"`
 	Type               *int64     `json:"type,omitempty"`
+	CampaignID         *int64     `json:"campaign_id,omitempty"`
 	Validators         *Validator `json:"validators,omitempty"`
 	UpdatedAt          *time.Time `json:"updatedAt,omitempty"`
 	CreatedAt          *time.Time `json:"createdAt,omitempty"`
@@ -39,4 +47,22 @@ type Reward struct {
 	Quotas             *[]Quota   `json:"quotas,omitempty"`
 	Tags               *[]Tag     `json:"tags,omitempty"`
 	Vouchers           *[]Voucher `json:"vouchers,omitempty"`
+}
+
+// RewardsInquiry is represent a inquire reward response model
+type RewardsInquiry struct {
+	RefTrx  string            `json:"refTrx,omitempty"`
+	Rewards *[]RewardResponse `json:"rewards,omitempty"`
+}
+
+// RewardResponse is represent a reward response model
+type RewardResponse struct {
+	Type           string  `json:"type,omitempty"`
+	JournalAccount string  `json:"journalAccount,omitempty"`
+	Value          float64 `json:"value,omitempty"`
+}
+
+// GetRewardTypeText to get text of reward type
+func (rwd Reward) GetRewardTypeText() string {
+	return rewardType[*rwd.Type]
 }

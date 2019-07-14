@@ -115,11 +115,11 @@ func main() {
 
 	// REWARD
 	rewardRepository := _rewardRepository.NewPsqlRewardRepository(dbConn)
-	rewardUseCase := _rewardUseCase.NewRewardUseCase(rewardRepository, tagUseCase, quotaUseCase)
+	campaignRepository := _campaignRepository.NewPsqlCampaignRepository(dbConn, rewardRepository)
+	rewardUseCase := _rewardUseCase.NewRewardUseCase(rewardRepository, campaignRepository, tagUseCase, quotaUseCase)
 	_rewardHttpDelivery.NewRewardHandler(echoGroup, rewardUseCase)
 
 	// CAMPAIGN
-	campaignRepository := _campaignRepository.NewPsqlCampaignRepository(dbConn)
 	campaignUseCase := _campaignUseCase.NewCampaignUseCase(campaignRepository, rewardUseCase)
 	_campaignHttpDelivery.NewCampaignsHandler(echoGroup, campaignUseCase)
 

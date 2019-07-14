@@ -14,7 +14,7 @@ var (
 // Quota is represent a quota model
 type Quota struct {
 	ID           int64      `json:"id,omitempty"`
-	NumberOfDays string     `json:"numberOfDays,omitempty"`
+	NumberOfDays *int64     `json:"numberOfDays,omitempty"`
 	Amount       *int64     `json:"amount,omitempty"`
 	IsPerUser    *int64     `json:"isPerUser,omitempty"`
 	UpdatedAt    *time.Time `json:"updatedAt,omitempty"`

@@ -32,10 +32,10 @@ func (tg *tagUseCase) CreateTag(c echo.Context, tag *models.Tag, campaignID int6
 	return nil
 }
 
-func (tg *tagUseCase) DeleteByReward(c echo.Context, rewardID int64) error {
+func (tg *tagUseCase) Delete(c echo.Context, tagID int64) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	err := tg.tagRepo.DeleteByReward(c, rewardID)
+	err := tg.tagRepo.Delete(c, tagID)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrDelQuotaFailed)

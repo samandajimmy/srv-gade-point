@@ -27,9 +27,6 @@ func NewCampaignsHandler(echoGroup models.EchoGroup, us campaigns.UseCase) {
 	echoGroup.Admin.PUT("/campaigns/status/:id", handler.UpdateStatusCampaign)
 	echoGroup.Admin.GET("/campaigns", handler.GetCampaigns)
 	echoGroup.Admin.GET("/campaigns/:id", handler.GetCampaignDetail)
-
-	// End Point For External
-	echoGroup.API.POST("/campaigns/value", handler.GetCampaignValue)
 }
 
 // CreateCampaign a handler to create a campaign
@@ -157,39 +154,6 @@ func (cmpgn *CampaignsHandler) GetCampaignDetail(c echo.Context) error {
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
 	requestLogger.Info("End of get detail campaign.")
-
-	return c.JSON(http.StatusOK, response)
-}
-
-// GetCampaignValue to validate point amount available and store the point trx
-func (cmpgn *CampaignsHandler) GetCampaignValue(c echo.Context) error {
-	campaignValue := models.GetCampaignValue{}
-	response = models.Response{}
-
-	if err := c.Bind(&campaignValue); err != nil {
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		return c.JSON(getStatusCode(err), response)
-	}
-
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, campaignValue)
-	requestLogger.Info("Start to get a campaign value.")
-	userPoint, err := cmpgn.CampaignUseCase.GetCampaignValue(c, &campaignValue)
-
-	if err != nil {
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		return c.JSON(getStatusCode(err), response)
-	}
-
-	if (&models.UserPoint{}) != userPoint {
-		response.Data = userPoint
-	}
-
-	response.Status = models.StatusSuccess
-	response.Message = models.MessagePointSuccess
-	requestLogger.Info("End of get a campaign value.")
 
 	return c.JSON(http.StatusOK, response)
 }

@@ -185,4 +185,10 @@ var (
 
 	// ErrTrxDateFormat to store a trx date format params error message
 	ErrTrxDateFormat = errors.New("Transaction date parameters is not meet the format")
+
+	// ErrCreateMetric to store metric error message
+	ErrCreateMetric = errors.New("Failed to create metric")
+
+	// ErrUpdateMetric to store metric error message
+	ErrUpdateMetric = errors.New("Failed to update metric")
 )

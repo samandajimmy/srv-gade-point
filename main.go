@@ -20,6 +20,8 @@ import (
 	_campaignTrxHttpDelivery "gade/srv-gade-point/campaigntrxs/delivery/http"
 	_campaignTrxRepository "gade/srv-gade-point/campaigntrxs/repository"
 	_campaignTrxUseCase "gade/srv-gade-point/campaigntrxs/usecase"
+	_metricRepository "gade/srv-gade-point/metrics/repository"
+	_metricUseCase "gade/srv-gade-point/metrics/usecase"
 	_pHistoryHttpDelivery "gade/srv-gade-point/pointhistories/delivery/http"
 	_pHistoryRepository "gade/srv-gade-point/pointhistories/repository"
 	_pHistoryUseCase "gade/srv-gade-point/pointhistories/usecase"
@@ -28,6 +30,7 @@ import (
 	_rewardHttpDelivery "gade/srv-gade-point/rewards/delivery/http"
 	_rewardRepository "gade/srv-gade-point/rewards/repository"
 	_rewardUseCase "gade/srv-gade-point/rewards/usecase"
+	_metricService "gade/srv-gade-point/services"
 	_tagRepository "gade/srv-gade-point/tags/repository"
 	_tagUseCase "gade/srv-gade-point/tags/usecase"
 	_tokenHttpDelivery "gade/srv-gade-point/tokens/delivery/http"
@@ -43,6 +46,8 @@ import (
 	_voucherRepository "gade/srv-gade-point/vouchers/repository"
 	_voucherUseCase "gade/srv-gade-point/vouchers/usecase"
 
+	"gade/srv-gade-point/services"
+
 	"github.com/carlescere/scheduler"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -54,6 +59,7 @@ import (
 )
 
 var ech *echo.Echo
+var metricService services.MetricService
 
 func init() {
 	ech = echo.New()
@@ -147,6 +153,13 @@ func main() {
 	userRepository := _userRepository.NewPsqlUserRepository(dbConn)
 	userUseCase := _userUseCase.NewUserUseCase(userRepository, timeoutContext)
 	_userHttpDelivery.NewUserHandler(echoGroup, userUseCase)
+
+	// METRIC
+	metricRepository := _metricRepository.NewPsqlMetricRepository(dbConn)
+	metricUseCase := _metricUseCase.NewMetricUseCase(metricRepository, timeoutContext)
+
+	// Add metric
+	_metricService.NewMetricHandler(metricUseCase)
 
 	// Run every day.
 	updateStatusBasedOnStartDate(campaignUseCase, voucherUseCase)

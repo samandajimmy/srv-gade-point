@@ -17,6 +17,7 @@ type Quota struct {
 	NumberOfDays *int64     `json:"numberOfDays,omitempty"`
 	Amount       *int64     `json:"amount,omitempty"`
 	IsPerUser    *int64     `json:"isPerUser,omitempty"`
+	Available    *int64     `json:"available,omitempty"`
 	UpdatedAt    *time.Time `json:"updatedAt,omitempty"`
 	CreatedAt    *time.Time `json:"createdAt,omitempty"`
 	Reward       *Reward    `json:"reward,omitempty"`

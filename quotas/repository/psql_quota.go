@@ -77,3 +77,28 @@ func (quotRepo *psqlQuotaRepository) DeleteByReward(c echo.Context, rewardID int
 
 	return nil
 }
+
+func (quotRepo *psqlQuotaRepository) CheckQuota(c echo.Context, rewardID int64) (int64, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	var available int64
+
+	query := `SELECT available FROM metrics where job = $1`
+	stmt, err := quotRepo.Conn.Prepare(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return 0, err
+	}
+
+	err = stmt.QueryRow(&rewardID).Scan(&available)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return 0, err
+	}
+
+	return available, nil
+}

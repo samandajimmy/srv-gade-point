@@ -45,3 +45,22 @@ func (quot *quotaUseCase) DeleteByReward(c echo.Context, rewardID int64) error {
 
 	return nil
 }
+
+func (quot *quotaUseCase) CheckQuota(c echo.Context, rewardID int64) (bool, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	available, err := quot.quotaRepo.CheckQuota(c, rewardID)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrDelQuotaFailed)
+
+		return false, models.ErrDelQuotaFailed
+	}
+
+	valid := true
+	if available <= 0 {
+		valid = false
+	}
+
+	return valid, nil
+}

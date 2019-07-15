@@ -168,6 +168,12 @@ var (
 	// ErrCreateRewardsFailed to store create rewards failed message
 	ErrCreateRewardsFailed = errors.New("Something went wrong when trying to create rewards")
 
+	// ErrRewardTrxFailed to store create reward transaction failed error message
+	ErrRewardTrxFailed = errors.New("Failed to create a reward transaction")
+
+	// ErrRewardTrxUpdateFailed to store create reward transaction failed error message
+	ErrRewardTrxUpdateFailed = errors.New("Failed to update a reward transaction")
+
 	// ErrDelRewardFailed to store delete reward error message
 	ErrDelRewardFailed = errors.New("Something went wrong when deleting a reward")
 

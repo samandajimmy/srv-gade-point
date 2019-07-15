@@ -465,6 +465,50 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 	return voucherCode, nil
 }
 
+func (vchr *voucherUseCase) VoucherGive(ech echo.Context, payload *models.PayloadVoucherBuy) (*models.VoucherCode, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(ech, nil)
+	now := time.Now()
+	voucherDetail, err := vchr.voucherRepo.GetVoucher(ech, payload.VoucherID)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrVoucherUnavailable)
+
+		return nil, models.ErrVoucherUnavailable
+	}
+
+	// check date expiry
+	vStartDate, _ := time.Parse(time.RFC3339, voucherDetail.StartDate)
+	vEndDate, _ := time.Parse(time.RFC3339, voucherDetail.EndDate)
+
+	if vStartDate.After(now) {
+		requestLogger.Debug(models.ErrVoucherExpired)
+
+		return nil, models.ErrVoucherNotStarted
+	}
+
+	if vEndDate.Before(now) {
+		requestLogger.Debug(models.ErrVoucherExpired)
+
+		return nil, models.ErrVoucherExpired
+	}
+
+	voucherCode, err := vchr.voucherRepo.UpdatePromoCodeBought(ech, payload.VoucherID, payload.CIF)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrUpdatePromoCodes)
+
+		return nil, models.ErrUpdatePromoCodes
+	}
+
+	voucherCode.Voucher = &models.Voucher{
+		ID:   voucherDetail.ID,
+		Name: voucherDetail.Name,
+	}
+
+	return voucherCode, nil
+}
+
 func (vchr *voucherUseCase) VoucherValidate(c echo.Context, validateVoucher *models.PayloadValidator) (*models.ResponseValidateVoucher, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)

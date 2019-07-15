@@ -119,10 +119,20 @@ func main() {
 	quotaRepository := _quotaRepository.NewPsqlQuotaRepository(dbConn)
 	quotaUseCase := _quotaUseCase.NewQuotaUseCase(quotaRepository)
 
+	// POINTHISTORY
+	pHistoryRepository := _pHistoryRepository.NewPsqlPointHistoryRepository(dbConn)
+	pHistoryUseCase := _pHistoryUseCase.NewPointHistoryUseCase(pHistoryRepository)
+	_pHistoryHttpDelivery.NewPointHistoriesHandler(echoGroup, pHistoryUseCase)
+
+	// VOUCHER
+	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn)
+
 	// REWARD
 	rewardRepository := _rewardRepository.NewPsqlRewardRepository(dbConn)
 	campaignRepository := _campaignRepository.NewPsqlCampaignRepository(dbConn, rewardRepository)
-	rewardUseCase := _rewardUseCase.NewRewardUseCase(rewardRepository, campaignRepository, tagUseCase, quotaUseCase)
+	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, campaignRepository, pHistoryRepository)
+	_voucherHttpDelivery.NewVouchersHandler(echoGroup, voucherUseCase)
+	rewardUseCase := _rewardUseCase.NewRewardUseCase(rewardRepository, campaignRepository, tagUseCase, quotaUseCase, voucherUseCase)
 	_rewardHttpDelivery.NewRewardHandler(echoGroup, rewardUseCase)
 
 	// CAMPAIGN
@@ -133,16 +143,6 @@ func main() {
 	campaignTrxRepository := _campaignTrxRepository.NewPsqlCampaignTrxRepository(dbConn)
 	campaignTrxUseCase := _campaignTrxUseCase.NewCampaignTrxUseCase(campaignTrxRepository)
 	_campaignTrxHttpDelivery.NewCampaignTrxsHandler(echoGroup, campaignTrxUseCase, campaignUseCase)
-
-	// POINTHISTORY
-	pHistoryRepository := _pHistoryRepository.NewPsqlPointHistoryRepository(dbConn)
-	pHistoryUseCase := _pHistoryUseCase.NewPointHistoryUseCase(pHistoryRepository)
-	_pHistoryHttpDelivery.NewPointHistoriesHandler(echoGroup, pHistoryUseCase)
-
-	// VOUCHER
-	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn)
-	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, campaignRepository, pHistoryRepository)
-	_voucherHttpDelivery.NewVouchersHandler(echoGroup, voucherUseCase)
 
 	// VOUCHERCODE
 	voucherCodeRepository := _voucherCodeRepository.NewPsqlVoucherCodeRepository(dbConn)

@@ -17,6 +17,7 @@ type UseCase interface {
 	GetVouchers(echo.Context, map[string]interface{}) ([]*models.Voucher, string, error)
 	GetVoucher(echo.Context, string) (*models.Voucher, error)
 	VoucherBuy(echo.Context, *models.PayloadVoucherBuy) (*models.VoucherCode, error)
+	VoucherGive(echo.Context, *models.PayloadVoucherBuy) (*models.VoucherCode, error)
 	BadaiEmasGift(echo.Context, *models.PayloadValidator) (*models.VoucherCode, error)
 	GetVouchersUser(echo.Context, map[string]interface{}) ([]models.VoucherCode, string, error)
 	VoucherValidate(echo.Context, *models.PayloadValidator) (*models.ResponseValidateVoucher, error)

@@ -60,6 +60,7 @@ type RewardResponse struct {
 	Type           string  `json:"type,omitempty"`
 	JournalAccount string  `json:"journalAccount,omitempty"`
 	Value          float64 `json:"value,omitempty"`
+	VoucherName    string  `json:"voucherName,omitempty"`
 }
 
 // GetRewardTypeText to get text of reward type

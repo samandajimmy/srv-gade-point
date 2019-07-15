@@ -6,6 +6,8 @@ import (
 	"gade/srv-gade-point/quotas"
 	"gade/srv-gade-point/rewards"
 	"gade/srv-gade-point/tags"
+	"gade/srv-gade-point/vouchers"
+	"strconv"
 	"time"
 
 	"github.com/labstack/echo"
@@ -16,15 +18,23 @@ type rewardUseCase struct {
 	campaignRepo campaigns.Repository
 	tagUC        tags.UseCase
 	quotaUC      quotas.UseCase
+	voucherUC    vouchers.UseCase
 }
 
 // NewRewardUseCase will create new an rewardUseCase object representation of rewards.UseCase interface
-func NewRewardUseCase(rwdRepo rewards.Repository, campaignRepo campaigns.Repository, tagUC tags.UseCase, quotaUC quotas.UseCase) rewards.UseCase {
+func NewRewardUseCase(
+	rwdRepo rewards.Repository,
+	campaignRepo campaigns.Repository,
+	tagUC tags.UseCase,
+	quotaUC quotas.UseCase,
+	voucherUC vouchers.UseCase,
+) rewards.UseCase {
 	return &rewardUseCase{
 		rewardRepo:   rwdRepo,
 		campaignRepo: campaignRepo,
 		tagUC:        tagUC,
 		quotaUC:      quotaUC,
+		voucherUC:    voucherUC,
 	}
 }
 
@@ -144,7 +154,24 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		// get the rewards value/benefit
 		rwdValue, _ := reward.Validators.GetRewardValue(plValidator)
 
-		// TODO: check rewards voucher if any
+		// check rewards voucher if any
+		rwdVoucher, _ := reward.Validators.GetVoucherResult()
+
+		if rwdVoucher != 0 {
+			plVoucherBuy := &models.PayloadVoucherBuy{
+				CIF:       plValidator.CIF,
+				VoucherID: strconv.FormatInt(rwdVoucher, 10),
+			}
+
+			voucherCode, err := rwd.voucherUC.VoucherGive(c, plVoucherBuy)
+
+			if err != nil {
+				return rwdInquiry, nil
+			}
+
+			rwdResp.VoucherName = voucherCode.Voucher.Name
+			rwdValue = 0 // if voucher reward is exist then reward value should be nil
+		}
 
 		// populate reward response
 		rwdResp.Type = reward.GetRewardTypeText()

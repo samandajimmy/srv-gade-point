@@ -225,13 +225,15 @@ func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float6
 
 // GetVoucherResult to get voucher benefit
 func (v *Validator) GetVoucherResult() (int64, error) {
-	voucherID := *v.ValueVoucherID
-
-	if voucherID == 0 {
+	if v.ValueVoucherID == nil {
 		return 0, nil
 	}
 
-	return voucherID, nil
+	if *v.ValueVoucherID == 0 {
+		return 0, nil
+	}
+
+	return *v.ValueVoucherID, nil
 }
 
 // CalculateDiscount to get the discount currency value

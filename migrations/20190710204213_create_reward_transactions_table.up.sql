@@ -1,8 +1,7 @@
 -- Table: reward_transactions
 -- for status        0 --> inquiry
 --                   1 --> Success
---                   2 --> Reject       
-
+--                   2 --> Reject
 
 CREATE TABLE IF NOT EXISTS reward_transactions (
     id SERIAL PRIMARY KEY NOT NULL,
@@ -19,7 +18,6 @@ CREATE TABLE IF NOT EXISTS reward_transactions (
     request_data JSONB NOT NULL,
     created_at TIMESTAMP DEFAULT NULL,
     updated_at TIMESTAMP DEFAULT NULL
-
 );
 
 CREATE INDEX index_reward_transactions ON reward_transactions (cif, used_promo_code, status);

@@ -18,7 +18,7 @@ func NewRewardtrxUseCase(rwdTrxRepo rewardtrxs.Repository) rewardtrxs.UseCase {
 	}
 }
 
-func (rwdTrx *rewardTrxUseCase) Create(c echo.Context, payload map[string]interface{}, rewardID int64) error {
+func (rwdTrx *rewardTrxUseCase) Create(c echo.Context, payload models.PayloadValidator, rewardID int64) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	err := rwdTrx.rewardTrxRepo.Create(c, payload, rewardID)

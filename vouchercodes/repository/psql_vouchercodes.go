@@ -325,3 +325,56 @@ func (psqlRepo *psqlVoucherCodeRepository) GetBoughtVoucherCode(c echo.Context, 
 
 	return result, nil
 }
+
+func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeRefID(c echo.Context, voucherCode *models.VoucherCode, refID string) error {
+	if voucherCode == nil {
+		return nil
+	}
+
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	now := time.Now()
+	query := `UPDATE voucher_codes SET ref_id = $1, updated_at = $2 where status = 1 and id = $3`
+	stmt, err := psqlRepo.Conn.Prepare(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	_, err = stmt.Query(&refID, &now, &voucherCode.ID)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeRejected(c echo.Context, refID string) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	now := time.Now()
+	zero := int64(0)
+	query := `UPDATE voucher_codes SET status = $1, user_id = $2, bought_date = NULL, updated_at = $3 where status = 1 and ref_id = $4`
+	stmt, err := psqlRepo.Conn.Prepare(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	_, err = stmt.Query(&zero, "", &now, &refID)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	return nil
+}

@@ -63,6 +63,13 @@ type RewardResponse struct {
 	VoucherName    string  `json:"voucherName,omitempty"`
 }
 
+// RewardPayment is represent a reward payment model
+type RewardPayment struct {
+	CIF     string `json:"cif,omitempty"`
+	RefTrx  string `json:"refTrx,omitempty"`
+	RefCore string `json:"refCore,omitempty"`
+}
+
 // GetRewardTypeText to get text of reward type
 func (rwd Reward) GetRewardTypeText() string {
 	return rewardType[*rwd.Type]

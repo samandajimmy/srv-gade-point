@@ -15,4 +15,6 @@ type Repository interface {
 	UpdateVoucherCodeRedeemed(echo.Context, string, string, string) (*models.VoucherCode, error)
 	GetBoughtVoucherCode(echo.Context, map[string]interface{}) ([]models.VoucherCode, error)
 	CountBoughtVoucherCode(echo.Context, map[string]interface{}) (string, error)
+	UpdateVoucherCodeRefID(echo.Context, *models.VoucherCode, string) error
+	UpdateVoucherCodeRejected(echo.Context, string) error
 }

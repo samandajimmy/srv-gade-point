@@ -8,7 +8,8 @@ import (
 
 // Repository represent the reward transactions repository contract
 type Repository interface {
-	Create(echo.Context, models.PayloadValidator, int64) (models.RewardTrx, error)
+	Create(echo.Context, models.PayloadValidator, int64, []models.RewardResponse) (models.RewardTrx, error)
 	UpdateSuccess(echo.Context, map[string]interface{}) error
 	UpdateReject(echo.Context, map[string]interface{}) error
+	GetByRefID(echo.Context, string) (models.RewardTrx, error)
 }

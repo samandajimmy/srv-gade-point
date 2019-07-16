@@ -40,6 +40,7 @@ type PayloadValidator struct {
 	LoanAmount        *float64   `json:"loanAmount,omitempty"`
 	PromoCode         string     `json:"promoCode,omitempty" validate:"required"`
 	RedeemedDate      string     `json:"redeemedDate,omitempty"`
+	RefTrx            string     `json:"refTrx,omitempty"`
 	TransactionDate   string     `json:"transactionDate,omitempty" validate:"required"`
 	TransactionAmount *float64   `json:"transactionAmount,omitempty" validate:"required"`
 	VoucherID         string     `json:"voucherId,omitempty"`

@@ -17,22 +17,22 @@ type psqlRewardTrxRepository struct {
 
 const letterBytes = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-// NewPsqlRewardTrxRepository will create an object that represent the quotas.Repository interface
+// NewPsqlRewardTrxRepository will create an object that represent the rewardtrxs.Repository interface
 func NewPsqlRewardTrxRepository(Conn *sql.DB) rewardtrxs.Repository {
 	return &psqlRewardTrxRepository{Conn}
 }
 
-func (quotTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models.PayloadValidator, rewardID int64) (models.RewardTrx, error) {
+func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models.PayloadValidator, rewardID int64, resp []models.RewardResponse) (models.RewardTrx, error) {
 	var rewardTrx models.RewardTrx
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
 	refID := randRefID(20)
 
-	query := `INSERT INTO reward_transactions (status, ref_id, cif, reward_id, used_promo_code, transaction_date, inquiry_date, request_data, created_at)
+	query := `INSERT INTO reward_transactions (status, ref_id, cif, reward_id, used_promo_code, transaction_date, inquired_date, request_data, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`
 
-	stmt, err := quotTrxRepo.Conn.Prepare(query)
+	stmt, err := rwdTrxRepo.Conn.Prepare(query)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -83,7 +83,13 @@ func (quotTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload model
 	return rewardTrx, nil
 }
 
-func (quotTrxRepo *psqlRewardTrxRepository) UpdateSuccess(c echo.Context, payload map[string]interface{}) error {
+func (rwdTrxRepo *psqlRewardTrxRepository) GetByRefID(c echo.Context, refID string) (models.RewardTrx, error) {
+	var rewardTrx models.RewardTrx
+
+	return rewardTrx, nil
+}
+
+func (rwdTrxRepo *psqlRewardTrxRepository) UpdateSuccess(c echo.Context, payload map[string]interface{}) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
@@ -92,7 +98,7 @@ func (quotTrxRepo *psqlRewardTrxRepository) UpdateSuccess(c echo.Context, payloa
 	cif := payload["cif"].(string)
 	refID := payload["refTrx"].(string)
 	query := `UPDATE reward_transactions SET status = $1, ref_core = $2, successed_date = $3, updated_date = $4 WHERE cif = $5 and ref_id = $6`
-	stmt, err := quotTrxRepo.Conn.Prepare(query)
+	stmt, err := rwdTrxRepo.Conn.Prepare(query)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -119,7 +125,7 @@ func (quotTrxRepo *psqlRewardTrxRepository) UpdateSuccess(c echo.Context, payloa
 	return nil
 }
 
-func (quotTrxRepo *psqlRewardTrxRepository) UpdateReject(c echo.Context, payload map[string]interface{}) error {
+func (rwdTrxRepo *psqlRewardTrxRepository) UpdateReject(c echo.Context, payload map[string]interface{}) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
@@ -127,7 +133,7 @@ func (quotTrxRepo *psqlRewardTrxRepository) UpdateReject(c echo.Context, payload
 	cif := payload["cif"].(string)
 	refID := payload["refTrx"].(string)
 	query := `UPDATE reward_transactions SET status = $1, rejected_date = $2, updated_date = $3 WHERE cif = $4 and ref_id = $5`
-	stmt, err := quotTrxRepo.Conn.Prepare(query)
+	stmt, err := rwdTrxRepo.Conn.Prepare(query)
 
 	if err != nil {
 		requestLogger.Debug(err)

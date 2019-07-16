@@ -5,6 +5,7 @@ import (
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/quotas"
 	"gade/srv-gade-point/rewards"
+	"gade/srv-gade-point/rewardtrxs"
 	"gade/srv-gade-point/tags"
 	"gade/srv-gade-point/vouchers"
 	"strconv"
@@ -19,6 +20,7 @@ type rewardUseCase struct {
 	tagUC        tags.UseCase
 	quotaUC      quotas.UseCase
 	voucherUC    vouchers.UseCase
+	rwdTrxUC     rewardtrxs.UseCase
 }
 
 // NewRewardUseCase will create new an rewardUseCase object representation of rewards.UseCase interface
@@ -28,6 +30,7 @@ func NewRewardUseCase(
 	tagUC tags.UseCase,
 	quotaUC quotas.UseCase,
 	voucherUC vouchers.UseCase,
+	rwdTrxUC rewardtrxs.UseCase,
 ) rewards.UseCase {
 	return &rewardUseCase{
 		rewardRepo:   rwdRepo,
@@ -35,6 +38,7 @@ func NewRewardUseCase(
 		tagUC:        tagUC,
 		quotaUC:      quotaUC,
 		voucherUC:    voucherUC,
+		rwdTrxUC:     rwdTrxUC,
 	}
 }
 
@@ -117,7 +121,10 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		return rwdInquiry, models.ErrTrxDateFormat
 	}
 
-	// TODO: validate the inquiry request, if ref_id exist
+	// TODO: validate the inquiry request, if refId exist
+	if plValidator.RefTrx != "" {
+
+	}
 
 	// check available campaign
 	campaigns, err := rwd.campaignRepo.GetCampaignAvailable(c, trxDate.Format(models.TimeFormat))
@@ -184,10 +191,15 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		return rwdInquiry, nil
 	}
 
-	// TODO insert data to reward history
+	// insert data to reward history
+	rewardTrx, err := rwd.rwdTrxUC.Create(c, *plValidator, rewards[0].ID, rwdResponse)
 
-	// TODO: generate an unique ref ID
-	rwdInquiry.RefTrx = "1122334455"
+	if err != nil {
+		return rwdInquiry, nil
+	}
+
+	// generate an unique ref ID
+	rwdInquiry.RefTrx = rewardTrx.RefID
 	rwdInquiry.Rewards = &rwdResponse
 
 	return rwdInquiry, nil

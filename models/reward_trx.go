@@ -28,6 +28,7 @@ type RewardTrx struct {
 	RejectedDate    *time.Time `json:"rejectedDate,omitempty"`
 	TimeoutDate     *time.Time `json:"timeoutDate,omitempty"`
 	RequestData     string     `json:"requestData,omitempty"`
+	ResponseData    string     `json:"responseData,omitempty"`
 	CreatedAt       *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt       *time.Time `json:"updatedAt,omitempty"`
 }

@@ -29,8 +29,8 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 	now := time.Now()
 	refID := randRefID(20)
 
-	query := `INSERT INTO reward_transactions (status, ref_id, cif, reward_id, used_promo_code, transaction_date, inquired_date, request_data, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`
+	query := `INSERT INTO reward_transactions (status, ref_id, cif, reward_id, used_promo_code, transaction_date, inquired_date, request_data, response_data, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`
 
 	stmt, err := rwdTrxRepo.Conn.Prepare(query)
 
@@ -42,6 +42,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 
 	var lastID int64
 	requestData, err := json.Marshal(payload)
+	responseData, err := json.Marshal(models.RewardsInquiry{RefTrx: refID, Rewards: &resp})
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -66,12 +67,13 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 		TransactionDate: &trxDate,
 		InquiryDate:     &now,
 		RequestData:     string(requestData),
+		ResponseData:    string(responseData),
 		CreatedAt:       &now,
 	}
 
 	err = stmt.QueryRow(
-		&rewardTrx.Status, &rewardTrx.RefID, &rewardTrx.CIF, &rewardTrx.RewardID, &rewardTrx.UsedPromoCode,
-		&rewardTrx.TransactionDate, &rewardTrx.InquiryDate, &rewardTrx.RequestData, &rewardTrx.CreatedAt,
+		&rewardTrx.Status, &rewardTrx.RefID, &rewardTrx.CIF, &rewardTrx.RewardID, &rewardTrx.UsedPromoCode, &rewardTrx.TransactionDate,
+		&rewardTrx.InquiryDate, &rewardTrx.RequestData, &rewardTrx.ResponseData, &rewardTrx.CreatedAt,
 	).Scan(&lastID)
 
 	if err != nil {
@@ -83,10 +85,29 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 	return rewardTrx, nil
 }
 
-func (rwdTrxRepo *psqlRewardTrxRepository) GetByRefID(c echo.Context, refID string) (models.RewardTrx, error) {
-	var rewardTrx models.RewardTrx
+func (rwdTrxRepo *psqlRewardTrxRepository) GetByRefID(c echo.Context, refID string) (models.RewardsInquiry, error) {
+	var rewardInquiry models.RewardsInquiry
+	var rwdInquiry json.RawMessage
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	query := `SELECT response_data from reward_transactions where status = $1 and ref_id = $2`
+	err := rwdTrxRepo.Conn.QueryRow(query, models.RewardTrxInquired, refID).Scan(&rwdInquiry)
 
-	return rewardTrx, nil
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return rewardInquiry, err
+	}
+
+	err = json.Unmarshal([]byte(rwdInquiry), &rewardInquiry)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return rewardInquiry, err
+	}
+
+	return rewardInquiry, nil
 }
 
 func (rwdTrxRepo *psqlRewardTrxRepository) UpdateSuccess(c echo.Context, payload map[string]interface{}) error {

@@ -61,17 +61,17 @@ func (rwdTrx *rewardTrxUseCase) UpdateReject(c echo.Context, payload map[string]
 	return nil
 }
 
-func (rwdTrx *rewardTrxUseCase) GetByRefID(c echo.Context, refID string) (models.RewardTrx, error) {
-	var rewardTrx models.RewardTrx
+func (rwdTrx *rewardTrxUseCase) GetByRefID(c echo.Context, refID string) (models.RewardsInquiry, error) {
+	var rewardTrx models.RewardsInquiry
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
 	rewardTrx, err := rwdTrx.rewardTrxRepo.GetByRefID(c, refID)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrRewardTrxUpdateFailed)
+		requestLogger.Debug(models.ErrRefTrxNotFound)
 
-		return rewardTrx, models.ErrRewardTrxUpdateFailed
+		return rewardTrx, models.ErrRefTrxNotFound
 	}
 
 	return rewardTrx, nil

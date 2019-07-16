@@ -121,9 +121,17 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		return rwdInquiry, models.ErrTrxDateFormat
 	}
 
-	// TODO: validate the inquiry request, if refId exist
+	// validate the inquiry request, if refId exist
 	if plValidator.RefTrx != "" {
+		rwdInquiry, err = rwd.rwdTrxUC.GetByRefID(c, plValidator.RefTrx)
 
+		if err != nil {
+			requestLogger.Debug(models.ErrRefTrxNotFound)
+
+			return rwdInquiry, nil
+		}
+
+		return rwdInquiry, nil
 	}
 
 	// check available campaign

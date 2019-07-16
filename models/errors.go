@@ -197,4 +197,7 @@ var (
 
 	// ErrUpdateMetric to store metric error message
 	ErrUpdateMetric = errors.New("Failed to update metric")
+
+	// ErrRefTrxNotFound to not found ref_trx error message
+	ErrRefTrxNotFound = errors.New("Ref transaction not found")
 )

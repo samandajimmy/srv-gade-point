@@ -224,11 +224,20 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 }
 
 func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayment) error {
-	// TODO: check available reward transaction based in CIF and ref_id
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	// check available reward transaction based in CIF and ref_id
+	err := rwd.rwdTrxRepo.CheckTrx(c, rwdPayment.CIF, rwdPayment.RefTrx)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrRefTrxNotFound)
+
+		return models.ErrRefTrxNotFound
+	}
 
 	if rwdPayment.RefCore == "" {
 		// rejected
-
 		// update voucher code
 		rwd.voucherCodeRepo.UpdateVoucherCodeRejected(c, rwdPayment.RefTrx)
 
@@ -238,7 +247,6 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 		// TODO: update reward quota
 	} else {
 		// succeeded
-
 		// update reward trx
 		rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxSucceeded)
 	}

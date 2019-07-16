@@ -110,6 +110,22 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetByRefID(c echo.Context, refID stri
 	return rewardInquiry, nil
 }
 
+func (rwdTrxRepo *psqlRewardTrxRepository) CheckTrx(c echo.Context, CIF string, refID string) error {
+	var rewardTrxID int64
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	query := `SELECT id from reward_transactions where cif = $1 and ref_id = $2 and status = $3`
+	err := rwdTrxRepo.Conn.QueryRow(query, CIF, refID, models.RewardTrxInquired).Scan(&rewardTrxID)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	return nil
+}
+
 func (rwdTrxRepo *psqlRewardTrxRepository) UpdateRewardTrx(c echo.Context, rwdPayment *models.RewardPayment, status int64) error {
 	var refCore string
 	var succeedDate, rejectedDate *time.Time

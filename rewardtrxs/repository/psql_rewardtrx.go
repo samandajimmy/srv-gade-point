@@ -184,7 +184,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CountByCIF(c echo.Context, quot model
 		endDate = quot.LastCheck.AddDate(0, 0, int(*quot.NumberOfDays-1))
 	}
 
-	query := `select count(ID) from reward_transactions where cif = $1 and transaction_date::date >= $2 and transaction_date::date <= $3 and status != $4`
+	query := `select count(ID) from reward_transactions where cif = $1 and transaction_date::date >= $2 and transaction_date::date <= $3 and status != $4 and reward_id = $5`
 	stmt, err := rwdTrxRepo.Conn.Prepare(query)
 	if err != nil {
 		requestLogger.Debug(err)
@@ -200,7 +200,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CountByCIF(c echo.Context, quot model
 		return 0, err
 	}
 
-	err = stmt.QueryRow(&cif, startDate, endDate, models.RewardTrxRejected).Scan(&counter)
+	err = stmt.QueryRow(&cif, startDate, endDate, models.RewardTrxRejected, rwd.ID).Scan(&counter)
 
 	if err != nil {
 		requestLogger.Debug(err)

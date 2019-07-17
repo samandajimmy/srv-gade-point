@@ -18,13 +18,13 @@ func NewPsqlQuotaRepository(Conn *sql.DB) quotas.Repository {
 	return &psqlQuotaRepository{Conn}
 }
 
-func (quotRepo *psqlQuotaRepository) Create(c echo.Context, quota *models.Quota, rewardID int64) error {
+func (quotRepo *psqlQuotaRepository) Create(c echo.Context, quota *models.Quota, reward *models.Reward) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
 
-	query := `INSERT INTO quotas (number_of_days, amount, is_per_user, reward_id, created_at)
-		VALUES ($1, $2, $3, $4, $5) RETURNING id`
+	query := `INSERT INTO quotas (number_of_days, amount, is_per_user, reward_id, available, last_check, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
 	stmt, err := quotRepo.Conn.Prepare(query)
 
 	if err != nil {
@@ -41,7 +41,7 @@ func (quotRepo *psqlQuotaRepository) Create(c echo.Context, quota *models.Quota,
 		return err
 	}
 
-	err = stmt.QueryRow(quota.NumberOfDays, quota.Amount, quota.IsPerUser, rewardID, &now).Scan(&lastID)
+	err = stmt.QueryRow(quota.NumberOfDays, quota.Amount, quota.IsPerUser, reward.ID, quota.Amount, reward.Campaign.StartDate, &now).Scan(&lastID)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -80,12 +80,12 @@ func (quotRepo *psqlQuotaRepository) DeleteByReward(c echo.Context, rewardID int
 }
 
 func (quotRepo *psqlQuotaRepository) CheckQuota(c echo.Context, rewardID int64) ([]*models.Quota, error) {
+	var result []*models.Quota
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	result := make([]*models.Quota, 0)
 
-	query := `SELECT id, available, is_per_user, amount, number_of_days, reward_id FROM metrics where reward_id = $1`
-	rows, err := quotRepo.Conn.Query(query)
+	query := `SELECT id, available, is_per_user, amount, number_of_days, last_check FROM quotas where reward_id = $1`
+	rows, err := quotRepo.Conn.Query(query, rewardID)
 	defer rows.Close()
 
 	if err != nil {
@@ -95,7 +95,8 @@ func (quotRepo *psqlQuotaRepository) CheckQuota(c echo.Context, rewardID int64) 
 	}
 
 	for rows.Next() {
-		r := new(models.Quota)
+		var r models.Quota
+		var d models.Reward
 
 		err = rows.Scan(
 			&r.ID,
@@ -103,7 +104,7 @@ func (quotRepo *psqlQuotaRepository) CheckQuota(c echo.Context, rewardID int64) 
 			&r.IsPerUser,
 			&r.Amount,
 			&r.NumberOfDays,
-			&r.Reward.ID,
+			&r.LastCheck,
 		)
 
 		if err != nil {
@@ -112,7 +113,10 @@ func (quotRepo *psqlQuotaRepository) CheckQuota(c echo.Context, rewardID int64) 
 			return nil, err
 		}
 
-		result = append(result, r)
+		d.ID = rewardID
+		r.Reward = &d
+
+		result = append(result, &r)
 	}
 
 	return result, err
@@ -121,9 +125,8 @@ func (quotRepo *psqlQuotaRepository) CheckQuota(c echo.Context, rewardID int64) 
 func (quotRepo *psqlQuotaRepository) UpdateAddQuota(c echo.Context, rewardID int64) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	var lastID int64
 
-	query := `UPDATE quotas SET available = available + 1 WHERE reward_id = $1 and is_per_user = 0`
+	query := `UPDATE quotas SET available = available + 1 WHERE reward_id = $1 and is_per_user = $2`
 	stmt, err := quotRepo.Conn.Prepare(query)
 
 	if err != nil {
@@ -132,7 +135,7 @@ func (quotRepo *psqlQuotaRepository) UpdateAddQuota(c echo.Context, rewardID int
 		return err
 	}
 
-	err = stmt.QueryRow(&rewardID).Scan(&lastID)
+	_, err = stmt.Query(&rewardID, models.IsPerUserFalse)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -143,12 +146,11 @@ func (quotRepo *psqlQuotaRepository) UpdateAddQuota(c echo.Context, rewardID int
 	return nil
 }
 
-func (quotRepo *psqlQuotaRepository) UpdateMinQuota(c echo.Context, rewardID int64) error {
+func (quotRepo *psqlQuotaRepository) UpdateReduceQuota(c echo.Context, rewardID int64) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	var lastID int64
 
-	query := `UPDATE quotas SET available = available - 1 WHERE reward_id = $1 and is_per_user = 0`
+	query := `UPDATE quotas SET available = available - 1 WHERE reward_id = $1 and is_per_user = $2`
 	stmt, err := quotRepo.Conn.Prepare(query)
 
 	if err != nil {
@@ -157,7 +159,7 @@ func (quotRepo *psqlQuotaRepository) UpdateMinQuota(c echo.Context, rewardID int
 		return err
 	}
 
-	err = stmt.QueryRow(&rewardID).Scan(&lastID)
+	_, err = stmt.Query(&rewardID, models.IsPerUserFalse)
 
 	if err != nil {
 		requestLogger.Debug(err)

@@ -46,10 +46,11 @@ func NewRewardUseCase(
 	}
 }
 
-func (rwd *rewardUseCase) CreateReward(c echo.Context, reward *models.Reward, campaignID int64) error {
+func (rwd *rewardUseCase) CreateReward(c echo.Context, reward *models.Reward, campaign *models.Campaign) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	err := rwd.rewardRepo.CreateReward(c, reward, campaignID)
+	reward.Campaign = campaign
+	err := rwd.rewardRepo.CreateReward(c, reward, campaign.ID)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrRewardFailed)
@@ -59,7 +60,7 @@ func (rwd *rewardUseCase) CreateReward(c echo.Context, reward *models.Reward, ca
 
 	// create array quotas
 	for _, quota := range *reward.Quotas {
-		err = rwd.quotaUC.Create(c, &quota, reward.ID)
+		err = rwd.quotaUC.Create(c, &quota, reward)
 
 		if err != nil {
 			break
@@ -155,13 +156,12 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		var rwdResp models.RewardResponse
 		rewardLogger := logger.GetRequestLogger(c, reward.Validators)
 
-		// TODO: validate reward quota
-		available, err := rwd.quotaUC.CheckQuota(c, reward.ID, plValidator.CIF)
+		// validate reward quota
+		available, err := rwd.quotaUC.CheckQuota(c, reward, plValidator.CIF)
 
 		if err != nil {
-			requestLogger.Debug(models.ErrCheckQuotaFailed)
 
-			return rwdInquiry, models.ErrCheckQuotaFailed
+			return rwdInquiry, nil
 		}
 
 		if available == false {
@@ -231,7 +231,8 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	rwdInquiry.RefTrx = rewardTrx.RefID
 	rwdInquiry.Rewards = &rwdResponse
 
-	// TODO: update reward quota
+	// update reward quota
+	rwd.quotaUC.UpdateReduceQuota(c, rewards[0].ID)
 
 	return rwdInquiry, nil
 }
@@ -241,7 +242,7 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 	requestLogger := logger.GetRequestLogger(c, nil)
 
 	// check available reward transaction based in CIF and ref_id
-	err := rwd.rwdTrxRepo.CheckTrx(c, rwdPayment.CIF, rwdPayment.RefTrx)
+	rewardtrx, err := rwd.rwdTrxRepo.CheckTrx(c, rwdPayment.CIF, rwdPayment.RefTrx)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrRefTrxNotFound)
@@ -257,11 +258,15 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 		// update reward trx
 		rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxRejected)
 
-		// TODO: update reward quota
+		// update add reward quota
+		rwd.quotaUC.UpdateAddQuota(c, *rewardtrx.RewardID)
+
+		// update reward quota
 	} else {
 		// succeeded
 		// update reward trx
 		rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxSucceeded)
+
 	}
 
 	return nil
@@ -273,6 +278,7 @@ func (rwd *rewardUseCase) putRewards(c echo.Context, campaigns []*models.Campaig
 	for _, campaign := range campaigns {
 		for _, reward := range *campaign.Rewards {
 			rwd.rewardRepo.GetRewardTags(c, &reward)
+			reward.Campaign = campaign
 			rewards = append(rewards, reward)
 		}
 	}

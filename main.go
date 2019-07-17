@@ -31,6 +31,7 @@ import (
 	_rewardRepository "gade/srv-gade-point/rewards/repository"
 	_rewardUseCase "gade/srv-gade-point/rewards/usecase"
 	_rewardTrxRepository "gade/srv-gade-point/rewardtrxs/repository"
+	_rewardTrxUC "gade/srv-gade-point/rewardtrxs/usecase"
 	_metricService "gade/srv-gade-point/services"
 	_tagRepository "gade/srv-gade-point/tags/repository"
 	_tagUseCase "gade/srv-gade-point/tags/usecase"
@@ -123,6 +124,7 @@ func main() {
 
 	// REWARDTRX
 	rewardTrxRepository := _rewardTrxRepository.NewPsqlRewardTrxRepository(dbConn)
+	rewardTrxUseCase := _rewardTrxUC.NewRewardtrxUseCase(rewardTrxRepository)
 
 	// QUOTA
 	quotaRepository := _quotaRepository.NewPsqlQuotaRepository(dbConn)

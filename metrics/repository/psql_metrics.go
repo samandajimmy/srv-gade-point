@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"gade/srv-gade-point/metrics"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type psqlMetricRepository struct {
@@ -22,12 +24,16 @@ func (m *psqlMetricRepository) FindMetric(job string) (string, error) {
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
+		logrus.Debug(err)
+
 		return "", err
 	}
 
 	err = stmt.QueryRow(&job).Scan(&lastID)
 
 	if err != nil {
+		logrus.Debug(err)
+
 		return "", err
 	}
 
@@ -44,12 +50,16 @@ func (m *psqlMetricRepository) CreateMetric(job string) error {
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
+		logrus.Debug(err)
+
 		return err
 	}
 
 	err = stmt.QueryRow(&job, &counter, &status, &now).Scan(&lastID)
 
 	if err != nil {
+		logrus.Debug(err)
+
 		return err
 	}
 
@@ -58,17 +68,22 @@ func (m *psqlMetricRepository) CreateMetric(job string) error {
 
 func (m *psqlMetricRepository) UpdateMetric(job string) error {
 	var lastID int64
+	now := time.Now()
 
-	query := `UPDATE metrics SET counter = counter + 1 WHERE job = $1 RETURNING id`
+	query := `UPDATE metrics SET counter = counter + 1, modification_time = $1 WHERE job = $2 RETURNING id`
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
+		logrus.Debug(err)
+
 		return err
 	}
 
-	err = stmt.QueryRow(&job).Scan(&lastID)
+	err = stmt.QueryRow(&now, &job).Scan(&lastID)
 
 	if err != nil {
+		logrus.Debug(err)
+
 		return err
 	}
 

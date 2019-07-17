@@ -8,7 +8,7 @@ import (
 
 // UseCase represent the rewards usecases
 type UseCase interface {
-	CreateReward(echo.Context, *models.Reward, int64) error
+	CreateReward(echo.Context, *models.Reward, *models.Campaign) error
 	DeleteByCampaign(echo.Context, int64) error
 	Inquiry(echo.Context, *models.PayloadValidator) (models.RewardsInquiry, error)
 	Payment(echo.Context, *models.RewardPayment) error

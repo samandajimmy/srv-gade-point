@@ -8,6 +8,6 @@ type Metrics struct {
 	Job              string     `json:"job,omitempty"`
 	Counter          *int64     `json:"counter,omitempty"`
 	Status           string     `json:"status,omitempty"`
-	CreationTime     *time.Time `json:"created_at,omitempty"`
-	ModificationTime *time.Time `json:"updated_at,omitempty"`
+	CreationTime     *time.Time `json:"creation_time,omitempty"`
+	ModificationTime *time.Time `json:"modification_time,omitempty"`
 }

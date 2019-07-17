@@ -49,10 +49,10 @@ func (rwdTrx *rewardTrxUseCase) GetByRefID(c echo.Context, refID string) (models
 	return rewardTrx, nil
 }
 
-func (rwdTrx *rewardTrxUseCase) CountByCIF(c echo.Context, quot models.Quota, cif string) (int64, error) {
+func (rwdTrx *rewardTrxUseCase) CountByCIF(c echo.Context, quot models.Quota, reward models.Reward, cif string) (int64, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	count, err := rwdTrx.rewardTrxRepo.CountByCIF(c, quot, cif)
+	count, err := rwdTrx.rewardTrxRepo.CountByCIF(c, quot, reward, cif)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrCheckQuotaFailed)

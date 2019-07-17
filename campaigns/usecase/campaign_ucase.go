@@ -38,7 +38,7 @@ func (cmpgn *campaignUseCase) CreateCampaign(c echo.Context, campaign *models.Ca
 
 	// create array rewards
 	for _, reward := range *campaign.Rewards {
-		err = cmpgn.rewardUC.CreateReward(c, &reward, campaign.ID)
+		err = cmpgn.rewardUC.CreateReward(c, &reward, campaign)
 
 		if err != nil {
 			break

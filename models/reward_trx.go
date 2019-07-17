@@ -23,8 +23,8 @@ type RewardTrx struct {
 	CIF             string     `json:"cif,omitempty"`
 	UsedPromoCode   string     `json:"usedPromoCode,omitempty"`
 	TransactionDate *time.Time `json:"transactionDate,omitempty"`
-	InquiryDate     *time.Time `json:"inquiryDate,omitempty"`
-	SuccessedDate   *time.Time `json:"successedDate,omitempty"`
+	InquiredDate    *time.Time `json:"inquiredDate,omitempty"`
+	SucceededDate   *time.Time `json:"succeededDate,omitempty"`
 	RejectedDate    *time.Time `json:"rejectedDate,omitempty"`
 	TimeoutDate     *time.Time `json:"timeoutDate,omitempty"`
 	RequestData     string     `json:"requestData,omitempty"`

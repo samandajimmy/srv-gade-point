@@ -7,11 +7,18 @@ import (
 var (
 	// IsPerUserFalse to store is per user false
 	IsPerUserFalse int64
+
 	// IsPerUserTrue to store is per user true
 	IsPerUserTrue int64 = 1
 
-	//IsLimitAmount to store limit amount
+	// IsLimitAmount to store limit amount
 	IsLimitAmount int64
+
+	// CampaignPeriod means during the period
+	CampaignPeriod int64
+
+	// QuotaUnlimited means unlimited quota
+	QuotaUnlimited int64
 )
 
 // Quota is represent a quota model

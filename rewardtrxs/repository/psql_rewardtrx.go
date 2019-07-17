@@ -65,7 +65,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 		CIF:             payload.CIF,
 		UsedPromoCode:   payload.PromoCode,
 		TransactionDate: &trxDate,
-		InquiryDate:     &now,
+		InquiredDate:    &now,
 		RequestData:     string(requestData),
 		ResponseData:    string(responseData),
 		CreatedAt:       &now,
@@ -73,7 +73,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 
 	err = stmt.QueryRow(
 		&rewardTrx.Status, &rewardTrx.RefID, &rewardTrx.CIF, &rewardTrx.RewardID, &rewardTrx.UsedPromoCode, &rewardTrx.TransactionDate,
-		&rewardTrx.InquiryDate, &rewardTrx.RequestData, &rewardTrx.ResponseData, &rewardTrx.CreatedAt,
+		&rewardTrx.InquiredDate, &rewardTrx.RequestData, &rewardTrx.ResponseData, &rewardTrx.CreatedAt,
 	).Scan(&lastID)
 
 	if err != nil {
@@ -110,20 +110,29 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetByRefID(c echo.Context, refID stri
 	return rewardInquiry, nil
 }
 
-func (rwdTrxRepo *psqlRewardTrxRepository) CheckTrx(c echo.Context, CIF string, refID string) error {
-	var rewardTrxID int64
+func (rwdTrxRepo *psqlRewardTrxRepository) CheckTrx(c echo.Context, CIF string, refID string) (*models.RewardTrx, error) {
+	var result models.RewardTrx
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	query := `SELECT id from reward_transactions where cif = $1 and ref_id = $2 and status = $3`
-	err := rwdTrxRepo.Conn.QueryRow(query, CIF, refID, models.RewardTrxInquired).Scan(&rewardTrxID)
+	query := `SELECT id, status, coalesce(ref_core, ''), ref_id, reward_id, cif, inquired_date, transaction_date from reward_transactions where cif = $1 and ref_id = $2 and status = $3`
+	err := rwdTrxRepo.Conn.QueryRow(query, CIF, refID, models.RewardTrxInquired).Scan(
+		&result.ID,
+		&result.Status,
+		&result.RefCore,
+		&result.RefID,
+		&result.RewardID,
+		&result.CIF,
+		&result.InquiredDate,
+		&result.TransactionDate,
+	)
 
 	if err != nil {
 		requestLogger.Debug(err)
 
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &result, nil
 }
 
 func (rwdTrxRepo *psqlRewardTrxRepository) UpdateRewardTrx(c echo.Context, rwdPayment *models.RewardPayment, status int64) error {
@@ -162,11 +171,20 @@ func (rwdTrxRepo *psqlRewardTrxRepository) UpdateRewardTrx(c echo.Context, rwdPa
 	return nil
 }
 
-func (rwdTrxRepo *psqlRewardTrxRepository) CountByCIF(c echo.Context, quot models.Quota, cif string) (int64, error) {
+func (rwdTrxRepo *psqlRewardTrxRepository) CountByCIF(c echo.Context, quot models.Quota, rwd models.Reward, cif string) (int64, error) {
+	var startDate, endDate time.Time
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
-	query := `select count(ID) from reward_transactions where cif = $1 and transaction_date::date >= $2 and transaction_date::date <= $3`
+	if quot.NumberOfDays != nil && *quot.NumberOfDays == models.CampaignPeriod {
+		startDate, _ = time.Parse(time.RFC3339, rwd.Campaign.StartDate)
+		endDate, _ = time.Parse(time.RFC3339, rwd.Campaign.EndDate)
+	} else {
+		startDate = *quot.LastCheck
+		endDate = quot.LastCheck.AddDate(0, 0, int(*quot.NumberOfDays-1))
+	}
+
+	query := `select count(ID) from reward_transactions where cif = $1 and transaction_date::date >= $2 and transaction_date::date <= $3 and status != $4`
 	stmt, err := rwdTrxRepo.Conn.Prepare(query)
 	if err != nil {
 		requestLogger.Debug(err)
@@ -182,7 +200,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CountByCIF(c echo.Context, quot model
 		return 0, err
 	}
 
-	err = stmt.QueryRow(&cif).Scan(&counter)
+	err = stmt.QueryRow(&cif, startDate, endDate, models.RewardTrxRejected).Scan(&counter)
 
 	if err != nil {
 		requestLogger.Debug(err)

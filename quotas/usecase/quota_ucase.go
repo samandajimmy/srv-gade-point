@@ -24,10 +24,10 @@ func NewQuotaUseCase(
 	}
 }
 
-func (quot *quotaUseCase) Create(c echo.Context, quota *models.Quota, rewardID int64) error {
+func (quot *quotaUseCase) Create(c echo.Context, quota *models.Quota, reward *models.Reward) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	err := quot.quotaRepo.Create(c, quota, rewardID)
+	err := quot.quotaRepo.Create(c, quota, reward)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrQuotaFailed)
@@ -52,11 +52,10 @@ func (quot *quotaUseCase) DeleteByReward(c echo.Context, rewardID int64) error {
 	return nil
 }
 
-func (quot *quotaUseCase) CheckQuota(c echo.Context, rewardID int64, cif string) (bool, error) {
+func (quot *quotaUseCase) CheckQuota(c echo.Context, reward models.Reward, cif string) (bool, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-
-	quotas, err := quot.quotaRepo.CheckQuota(c, rewardID)
+	quotas, err := quot.quotaRepo.CheckQuota(c, reward.ID)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrCheckQuotaFailed)
@@ -67,17 +66,13 @@ func (quot *quotaUseCase) CheckQuota(c echo.Context, rewardID int64, cif string)
 	// validate all quota
 	for _, quota := range quotas {
 
-		// check quota stock
-		if *quota.Available <= models.IsLimitAmount {
-			requestLogger.Debug(models.ErrQuotaNotAvailable)
-
-			return false, models.ErrQuotaNotAvailable
+		// check quota allocation
+		if *quota.IsPerUser == models.IsPerUserFalse && *quota.Amount == models.QuotaUnlimited {
+			return true, nil
 		}
 
-		// check quota allocation
 		if *quota.IsPerUser == models.IsPerUserTrue {
-
-			count, err := quot.rwdTrxUC.CountByCIF(c, *quota, cif)
+			count, err := quot.rwdTrxUC.CountByCIF(c, *quota, reward, cif)
 
 			if err != nil {
 				requestLogger.Debug(models.ErrCheckQuotaFailed)
@@ -85,14 +80,48 @@ func (quot *quotaUseCase) CheckQuota(c echo.Context, rewardID int64, cif string)
 				return false, models.ErrCheckQuotaFailed
 			}
 
-			if count < *quota.Available {
+			if count >= *quota.Available {
 				requestLogger.Debug(models.ErrQuotaNotAvailable)
 
 				return false, models.ErrQuotaNotAvailable
 			}
 		}
 
+		// check quota stock
+		if quota.Available != nil && *quota.Available <= models.IsLimitAmount {
+			requestLogger.Debug(models.ErrQuotaNotAvailable)
+
+			return false, models.ErrQuotaNotAvailable
+		}
 	}
 
 	return true, nil
+}
+
+func (quot *quotaUseCase) UpdateAddQuota(c echo.Context, rewardID int64) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	err := quot.quotaRepo.UpdateAddQuota(c, rewardID)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrAddQuotaFailed)
+
+		return models.ErrAddQuotaFailed
+	}
+
+	return nil
+}
+
+func (quot *quotaUseCase) UpdateReduceQuota(c echo.Context, rewardID int64) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	err := quot.quotaRepo.UpdateReduceQuota(c, rewardID)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrReduceQuotaFailed)
+
+		return models.ErrReduceQuotaFailed
+	}
+
+	return nil
 }

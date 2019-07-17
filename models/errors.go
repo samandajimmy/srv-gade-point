@@ -186,6 +186,12 @@ var (
 	// ErrDelQuotaFailed to store delete quota error message
 	ErrDelQuotaFailed = errors.New("Something went wrong when deleting a quota")
 
+	// ErrAddQuotaFailed to store add quota error message
+	ErrAddQuotaFailed = errors.New("Something went wrong when add a quota")
+
+	// ErrReduceQuotaFailed to store minus quota error message
+	ErrReduceQuotaFailed = errors.New("Something went wrong when reduce a quota")
+
 	// ErrCreateQuotasFailed to store create quotas failed message
 	ErrCreateQuotasFailed = errors.New("Something went wrong when trying to create quotas")
 

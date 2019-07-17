@@ -22,6 +22,7 @@ func (quotRepo *psqlQuotaRepository) Create(c echo.Context, quota *models.Quota,
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
+
 	query := `INSERT INTO quotas (number_of_days, amount, is_per_user, reward_id, created_at)
 		VALUES ($1, $2, $3, $4, $5) RETURNING id`
 	stmt, err := quotRepo.Conn.Prepare(query)
@@ -78,27 +79,91 @@ func (quotRepo *psqlQuotaRepository) DeleteByReward(c echo.Context, rewardID int
 	return nil
 }
 
-func (quotRepo *psqlQuotaRepository) CheckQuota(c echo.Context, rewardID int64) (int64, error) {
+func (quotRepo *psqlQuotaRepository) CheckQuota(c echo.Context, rewardID int64) ([]*models.Quota, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	var available int64
+	result := make([]*models.Quota, 0)
 
-	query := `SELECT available FROM metrics where job = $1`
+	query := `SELECT id, available, is_per_user, amount, number_of_days, reward_id FROM metrics where reward_id = $1`
+	rows, err := quotRepo.Conn.Query(query)
+	defer rows.Close()
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	for rows.Next() {
+		r := new(models.Quota)
+
+		err = rows.Scan(
+			&r.ID,
+			&r.Available,
+			&r.IsPerUser,
+			&r.Amount,
+			&r.NumberOfDays,
+			&r.Reward.ID,
+		)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		result = append(result, r)
+	}
+
+	return result, err
+}
+
+func (quotRepo *psqlQuotaRepository) UpdateAddQuota(c echo.Context, rewardID int64) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	var lastID int64
+
+	query := `UPDATE quotas SET available = available + 1 WHERE reward_id = $1 and is_per_user = 0`
 	stmt, err := quotRepo.Conn.Prepare(query)
 
 	if err != nil {
 		requestLogger.Debug(err)
 
-		return 0, err
+		return err
 	}
 
-	err = stmt.QueryRow(&rewardID).Scan(&available)
+	err = stmt.QueryRow(&rewardID).Scan(&lastID)
 
 	if err != nil {
 		requestLogger.Debug(err)
 
-		return 0, err
+		return err
 	}
 
-	return available, nil
+	return nil
+}
+
+func (quotRepo *psqlQuotaRepository) UpdateMinQuota(c echo.Context, rewardID int64) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	var lastID int64
+
+	query := `UPDATE quotas SET available = available - 1 WHERE reward_id = $1 and is_per_user = 0`
+	stmt, err := quotRepo.Conn.Prepare(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	err = stmt.QueryRow(&rewardID).Scan(&lastID)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	return nil
 }

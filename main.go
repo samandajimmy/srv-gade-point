@@ -117,10 +117,6 @@ func main() {
 	tagRepository := _tagRepository.NewPsqlTagRepository(dbConn)
 	tagUseCase := _tagUseCase.NewTagUseCase(tagRepository)
 
-	// QUOTA
-	quotaRepository := _quotaRepository.NewPsqlQuotaRepository(dbConn)
-	quotaUseCase := _quotaUseCase.NewQuotaUseCase(quotaRepository)
-
 	// POINTHISTORY
 	pHistoryRepository := _pHistoryRepository.NewPsqlPointHistoryRepository(dbConn)
 	pHistoryUseCase := _pHistoryUseCase.NewPointHistoryUseCase(pHistoryRepository)
@@ -129,6 +125,10 @@ func main() {
 	// REWARDTRX
 	rewardTrxRepository := _rewardTrxRepository.NewPsqlRewardTrxRepository(dbConn)
 	rewardTrxUseCase := _rewardTrxUseCase.NewRewardtrxUseCase(rewardTrxRepository)
+
+	// QUOTA
+	quotaRepository := _quotaRepository.NewPsqlQuotaRepository(dbConn)
+	quotaUseCase := _quotaUseCase.NewQuotaUseCase(quotaRepository, rewardTrxUseCase)
 
 	// VOUCHER
 	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn)

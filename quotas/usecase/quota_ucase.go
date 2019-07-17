@@ -3,18 +3,24 @@ package usecase
 import (
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/quotas"
+	"gade/srv-gade-point/rewardtrxs"
 
 	"github.com/labstack/echo"
 )
 
 type quotaUseCase struct {
 	quotaRepo quotas.Repository
+	rwdTrxUC  rewardtrxs.UseCase
 }
 
 // NewQuotaUseCase will create new an quotaUseCase object representation of quotas.UseCase interface
-func NewQuotaUseCase(quotRepo quotas.Repository) quotas.UseCase {
+func NewQuotaUseCase(
+	quotRepo quotas.Repository,
+	rwdTrxUC rewardtrxs.UseCase,
+) quotas.UseCase {
 	return &quotaUseCase{
 		quotaRepo: quotRepo,
+		rwdTrxUC:  rwdTrxUC,
 	}
 }
 
@@ -46,21 +52,47 @@ func (quot *quotaUseCase) DeleteByReward(c echo.Context, rewardID int64) error {
 	return nil
 }
 
-func (quot *quotaUseCase) CheckQuota(c echo.Context, rewardID int64) (bool, error) {
+func (quot *quotaUseCase) CheckQuota(c echo.Context, rewardID int64, cif string) (bool, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	available, err := quot.quotaRepo.CheckQuota(c, rewardID)
+
+	quotas, err := quot.quotaRepo.CheckQuota(c, rewardID)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrDelQuotaFailed)
+		requestLogger.Debug(models.ErrCheckQuotaFailed)
 
-		return false, models.ErrDelQuotaFailed
+		return false, models.ErrCheckQuotaFailed
 	}
 
-	valid := true
-	if available <= 0 {
-		valid = false
+	// validate all quota
+	for _, quota := range quotas {
+
+		// check quota stock
+		if *quota.Available <= models.IsLimitAmount {
+			requestLogger.Debug(models.ErrQuotaNotAvailable)
+
+			return false, models.ErrQuotaNotAvailable
+		}
+
+		// check quota allocation
+		if *quota.IsPerUser == models.IsPerUserTrue {
+
+			count, err := quot.rwdTrxUC.CountByCIF(c, *quota, cif)
+
+			if err != nil {
+				requestLogger.Debug(models.ErrCheckQuotaFailed)
+
+				return false, models.ErrCheckQuotaFailed
+			}
+
+			if count < *quota.Available {
+				requestLogger.Debug(models.ErrQuotaNotAvailable)
+
+				return false, models.ErrQuotaNotAvailable
+			}
+		}
+
 	}
 
-	return valid, nil
+	return true, nil
 }

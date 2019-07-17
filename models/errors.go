@@ -165,6 +165,12 @@ var (
 	// ErrQuotaFailed to store create quota failed error message
 	ErrQuotaFailed = errors.New("Failed to create a quota")
 
+	// ErrCheckQuotaFailed to check quota failed error message
+	ErrCheckQuotaFailed = errors.New("Failed to check quota")
+
+	// ErrQuotaNotAvailable to info quota is not available message
+	ErrQuotaNotAvailable = errors.New("Sorry quota is not available")
+
 	// ErrCreateRewardsFailed to store create rewards failed message
 	ErrCreateRewardsFailed = errors.New("Something went wrong when trying to create rewards")
 

@@ -76,3 +76,17 @@ func (rwdTrx *rewardTrxUseCase) GetByRefID(c echo.Context, refID string) (models
 
 	return rewardTrx, nil
 }
+
+func (rwdTrx *rewardTrxUseCase) CountByCIF(c echo.Context, quot models.Quota, cif string) (int64, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	count, err := rwdTrx.rewardTrxRepo.CountByCIF(c, quot, cif)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrCheckQuotaFailed)
+
+		return 0, models.ErrCheckQuotaFailed
+	}
+
+	return count, nil
+}

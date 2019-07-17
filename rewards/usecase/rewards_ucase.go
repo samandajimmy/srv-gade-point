@@ -151,6 +151,19 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		rewardLogger := logger.GetRequestLogger(c, reward.Validators)
 
 		// TODO: validate reward quota
+		available, err := rwd.quotaUC.CheckQuota(c, reward.ID, plValidator.CIF)
+
+		if err != nil {
+			requestLogger.Debug(models.ErrCheckQuotaFailed)
+
+			return rwdInquiry, models.ErrCheckQuotaFailed
+		}
+
+		if available == false {
+			requestLogger.Debug(models.ErrQuotaNotAvailable)
+
+			return rwdInquiry, models.ErrQuotaNotAvailable
+		}
 
 		// validate promo code
 		if err = rwd.validatePromoCode(*reward.Tags, reward.PromoCode, plValidator.PromoCode); err != nil {

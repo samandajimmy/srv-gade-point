@@ -12,4 +12,5 @@ type UseCase interface {
 	UpdateSuccess(echo.Context, map[string]interface{}) error
 	UpdateReject(echo.Context, map[string]interface{}) error
 	GetByRefID(echo.Context, string) (models.RewardsInquiry, error)
+	CountByCIF(echo.Context, models.Quota, string) (int64, error)
 }

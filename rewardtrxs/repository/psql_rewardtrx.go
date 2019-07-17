@@ -181,6 +181,37 @@ func (rwdTrxRepo *psqlRewardTrxRepository) UpdateReject(c echo.Context, payload 
 	return nil
 }
 
+func (rwdTrxRepo *psqlRewardTrxRepository) CountByCIF(c echo.Context, quot models.Quota, cif string) (int64, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	query := `select count(ID) from reward_transactions where cif = $1 and transaction_date::date >= $2 and transaction_date::date <= $3`
+	stmt, err := rwdTrxRepo.Conn.Prepare(query)
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return 0, err
+	}
+
+	var counter int64
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return 0, err
+	}
+
+	err = stmt.QueryRow(&cif).Scan(&counter)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return 0, err
+	}
+
+	return counter, nil
+}
+
 func randRefID(n int) string {
 	rand.Seed(time.Now().UnixNano())
 

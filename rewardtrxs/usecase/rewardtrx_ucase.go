@@ -33,34 +33,6 @@ func (rwdTrx *rewardTrxUseCase) Create(c echo.Context, payload models.PayloadVal
 	return rewardTrx, nil
 }
 
-func (rwdTrx *rewardTrxUseCase) UpdateSuccess(c echo.Context, payload map[string]interface{}) error {
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-	err := rwdTrx.rewardTrxRepo.UpdateSuccess(c, payload)
-
-	if err != nil {
-		requestLogger.Debug(models.ErrRewardTrxUpdateFailed)
-
-		return models.ErrRewardTrxUpdateFailed
-	}
-
-	return nil
-}
-
-func (rwdTrx *rewardTrxUseCase) UpdateReject(c echo.Context, payload map[string]interface{}) error {
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-	err := rwdTrx.rewardTrxRepo.UpdateReject(c, payload)
-
-	if err != nil {
-		requestLogger.Debug(models.ErrRewardTrxUpdateFailed)
-
-		return models.ErrRewardTrxUpdateFailed
-	}
-
-	return nil
-}
-
 func (rwdTrx *rewardTrxUseCase) GetByRefID(c echo.Context, refID string) (models.RewardsInquiry, error) {
 	var rewardTrx models.RewardsInquiry
 	logger := models.RequestLogger{}

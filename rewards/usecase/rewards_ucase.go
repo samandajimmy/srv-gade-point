@@ -7,6 +7,7 @@ import (
 	"gade/srv-gade-point/rewards"
 	"gade/srv-gade-point/rewardtrxs"
 	"gade/srv-gade-point/tags"
+	"gade/srv-gade-point/vouchercodes"
 	"gade/srv-gade-point/vouchers"
 	"strconv"
 	"time"
@@ -15,12 +16,13 @@ import (
 )
 
 type rewardUseCase struct {
-	rewardRepo   rewards.Repository
-	campaignRepo campaigns.Repository
-	tagUC        tags.UseCase
-	quotaUC      quotas.UseCase
-	voucherUC    vouchers.UseCase
-	rwdTrxUC     rewardtrxs.UseCase
+	rewardRepo      rewards.Repository
+	campaignRepo    campaigns.Repository
+	tagUC           tags.UseCase
+	quotaUC         quotas.UseCase
+	voucherUC       vouchers.UseCase
+	voucherCodeRepo vouchercodes.Repository
+	rwdTrxRepo      rewardtrxs.Repository
 }
 
 // NewRewardUseCase will create new an rewardUseCase object representation of rewards.UseCase interface
@@ -30,15 +32,17 @@ func NewRewardUseCase(
 	tagUC tags.UseCase,
 	quotaUC quotas.UseCase,
 	voucherUC vouchers.UseCase,
-	rwdTrxUC rewardtrxs.UseCase,
+	voucherCodeRepo vouchercodes.Repository,
+	rwdTrxRepo rewardtrxs.Repository,
 ) rewards.UseCase {
 	return &rewardUseCase{
-		rewardRepo:   rwdRepo,
-		campaignRepo: campaignRepo,
-		tagUC:        tagUC,
-		quotaUC:      quotaUC,
-		voucherUC:    voucherUC,
-		rwdTrxUC:     rwdTrxUC,
+		rewardRepo:      rwdRepo,
+		campaignRepo:    campaignRepo,
+		tagUC:           tagUC,
+		quotaUC:         quotaUC,
+		voucherUC:       voucherUC,
+		voucherCodeRepo: voucherCodeRepo,
+		rwdTrxRepo:      rwdTrxRepo,
 	}
 }
 
@@ -111,6 +115,7 @@ func (rwd *rewardUseCase) DeleteByCampaign(c echo.Context, campaignID int64) err
 func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadValidator) (models.RewardsInquiry, error) {
 	var rwdInquiry models.RewardsInquiry
 	var rwdResponse []models.RewardResponse
+	var voucherCode *models.VoucherCode
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	trxDate, err := time.Parse(time.RFC3339, plValidator.TransactionDate)
@@ -123,7 +128,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 	// validate the inquiry request, if refId exist
 	if plValidator.RefTrx != "" {
-		rwdInquiry, err = rwd.rwdTrxUC.GetByRefID(c, plValidator.RefTrx)
+		rwdInquiry, err = rwd.rwdTrxRepo.GetByRefID(c, plValidator.RefTrx)
 
 		if err != nil {
 			requestLogger.Debug(models.ErrRefTrxNotFound)
@@ -191,7 +196,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 				VoucherID: strconv.FormatInt(rwdVoucher, 10),
 			}
 
-			voucherCode, err := rwd.voucherUC.VoucherGive(c, plVoucherBuy)
+			voucherCode, err = rwd.voucherUC.VoucherGive(c, plVoucherBuy)
 
 			if err != nil {
 				return rwdInquiry, nil
@@ -213,17 +218,53 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	}
 
 	// insert data to reward history
-	rewardTrx, err := rwd.rwdTrxUC.Create(c, *plValidator, rewards[0].ID, rwdResponse)
+	rewardTrx, err := rwd.rwdTrxRepo.Create(c, *plValidator, rewards[0].ID, rwdResponse)
 
 	if err != nil {
 		return rwdInquiry, nil
 	}
 
+	// update voucher code ref_id
+	rwd.voucherCodeRepo.UpdateVoucherCodeRefID(c, voucherCode, rewardTrx.RefID)
+
 	// generate an unique ref ID
 	rwdInquiry.RefTrx = rewardTrx.RefID
 	rwdInquiry.Rewards = &rwdResponse
 
+	// TODO: update reward quota
+
 	return rwdInquiry, nil
+}
+
+func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayment) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	// check available reward transaction based in CIF and ref_id
+	err := rwd.rwdTrxRepo.CheckTrx(c, rwdPayment.CIF, rwdPayment.RefTrx)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrRefTrxNotFound)
+
+		return models.ErrRefTrxNotFound
+	}
+
+	if rwdPayment.RefCore == "" {
+		// rejected
+		// update voucher code
+		rwd.voucherCodeRepo.UpdateVoucherCodeRejected(c, rwdPayment.RefTrx)
+
+		// update reward trx
+		rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxRejected)
+
+		// TODO: update reward quota
+	} else {
+		// succeeded
+		// update reward trx
+		rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxSucceeded)
+	}
+
+	return nil
 }
 
 func (rwd *rewardUseCase) putRewards(c echo.Context, campaigns []*models.Campaign) []models.Reward {

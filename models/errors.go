@@ -205,5 +205,5 @@ var (
 	ErrUpdateMetric = errors.New("Failed to update metric")
 
 	// ErrRefTrxNotFound to not found ref_trx error message
-	ErrRefTrxNotFound = errors.New("Ref transaction not found")
+	ErrRefTrxNotFound = errors.New("Reference ID transaction not found")
 )

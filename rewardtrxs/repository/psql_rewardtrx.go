@@ -110,32 +110,12 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetByRefID(c echo.Context, refID stri
 	return rewardInquiry, nil
 }
 
-func (rwdTrxRepo *psqlRewardTrxRepository) UpdateSuccess(c echo.Context, payload map[string]interface{}) error {
+func (rwdTrxRepo *psqlRewardTrxRepository) CheckTrx(c echo.Context, CIF string, refID string) error {
+	var rewardTrxID int64
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	now := time.Now()
-	status := int8(1)
-	refCore := payload["refCore"].(string)
-	cif := payload["cif"].(string)
-	refID := payload["refTrx"].(string)
-	query := `UPDATE reward_transactions SET status = $1, ref_core = $2, successed_date = $3, updated_date = $4 WHERE cif = $5 and ref_id = $6`
-	stmt, err := rwdTrxRepo.Conn.Prepare(query)
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return err
-	}
-
-	var lastID int64
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return err
-	}
-
-	err = stmt.QueryRow(&status, &refCore, &now, &now, &cif, &refID).Scan(&lastID)
+	query := `SELECT id from reward_transactions where cif = $1 and ref_id = $2 and status = $3`
+	err := rwdTrxRepo.Conn.QueryRow(query, CIF, refID, models.RewardTrxInquired).Scan(&rewardTrxID)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -146,14 +126,23 @@ func (rwdTrxRepo *psqlRewardTrxRepository) UpdateSuccess(c echo.Context, payload
 	return nil
 }
 
-func (rwdTrxRepo *psqlRewardTrxRepository) UpdateReject(c echo.Context, payload map[string]interface{}) error {
+func (rwdTrxRepo *psqlRewardTrxRepository) UpdateRewardTrx(c echo.Context, rwdPayment *models.RewardPayment, status int64) error {
+	var refCore string
+	var succeedDate, rejectedDate *time.Time
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
-	status := int8(2)
-	cif := payload["cif"].(string)
-	refID := payload["refTrx"].(string)
-	query := `UPDATE reward_transactions SET status = $1, rejected_date = $2, updated_date = $3 WHERE cif = $4 and ref_id = $5`
+
+	if status == models.RewardTrxSucceeded {
+		refCore = rwdPayment.RefCore
+		succeedDate = &now
+	} else {
+		rejectedDate = &now
+	}
+
+	query := `UPDATE reward_transactions SET ref_core = $1 , status = $2, succeeded_date = $3, rejected_date = $4,
+		updated_at = $5 where status = $6 and ref_id = $7 and cif = $8`
+
 	stmt, err := rwdTrxRepo.Conn.Prepare(query)
 
 	if err != nil {
@@ -162,15 +151,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) UpdateReject(c echo.Context, payload 
 		return err
 	}
 
-	var lastID int64
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return err
-	}
-
-	err = stmt.QueryRow(&status, &now, &now, &cif, &refID).Scan(&lastID)
+	_, err = stmt.Query(&refCore, &status, succeedDate, rejectedDate, &now, &models.RewardTrxInquired, &rwdPayment.RefTrx, &rwdPayment.CIF)
 
 	if err != nil {
 		requestLogger.Debug(err)

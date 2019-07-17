@@ -24,8 +24,8 @@ func NewRewardHandler(echoGroup models.EchoGroup, us rewards.UseCase) {
 
 	// Dummy End Point
 	echoGroup.API.POST("/rewards/inquiry", handler.rewardInquiry)
-	echoGroup.API.POST("/rewards/succeeded", handler.rewardSucceeded)
-	echoGroup.API.POST("/rewards/rejected", handler.rewardRejected)
+	echoGroup.API.POST("/rewards/succeeded", handler.rewardPayment)
+	echoGroup.API.POST("/rewards/rejected", handler.rewardPayment)
 }
 
 func (rwd *RewardHandler) rewardInquiry(echTx echo.Context) error {
@@ -73,40 +73,42 @@ func (rwd *RewardHandler) rewardInquiry(echTx echo.Context) error {
 	return echTx.JSON(getStatusCode(err), response)
 }
 
-func (rwd *RewardHandler) rewardSucceeded(echTx echo.Context) error {
-	var reward models.Reward
+func (rwd *RewardHandler) rewardPayment(echTx echo.Context) error {
+	var rwdPayment models.RewardPayment
 	response = models.Response{}
-	err := echTx.Bind(&reward)
 
-	if err != nil {
+	if err := echTx.Bind(&rwdPayment); err != nil {
 		response.Status = models.StatusError
 		response.Message = models.MessageUnprocessableEntity
 
 		return echTx.JSON(http.StatusUnprocessableEntity, response)
 	}
 
-	response.Status = models.StatusSuccess
-	response.Message = models.MessageDataSuccess
+	if err := echTx.Validate(rwdPayment); err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
 
-	return echTx.JSON(http.StatusOK, response)
-}
+		return echTx.JSON(http.StatusBadRequest, response)
+	}
 
-func (rwd *RewardHandler) rewardRejected(echTx echo.Context) error {
-	var reward models.Reward
-	response = models.Response{}
-	err := echTx.Bind(&reward)
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(echTx, rwdPayment)
+	requestLogger.Info("Start to payment rewards.")
+	err := rwd.RewardUseCase.Payment(echTx, &rwdPayment)
 
 	if err != nil {
 		response.Status = models.StatusError
-		response.Message = models.MessageUnprocessableEntity
+		response.Message = err.Error()
 
-		return echTx.JSON(http.StatusUnprocessableEntity, response)
+		return echTx.JSON(getStatusCode(err), response)
 	}
 
 	response.Status = models.StatusSuccess
-	response.Message = models.MessageDataSuccess
+	response.Message = models.MessagePointSuccess
 
-	return echTx.JSON(http.StatusOK, response)
+	requestLogger.Info("End of payment rewards.")
+
+	return echTx.JSON(getStatusCode(err), response)
 }
 
 func getStatusCode(err error) int {

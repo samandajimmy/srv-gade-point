@@ -49,7 +49,7 @@ func TestValidate(t *testing.T) {
 	assert.Equal(t, nil, validator.Validate(&plValidator))
 
 	// when its not valid
-	plValidator.Validators.Channel = "cacing"
+	plValidator.Validators.Channel = "passion"
 	err := errors.New("channel on this transaction is not valid to use the benefit")
 	assert.Equal(t, err, validator.Validate(&plValidator))
 }

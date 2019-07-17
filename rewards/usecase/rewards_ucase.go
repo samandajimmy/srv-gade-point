@@ -59,41 +59,45 @@ func (rwd *rewardUseCase) CreateReward(c echo.Context, reward *models.Reward, ca
 	}
 
 	// create array quotas
-	for _, quota := range *reward.Quotas {
-		err = rwd.quotaUC.Create(c, &quota, reward)
+	if reward.Quotas != nil {
+		for _, quota := range *reward.Quotas {
+			err = rwd.quotaUC.Create(c, &quota, reward)
+
+			if err != nil {
+				break
+			}
+		}
 
 		if err != nil {
-			break
+			_ = rwd.quotaUC.DeleteByReward(c, reward.ID)
+			requestLogger.Debug(models.ErrCreateQuotasFailed)
+
+			return models.ErrCreateQuotasFailed
 		}
-	}
-
-	if err != nil {
-		_ = rwd.quotaUC.DeleteByReward(c, reward.ID)
-		requestLogger.Debug(models.ErrCreateQuotasFailed)
-
-		return models.ErrCreateQuotasFailed
 	}
 
 	// create array tags
-	for _, tag := range *reward.Tags {
-		err = rwd.tagUC.CreateTag(c, &tag, reward.ID)
+	if reward.Tags != nil {
+		for _, tag := range *reward.Tags {
+			err = rwd.tagUC.CreateTag(c, &tag, reward.ID)
 
-		if err != nil {
-			break
+			if err != nil {
+				break
+			}
+
+			err = rwd.rewardRepo.CreateRewardTag(c, &tag, reward.ID)
+
+			if err != nil {
+				break
+			}
 		}
 
-		err = rwd.rewardRepo.CreateRewardTag(c, &tag, reward.ID)
-
 		if err != nil {
-			break
+			_ = rwd.rewardRepo.DeleteRewardTag(c, reward.ID)
+			requestLogger.Debug(models.ErrCreateTagsFailed)
+
+			return models.ErrCreateTagsFailed
 		}
-	}
-
-	if err != nil {
-		_ = rwd.rewardRepo.DeleteRewardTag(c, reward.ID)
-		requestLogger.Debug(models.ErrCreateTagsFailed)
-
-		return models.ErrCreateTagsFailed
 	}
 
 	return nil
@@ -156,22 +160,17 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		var rwdResp models.RewardResponse
 		rewardLogger := logger.GetRequestLogger(c, reward.Validators)
 
+		// validate promo code
+		if err = rwd.validatePromoCode(*reward.Tags, reward.PromoCode, plValidator.PromoCode); err != nil {
+			rewardLogger.Debug(err)
+
+			continue
+		}
+
 		// validate reward quota
 		available, err := rwd.quotaUC.CheckQuota(c, reward, plValidator.CIF)
 
-		if err != nil {
-
-			return rwdInquiry, nil
-		}
-
 		if available == false {
-			requestLogger.Debug(models.ErrQuotaNotAvailable)
-
-			return rwdInquiry, models.ErrQuotaNotAvailable
-		}
-
-		// validate promo code
-		if err = rwd.validatePromoCode(*reward.Tags, reward.PromoCode, plValidator.PromoCode); err != nil {
 			rewardLogger.Debug(err)
 
 			continue

@@ -239,31 +239,29 @@ func (v *Validator) GetVoucherResult() (int64, error) {
 
 // CalculateDiscount to get the discount currency value
 func (v *Validator) CalculateDiscount(trxAmount *float64) (float64, error) {
-	discount := *v.Discount
-
-	if &discount == nil || discount == 0 {
+	if v.Discount == nil || *v.Discount == 0 {
 		return 0, nil
 	}
 
-	result := *trxAmount * (discount / 100)
+	result := *trxAmount * (*v.Discount / 100)
 
 	return result, nil
 }
 
 // CalculateMaximumValue to get maximum value of a reward
 func (v *Validator) CalculateMaximumValue(value *float64) (float64, error) {
-	maxValue := *v.MaxValue
+	maxValue := v.MaxValue
 
-	if &maxValue == nil || maxValue == 0 {
+	if maxValue == nil || *maxValue == 0 {
 		return 0, nil
 
 	}
 
-	if *value < maxValue {
+	if *value < *maxValue {
 		return *value, nil
 	}
 
-	return maxValue, nil
+	return *maxValue, nil
 }
 
 func (v *Validator) getField(field string) (interface{}, error) {

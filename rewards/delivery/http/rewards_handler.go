@@ -65,6 +65,7 @@ func (rwd *RewardHandler) rewardInquiry(echTx echo.Context) error {
 	if (models.RewardsInquiry{}) != responseData {
 		response.Data = responseData
 	} else {
+		response.Status = models.StatusError
 		response.Message = models.MessageNoRewards
 	}
 

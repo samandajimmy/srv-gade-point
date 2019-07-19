@@ -10,7 +10,7 @@ import (
 type UseCase interface {
 	Create(echo.Context, *models.Quota, *models.Reward) error
 	DeleteByReward(echo.Context, int64) error
-	CheckQuota(echo.Context, models.Reward, string) (bool, error)
+	CheckQuota(echo.Context, models.Reward, *models.PayloadValidator) (bool, error)
 	UpdateAddQuota(echo.Context, int64) error
 	UpdateReduceQuota(echo.Context, int64) error
 }

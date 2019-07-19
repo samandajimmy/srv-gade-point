@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo"
+	"github.com/sirupsen/logrus"
 )
 
 type psqlQuotaRepository struct {
@@ -19,11 +20,19 @@ func NewPsqlQuotaRepository(Conn *sql.DB) quotas.Repository {
 }
 
 func (quotRepo *psqlQuotaRepository) Create(c echo.Context, quota *models.Quota, reward *models.Reward) error {
+	var nextCheck time.Time
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
 
-	query := `INSERT INTO quotas (number_of_days, amount, is_per_user, reward_id, available, last_check, created_at)
+	if *quota.IsPerUser == models.IsPerUserFalse && *quota.NumberOfDays != models.QuotaUnlimited {
+		nextCheck, _ = time.Parse(time.RFC3339, reward.Campaign.StartDate)
+		nextCheck = nextCheck.AddDate(0, 0, int(*quota.NumberOfDays-1))
+	} else {
+		nextCheck, _ = time.Parse(time.RFC3339, reward.Campaign.EndDate)
+	}
+
+	query := `INSERT INTO quotas (number_of_days, amount, is_per_user, reward_id, available, last_check, next_check, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
 	stmt, err := quotRepo.Conn.Prepare(query)
 
@@ -41,7 +50,7 @@ func (quotRepo *psqlQuotaRepository) Create(c echo.Context, quota *models.Quota,
 		return err
 	}
 
-	err = stmt.QueryRow(quota.NumberOfDays, quota.Amount, quota.IsPerUser, reward.ID, quota.Amount, reward.Campaign.StartDate, &now).Scan(&lastID)
+	err = stmt.QueryRow(quota.NumberOfDays, quota.Amount, quota.IsPerUser, reward.ID, quota.Amount, reward.Campaign.StartDate, &nextCheck, &now).Scan(&lastID)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -163,6 +172,100 @@ func (quotRepo *psqlQuotaRepository) UpdateReduceQuota(c echo.Context, rewardID 
 
 	if err != nil {
 		requestLogger.Debug(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func (quotRepo *psqlQuotaRepository) CheckRefreshQuota(c echo.Context, payload *models.PayloadValidator) ([]*models.Quota, error) {
+	var result []*models.Quota
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	query := `select q.id, q.available, q.is_per_user, q.amount, q.number_of_days, q.last_check, q.next_check from quotas q where q.reward_id in (select r.id as reward_id
+		from campaigns c inner join rewards r on c.id = r.campaign_id where c.status = $1
+		and c.start_date::date < $2 and c.end_date::date > $2)
+		and q.is_per_user = $3 and q.number_of_days > $4 and q.amount > $5 and q.next_check::date < $2`
+	rows, err := quotRepo.Conn.Query(
+		query,
+		models.CampaignActive,
+		payload.TransactionDate,
+		models.IsPerUserFalse,
+		models.QuotaUnlimited,
+		models.IsLimitAmount,
+	)
+
+	defer rows.Close()
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	for rows.Next() {
+		var r models.Quota
+
+		err = rows.Scan(
+			&r.ID,
+			&r.Available,
+			&r.IsPerUser,
+			&r.Amount,
+			&r.NumberOfDays,
+			&r.LastCheck,
+			&r.NextCheck,
+		)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		result = append(result, &r)
+	}
+
+	return result, err
+}
+
+func (quotRepo *psqlQuotaRepository) RefreshQuota(c echo.Context, qList *models.Quota, payload *models.PayloadValidator) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	transactionDate, _ := time.Parse(time.RFC3339, payload.TransactionDate)
+	numberOfDay := int(*qList.NumberOfDays)
+	diff := transactionDate.Sub(*qList.LastCheck)
+	selisihTanggal := int(diff.Hours() / 24) // number of days
+	modulus := selisihTanggal % numberOfDay
+	intervalDays := numberOfDay - modulus
+
+	nextCheckDate := transactionDate.AddDate(0, 0, intervalDays-1)
+	lastCheckDate := nextCheckDate.AddDate(0, 0, (numberOfDay-1)*-1)
+
+	query := `update quotas set available = $1, last_check = $2, next_check = $3 where id = $4`
+
+	stmt, err := quotRepo.Conn.Prepare(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	_, err = stmt.Query(qList.Amount, lastCheckDate, nextCheckDate, qList.ID)
+
+	if err != nil {
+		logrus.Debug(err)
+
+		return err
+	}
+
+	_, err = stmt.Query()
+
+	if err != nil {
+		logrus.Debug(err)
 
 		return err
 	}

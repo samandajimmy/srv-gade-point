@@ -29,6 +29,7 @@ type Quota struct {
 	IsPerUser    *int64     `json:"isPerUser,omitempty"`
 	Available    *int64     `json:"available,omitempty"`
 	LastCheck    *time.Time `json:"lastCheck,omitempty"`
+	NextCheck    *time.Time `json:"nextCheck,omitempty"`
 	UpdatedAt    *time.Time `json:"updatedAt,omitempty"`
 	CreatedAt    *time.Time `json:"createdAt,omitempty"`
 	Reward       *Reward    `json:"reward,omitempty"`

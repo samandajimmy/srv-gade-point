@@ -52,9 +52,33 @@ func (quot *quotaUseCase) DeleteByReward(c echo.Context, rewardID int64) error {
 	return nil
 }
 
-func (quot *quotaUseCase) CheckQuota(c echo.Context, reward models.Reward, cif string) (bool, error) {
+func (quot *quotaUseCase) CheckQuota(c echo.Context, reward models.Reward, plValidator *models.PayloadValidator) (bool, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
+
+	// Check Refresh Quota List
+	quotaList, err := quot.quotaRepo.CheckRefreshQuota(c, plValidator)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrRefreshQuotaFailed)
+
+		return false, models.ErrRefreshQuotaFailed
+	}
+
+	for _, qList := range quotaList {
+
+		// check quota allocation
+		err := quot.quotaRepo.RefreshQuota(c, qList, plValidator)
+
+		if err != nil {
+			requestLogger.Debug(models.ErrCheckQuotaFailed)
+
+			return false, models.ErrCheckQuotaFailed
+		}
+
+	}
+
+	// Check quota
 	quotas, err := quot.quotaRepo.CheckQuota(c, reward.ID)
 
 	if err != nil {
@@ -72,7 +96,7 @@ func (quot *quotaUseCase) CheckQuota(c echo.Context, reward models.Reward, cif s
 		}
 
 		if *quota.IsPerUser == models.IsPerUserTrue {
-			count, err := quot.rwdTrxUC.CountByCIF(c, *quota, reward, cif)
+			count, err := quot.rwdTrxUC.CountByCIF(c, *quota, reward, plValidator.CIF)
 
 			if err != nil {
 				requestLogger.Debug(models.ErrCheckQuotaFailed)

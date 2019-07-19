@@ -195,6 +195,9 @@ var (
 	// ErrCreateQuotasFailed to store create quotas failed message
 	ErrCreateQuotasFailed = errors.New("Something went wrong when trying to create quotas")
 
+	// ErrRefreshQuotaFailed to store minus quota error message
+	ErrRefreshQuotaFailed = errors.New("Something went wrong when refresh a quota")
+
 	// ErrCreateTagsFailed to store create tags failed message
 	ErrCreateTagsFailed = errors.New("Something went wrong when trying to create tags")
 

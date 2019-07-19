@@ -4,6 +4,14 @@ import (
 	"time"
 )
 
+var (
+	// CampaignInActive to store if campaign not active
+	CampaignInActive int64
+
+	// CampaignActive to store  if campaign active
+	CampaignActive int64 = 1
+)
+
 // Campaign is represent a campaigns model
 type Campaign struct {
 	ID          int64      `json:"id,omitempty"`

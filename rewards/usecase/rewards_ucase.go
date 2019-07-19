@@ -168,7 +168,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		}
 
 		// validate reward quota
-		available, err := rwd.quotaUC.CheckQuota(c, reward, plValidator.CIF)
+		available, err := rwd.quotaUC.CheckQuota(c, reward, plValidator)
 
 		if available == false {
 			rewardLogger.Debug(err)

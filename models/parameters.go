@@ -24,9 +24,6 @@ var (
 	// MessagePointSuccess to store a success message response of data
 	MessagePointSuccess = "Data Successfully Sent"
 
-	// MessageNoRewards to store a no rewards message response of data
-	MessageNoRewards = "Sorry, no rewards available"
-
 	// MessageUpdateError to store an errpr message response 0f update
 	MessageUpdateError = "Update Error"
 
@@ -48,8 +45,11 @@ var (
 	// MicroTimeFormat to store a time format of micro timestamp
 	MicroTimeFormat = "20060102150405.000000"
 
-	// TimeFormat to store a time format of timestamp
-	TimeFormat = "2006-01-02 15:04:05.999Z07"
+	// DateTimeFormat to store a date time format of timestamp
+	DateTimeFormat = "2006-01-02 15:04:05"
+
+	// DateFormat to store a date format of timestamp
+	DateFormat = "2006-01-02"
 
 	// DateFormatRegex to store a regex of dd/mm/yyyy date format
 	DateFormatRegex = "(^\\d{4}\\-(0[1-9]|1[012])\\-(0[1-9]|[12][0-9]|3[01])$)"

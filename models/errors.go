@@ -169,7 +169,13 @@ var (
 	ErrCheckQuotaFailed = errors.New("Failed to check quota")
 
 	// ErrQuotaNotAvailable to info quota is not available message
-	ErrQuotaNotAvailable = errors.New("Sorry quota is not available")
+	ErrQuotaNotAvailable = errors.New("Quota is not available")
+
+	// ErrQuotaNACIF to info CIF quota is not available message
+	ErrQuotaNACIF = errors.New("Quota for this CIF is not available")
+
+	// ErrTodaysQuotaNotAvailable to info quota is not available message
+	ErrTodaysQuotaNotAvailable = errors.New("Quota for today is not available")
 
 	// ErrCreateRewardsFailed to store create rewards failed message
 	ErrCreateRewardsFailed = errors.New("Something went wrong when trying to create rewards")
@@ -215,4 +221,7 @@ var (
 
 	// ErrRefTrxNotFound to not found ref_trx error message
 	ErrRefTrxNotFound = errors.New("Reference ID transaction not found")
+
+	// ErrMessageNoRewards to store a no rewards message response of data
+	ErrMessageNoRewards = errors.New("Sorry, no rewards available")
 )

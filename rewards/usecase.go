@@ -10,6 +10,6 @@ import (
 type UseCase interface {
 	CreateReward(echo.Context, *models.Reward, *models.Campaign) error
 	DeleteByCampaign(echo.Context, int64) error
-	Inquiry(echo.Context, *models.PayloadValidator) (models.RewardsInquiry, error)
+	Inquiry(echo.Context, *models.PayloadValidator) (models.RewardsInquiry, *models.ResponseErrors)
 	Payment(echo.Context, *models.RewardPayment) error
 }

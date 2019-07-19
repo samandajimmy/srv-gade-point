@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/labstack/echo"
-	"github.com/sirupsen/logrus"
 )
 
 type psqlQuotaRepository struct {
@@ -234,7 +233,7 @@ func (quotRepo *psqlQuotaRepository) RefreshQuota(c echo.Context, qList *models.
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
-	transactionDate, _ := time.Parse(time.RFC3339, payload.TransactionDate)
+	transactionDate, _ := time.Parse(models.DateFormat, payload.TransactionDate)
 	numberOfDay := int(*qList.NumberOfDays)
 	diff := transactionDate.Sub(*qList.LastCheck)
 	selisihTanggal := int(diff.Hours() / 24) // number of days
@@ -257,15 +256,7 @@ func (quotRepo *psqlQuotaRepository) RefreshQuota(c echo.Context, qList *models.
 	_, err = stmt.Query(qList.Amount, lastCheckDate, nextCheckDate, qList.ID)
 
 	if err != nil {
-		logrus.Debug(err)
-
-		return err
-	}
-
-	_, err = stmt.Query()
-
-	if err != nil {
-		logrus.Debug(err)
+		requestLogger.Debug(err)
 
 		return err
 	}

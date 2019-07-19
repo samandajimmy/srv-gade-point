@@ -117,18 +117,21 @@ func (rwd *rewardUseCase) DeleteByCampaign(c echo.Context, campaignID int64) err
 	return nil
 }
 
-func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadValidator) (models.RewardsInquiry, error) {
+func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadValidator) (models.RewardsInquiry, *models.ResponseErrors) {
 	var rwdInquiry models.RewardsInquiry
 	var rwdResponse []models.RewardResponse
 	var voucherCode *models.VoucherCode
+	var respErrors models.ResponseErrors
+	var rewardSelected models.Reward
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	trxDate, err := time.Parse(time.RFC3339, plValidator.TransactionDate)
+	trxDate, err := time.Parse(models.DateFormat, plValidator.TransactionDate)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrTrxDateFormat)
+		respErrors.SetTitle(models.ErrTrxDateFormat.Error())
 
-		return rwdInquiry, models.ErrTrxDateFormat
+		return rwdInquiry, &respErrors
 	}
 
 	// validate the inquiry request, if refId exist
@@ -137,20 +140,22 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 		if err != nil {
 			requestLogger.Debug(models.ErrRefTrxNotFound)
+			respErrors.SetTitle(models.ErrRefTrxNotFound.Error())
 
-			return rwdInquiry, nil
+			return rwdInquiry, &respErrors
 		}
 
 		return rwdInquiry, nil
 	}
 
 	// check available campaign
-	campaigns, err := rwd.campaignRepo.GetCampaignAvailable(c, trxDate.Format(models.TimeFormat))
+	campaigns, err := rwd.campaignRepo.GetCampaignAvailable(c, trxDate.Format(models.DateTimeFormat))
 
 	if err != nil {
 		requestLogger.Debug(models.ErrNoCampaign)
+		respErrors.SetTitle(models.ErrNoCampaign.Error())
 
-		return rwdInquiry, models.ErrNoCampaign
+		return rwdInquiry, &respErrors
 	}
 
 	// create array rewards
@@ -172,6 +177,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 		if available == false {
 			rewardLogger.Debug(err)
+			respErrors.AddError(err.Error())
 
 			continue
 		}
@@ -179,6 +185,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		// validate each reward
 		if err = reward.Validators.Validate(plValidator); err != nil {
 			rewardLogger.Debug(err)
+			respErrors.AddError(err.Error())
 
 			continue
 		}
@@ -198,7 +205,10 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 			voucherCode, err = rwd.voucherUC.VoucherGive(c, plVoucherBuy)
 
 			if err != nil {
-				return rwdInquiry, nil
+				requestLogger.Debug(models.ErrVoucherUnavailable)
+				respErrors.AddError(models.ErrVoucherUnavailable.Error())
+
+				continue
 			}
 
 			rwdResp.VoucherName = voucherCode.Voucher.Name
@@ -210,28 +220,42 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		rwdResp.Value = rwdValue
 		rwdResp.JournalAccount = reward.JournalAccount
 		rwdResponse = append(rwdResponse, rwdResp)
+		rewardSelected = reward
 	}
 
 	if len(rwdResponse) == 0 {
-		return rwdInquiry, nil
+		requestLogger.Debug(models.ErrMessageNoRewards)
+		respErrors.SetTitle(models.ErrMessageNoRewards.Error())
+
+		return rwdInquiry, &respErrors
 	}
 
 	// insert data to reward history
-	rewardTrx, err := rwd.rwdTrxRepo.Create(c, *plValidator, rewards[0].ID, rwdResponse)
+	rewardTrx, err := rwd.rwdTrxRepo.Create(c, *plValidator, rewardSelected.ID, rwdResponse)
 
 	if err != nil {
-		return rwdInquiry, nil
+		requestLogger.Debug(err)
+		respErrors.SetTitle(err.Error())
+
+		return rwdInquiry, &respErrors
 	}
 
 	// update voucher code ref_id
-	rwd.voucherCodeRepo.UpdateVoucherCodeRefID(c, voucherCode, rewardTrx.RefID)
+	err = rwd.voucherCodeRepo.UpdateVoucherCodeRefID(c, voucherCode, rewardTrx.RefID)
+
+	if err != nil {
+		requestLogger.Debug(err)
+		respErrors.SetTitle(err.Error())
+
+		return rwdInquiry, &respErrors
+	}
 
 	// generate an unique ref ID
 	rwdInquiry.RefTrx = rewardTrx.RefID
 	rwdInquiry.Rewards = &rwdResponse
 
 	// update reward quota
-	rwd.quotaUC.UpdateReduceQuota(c, rewards[0].ID)
+	rwd.quotaUC.UpdateReduceQuota(c, rewardSelected.ID)
 
 	return rwdInquiry, nil
 }

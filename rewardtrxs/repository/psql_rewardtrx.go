@@ -50,7 +50,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 		return rewardTrx, err
 	}
 
-	trxDate, err := time.Parse(time.RFC3339, payload.TransactionDate)
+	trxDate, err := time.Parse(models.DateFormat, payload.TransactionDate)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrTrxDateFormat)

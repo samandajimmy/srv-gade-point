@@ -52,7 +52,7 @@ func (quot *quotaUseCase) DeleteByReward(c echo.Context, rewardID int64) error {
 	return nil
 }
 
-func (quot *quotaUseCase) CheckQuota(c echo.Context, reward models.Reward, plValidator *models.PayloadValidator) (bool, error) {
+func (quot *quotaUseCase) refreshQuota(c echo.Context, reward models.Reward, plValidator *models.PayloadValidator) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
@@ -60,22 +60,33 @@ func (quot *quotaUseCase) CheckQuota(c echo.Context, reward models.Reward, plVal
 	quotaList, err := quot.quotaRepo.CheckRefreshQuota(c, plValidator)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrRefreshQuotaFailed)
+		requestLogger.Debug(models.ErrCheckQuotaFailed)
 
-		return false, models.ErrRefreshQuotaFailed
+		return models.ErrCheckQuotaFailed
 	}
 
 	for _, qList := range quotaList {
-
-		// check quota allocation
 		err := quot.quotaRepo.RefreshQuota(c, qList, plValidator)
 
 		if err != nil {
-			requestLogger.Debug(models.ErrCheckQuotaFailed)
+			requestLogger.Debug(models.ErrRefreshQuotaFailed)
 
-			return false, models.ErrCheckQuotaFailed
+			return models.ErrRefreshQuotaFailed
 		}
+	}
 
+	return nil
+}
+
+func (quot *quotaUseCase) CheckQuota(c echo.Context, reward models.Reward, plValidator *models.PayloadValidator) (bool, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	// Check Refresh Quota List
+	if err := quot.refreshQuota(c, reward, plValidator); err != nil {
+		requestLogger.Debug(models.ErrRefreshQuotaFailed)
+
+		return false, models.ErrRefreshQuotaFailed
 	}
 
 	// Check quota
@@ -89,7 +100,6 @@ func (quot *quotaUseCase) CheckQuota(c echo.Context, reward models.Reward, plVal
 
 	// validate all quota
 	for _, quota := range quotas {
-
 		// check quota allocation
 		if *quota.IsPerUser == models.IsPerUserFalse && *quota.Amount == models.QuotaUnlimited {
 			return true, nil
@@ -105,17 +115,23 @@ func (quot *quotaUseCase) CheckQuota(c echo.Context, reward models.Reward, plVal
 			}
 
 			if count >= *quota.Available {
-				requestLogger.Debug(models.ErrQuotaNotAvailable)
+				requestLogger.Debug(models.ErrQuotaNACIF)
 
-				return false, models.ErrQuotaNotAvailable
+				return false, models.ErrQuotaNACIF
 			}
 		}
 
-		// check quota stock
+		// check quota availibility
 		if quota.Available != nil && *quota.Available <= models.IsLimitAmount {
-			requestLogger.Debug(models.ErrQuotaNotAvailable)
+			err = models.ErrTodaysQuotaNotAvailable
 
-			return false, models.ErrQuotaNotAvailable
+			if *quota.NumberOfDays == 0 {
+				err = models.ErrQuotaNotAvailable
+			}
+
+			requestLogger.Debug(err)
+
+			return false, err
 		}
 	}
 

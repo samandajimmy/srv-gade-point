@@ -30,46 +30,30 @@ func NewRewardHandler(echoGroup models.EchoGroup, us rewards.UseCase) {
 
 func (rwd *RewardHandler) rewardInquiry(echTx echo.Context) error {
 	var plValidator models.PayloadValidator
+	respErrors := &models.ResponseErrors{}
 	response = models.Response{}
+	logger := models.RequestLogger{}
 	err := echTx.Bind(&plValidator)
+	logger.DataLog(echTx, plValidator).Info("Start to inquiry rewards.")
 
 	if err != nil {
-		response.Status = models.StatusError
-		response.Message = models.MessageUnprocessableEntity
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
+		logger.DataLog(echTx, response).Info("End of inquiry rewards.")
 
 		return echTx.JSON(http.StatusUnprocessableEntity, response)
 	}
 
 	if err = echTx.Validate(plValidator); err != nil {
-		response.Status = models.StatusError
-		response.Message = err.Error()
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+		logger.DataLog(echTx, response).Info("End of inquiry rewards.")
 
 		return echTx.JSON(http.StatusBadRequest, response)
 	}
-
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(echTx, plValidator)
-	requestLogger.Info("Start to inquiry rewards.")
-	responseData, err := rwd.RewardUseCase.Inquiry(echTx, &plValidator)
-
-	if err != nil {
-		response.Status = models.StatusError
-		response.Message = err.Error()
-
-		return echTx.JSON(getStatusCode(err), response)
-	}
-
-	response.Status = models.StatusSuccess
-	response.Message = models.MessagePointSuccess
-
-	if (models.RewardsInquiry{}) != responseData {
-		response.Data = responseData
-	} else {
-		response.Status = models.StatusError
-		response.Message = models.MessageNoRewards
-	}
-
-	requestLogger.Info("End of inquiry rewards.")
+	responseData, respErrors := rwd.RewardUseCase.Inquiry(echTx, &plValidator)
+	response.SetResponse(responseData, respErrors)
+	logger.DataLog(echTx, response).Info("End of inquiry rewards.")
 
 	return echTx.JSON(getStatusCode(err), response)
 }
@@ -77,37 +61,38 @@ func (rwd *RewardHandler) rewardInquiry(echTx echo.Context) error {
 func (rwd *RewardHandler) rewardPayment(echTx echo.Context) error {
 	var rwdPayment models.RewardPayment
 	response = models.Response{}
+	respErrors := &models.ResponseErrors{}
+	logger := models.RequestLogger{}
+	err := echTx.Bind(&rwdPayment)
+	logger.DataLog(echTx, rwdPayment).Info("Start to payment rewards.")
 
-	if err := echTx.Bind(&rwdPayment); err != nil {
-		response.Status = models.StatusError
-		response.Message = models.MessageUnprocessableEntity
+	if err != nil {
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
+		logger.DataLog(echTx, response).Info("End of payment rewards.")
 
 		return echTx.JSON(http.StatusUnprocessableEntity, response)
 	}
 
 	if err := echTx.Validate(rwdPayment); err != nil {
-		response.Status = models.StatusError
-		response.Message = err.Error()
+		respErrors.SetTitle(err.Error())
+		logger.DataLog(echTx, response).Info("End of payment rewards.")
 
 		return echTx.JSON(http.StatusBadRequest, response)
 	}
 
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(echTx, rwdPayment)
-	requestLogger.Info("Start to payment rewards.")
-	err := rwd.RewardUseCase.Payment(echTx, &rwdPayment)
+	err = rwd.RewardUseCase.Payment(echTx, &rwdPayment)
 
 	if err != nil {
-		response.Status = models.StatusError
-		response.Message = err.Error()
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+		logger.DataLog(echTx, response).Info("End of payment rewards.")
 
 		return echTx.JSON(getStatusCode(err), response)
 	}
 
-	response.Status = models.StatusSuccess
-	response.Message = models.MessagePointSuccess
-
-	requestLogger.Info("End of payment rewards.")
+	response.SetResponse(nil, respErrors)
+	logger.DataLog(echTx, response).Info("End of payment rewards.")
 
 	return echTx.JSON(getStatusCode(err), response)
 }

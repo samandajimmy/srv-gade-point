@@ -11,7 +11,16 @@ var (
 
 	// RewardTrxRejected to store reward succeeded status
 	RewardTrxRejected int64 = 2
+
+	// Inquiry to store inquiry description
+	Inquiry = "inquiry"
 )
+
+var statusRewardTrx = map[int64]string{
+	RewardTrxInquired:  "inquired",
+	RewardTrxSucceeded: "succeeded",
+	RewardTrxRejected:  "rejected",
+}
 
 // RewardTrx is represent a reward_transactions model
 type RewardTrx struct {
@@ -31,4 +40,14 @@ type RewardTrx struct {
 	ResponseData    string     `json:"responseData,omitempty"`
 	CreatedAt       *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt       *time.Time `json:"updatedAt,omitempty"`
+}
+
+// RewardTrxResponse is represent a reward transaction response model
+type RewardTrxResponse struct {
+	Status string `json:"status,omitempty"`
+}
+
+// GetstatusRewardTrxText to get text of status reward transaction
+func (rwdTrx RewardTrx) GetstatusRewardTrxText() string {
+	return statusRewardTrx[*rwdTrx.Status]
 }

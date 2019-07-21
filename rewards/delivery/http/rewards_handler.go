@@ -22,10 +22,11 @@ func NewRewardHandler(echoGroup models.EchoGroup, us rewards.UseCase) {
 		RewardUseCase: us,
 	}
 
-	// Dummy End Point
+	// End Point For External
 	echoGroup.API.POST("/rewards/inquiry", handler.rewardInquiry)
 	echoGroup.API.POST("/rewards/succeeded", handler.rewardPayment)
 	echoGroup.API.POST("/rewards/rejected", handler.rewardPayment)
+	echoGroup.API.POST("/rewards/check_transaction", handler.checkTransaction)
 }
 
 func (rwd *RewardHandler) rewardInquiry(echTx echo.Context) error {
@@ -93,6 +94,46 @@ func (rwd *RewardHandler) rewardPayment(echTx echo.Context) error {
 
 	response.SetResponse(nil, respErrors)
 	logger.DataLog(echTx, response).Info("End of payment rewards.")
+
+	return echTx.JSON(getStatusCode(err), response)
+}
+
+func (rwd *RewardHandler) checkTransaction(echTx echo.Context) error {
+	var rwdPayment models.RewardPayment
+	var responseData models.RewardTrxResponse
+	response = models.Response{}
+	respErrors := &models.ResponseErrors{}
+	logger := models.RequestLogger{}
+	err := echTx.Bind(&rwdPayment)
+	logger.DataLog(echTx, rwdPayment).Info("Start to check rewards transaction.")
+
+	if err != nil {
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
+		logger.DataLog(echTx, response).Info("End of check rewards transaction.")
+
+		return echTx.JSON(http.StatusUnprocessableEntity, response)
+	}
+
+	if err := echTx.Validate(rwdPayment); err != nil {
+		respErrors.SetTitle(err.Error())
+		logger.DataLog(echTx, response).Info("End of check rewards transaction.")
+
+		return echTx.JSON(http.StatusBadRequest, response)
+	}
+
+	responseData, err = rwd.RewardUseCase.CheckTransaction(echTx, &rwdPayment)
+
+	if err != nil {
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+		logger.DataLog(echTx, response).Info("End of check rewards transaction.")
+
+		return echTx.JSON(getStatusCode(err), response)
+	}
+
+	response.SetResponse(responseData, respErrors)
+	logger.DataLog(echTx, response).Info("End of check rewards transaction.")
 
 	return echTx.JSON(getStatusCode(err), response)
 }

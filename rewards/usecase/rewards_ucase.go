@@ -264,8 +264,8 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
-	// check available reward transaction based in CIF and ref_id and status
-	rewardtrx, err := rwd.rwdTrxRepo.CheckTrx(c, rwdPayment.CIF, rwdPayment.RefTrx, models.Inquiry)
+	// check available reward transaction based in CIF and ref_id
+	rewardtrx, err := rwd.rwdTrxRepo.CheckTrx(c, rwdPayment.CIF, rwdPayment.RefTrx)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrRefTrxNotFound)
@@ -300,8 +300,8 @@ func (rwd *rewardUseCase) CheckTransaction(c echo.Context, rwdPayment *models.Re
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
-	// check available reward transaction based in CIF and ref_id
-	rewardtrx, err := rwd.rwdTrxRepo.CheckTrx(c, rwdPayment.CIF, rwdPayment.RefTrx, "")
+	// check available reward transaction based in ref_id
+	rewardtrx, err := rwd.rwdTrxRepo.CheckRefID(c, rwdPayment.RefTrx)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrRefTrxNotFound)
@@ -309,6 +309,7 @@ func (rwd *rewardUseCase) CheckTransaction(c echo.Context, rwdPayment *models.Re
 		return responseData, models.ErrRefTrxNotFound
 	}
 
+	responseData.StatusCode = rewardtrx.Status
 	responseData.Status = rewardtrx.GetstatusRewardTrxText()
 
 	return responseData, nil

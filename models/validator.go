@@ -35,9 +35,12 @@ type Validator struct {
 
 // PayloadValidator to store a payload to validate a request
 type PayloadValidator struct {
+	BranchCode        string     `json:"branchCode,omitempty"`
 	CampaignID        string     `json:"campaignId,omitempty"`
 	CIF               string     `json:"cif,omitempty" validate:"required"`
+	CustomerName      string     `json:"customerName,omitempty"`
 	LoanAmount        *float64   `json:"loanAmount,omitempty"`
+	Phone             string     `json:"phone,omitempty"`
 	PromoCode         string     `json:"promoCode,omitempty" validate:"required"`
 	RedeemedDate      string     `json:"redeemedDate,omitempty"`
 	RefTrx            string     `json:"refTrx,omitempty"`

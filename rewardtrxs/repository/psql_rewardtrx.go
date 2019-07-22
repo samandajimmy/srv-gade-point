@@ -110,18 +110,37 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetByRefID(c echo.Context, refID stri
 	return rewardInquiry, nil
 }
 
-func (rwdTrxRepo *psqlRewardTrxRepository) CheckTrx(c echo.Context, CIF string, refID string, status string) (*models.RewardTrx, error) {
+func (rwdTrxRepo *psqlRewardTrxRepository) CheckTrx(c echo.Context, CIF string, refID string) (*models.RewardTrx, error) {
 	var result models.RewardTrx
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	query := `SELECT id, status, coalesce(ref_core, ''), ref_id, reward_id, cif, inquired_date, transaction_date from reward_transactions where cif = '` + CIF + `' and ref_id = '` + refID + `'`
+	query := `SELECT id, status, coalesce(ref_core, ''), ref_id, reward_id, cif, inquired_date, transaction_date from reward_transactions where cif = $1 and ref_id = $2 and status = $3`
+	err := rwdTrxRepo.Conn.QueryRow(query, CIF, refID, models.RewardTrxInquired).Scan(
+		&result.ID,
+		&result.Status,
+		&result.RefCore,
+		&result.RefID,
+		&result.RewardID,
+		&result.CIF,
+		&result.InquiredDate,
+		&result.TransactionDate,
+	)
 
-	if status == models.Inquiry {
-		criteria := ` and status = 0 `
-		query = query + criteria
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
 	}
 
-	err := rwdTrxRepo.Conn.QueryRow(query).Scan(
+	return &result, nil
+}
+
+func (rwdTrxRepo *psqlRewardTrxRepository) CheckRefID(c echo.Context, refID string) (*models.RewardTrx, error) {
+	var result models.RewardTrx
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	query := `SELECT id, status, coalesce(ref_core, ''), ref_id, reward_id, cif, inquired_date, transaction_date from reward_transactions where ref_id = $1`
+	err := rwdTrxRepo.Conn.QueryRow(query, refID).Scan(
 		&result.ID,
 		&result.Status,
 		&result.RefCore,

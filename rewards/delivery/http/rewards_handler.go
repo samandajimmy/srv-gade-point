@@ -26,7 +26,7 @@ func NewRewardHandler(echoGroup models.EchoGroup, us rewards.UseCase) {
 	echoGroup.API.POST("/rewards/inquiry", handler.rewardInquiry)
 	echoGroup.API.POST("/rewards/succeeded", handler.rewardPayment)
 	echoGroup.API.POST("/rewards/rejected", handler.rewardPayment)
-	echoGroup.API.POST("/rewards/check_transaction", handler.checkTransaction)
+	echoGroup.API.POST("/rewards/check-transaction", handler.checkTransaction)
 }
 
 func (rwd *RewardHandler) rewardInquiry(echTx echo.Context) error {
@@ -132,7 +132,11 @@ func (rwd *RewardHandler) checkTransaction(echTx echo.Context) error {
 		return echTx.JSON(getStatusCode(err), response)
 	}
 
-	response.SetResponse(responseData, respErrors)
+	if models.RewardTrxInquired != *responseData.StatusCode {
+		respErrors.SetTitle("Ref transaction ID has been " + responseData.Status)
+	}
+
+	response.SetResponse(nil, respErrors)
 	logger.DataLog(echTx, response).Info("End of check rewards transaction.")
 
 	return echTx.JSON(getStatusCode(err), response)

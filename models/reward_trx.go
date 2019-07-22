@@ -12,14 +12,15 @@ var (
 	// RewardTrxRejected to store reward succeeded status
 	RewardTrxRejected int64 = 2
 
-	// Inquiry to store inquiry description
-	Inquiry = "inquiry"
+	// RewardTrxTimeOut to store reward time out status
+	RewardTrxTimeOut int64 = 3
 )
 
 var statusRewardTrx = map[int64]string{
 	RewardTrxInquired:  "inquired",
 	RewardTrxSucceeded: "succeeded",
 	RewardTrxRejected:  "rejected",
+	RewardTrxTimeOut:   "time out",
 }
 
 // RewardTrx is represent a reward_transactions model
@@ -44,7 +45,8 @@ type RewardTrx struct {
 
 // RewardTrxResponse is represent a reward transaction response model
 type RewardTrxResponse struct {
-	Status string `json:"status,omitempty"`
+	StatusCode *int64 `json:"statusCode,omitempty"`
+	Status     string `json:"status,omitempty"`
 }
 
 // GetstatusRewardTrxText to get text of status reward transaction

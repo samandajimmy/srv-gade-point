@@ -25,14 +25,14 @@ func (quotRepo *psqlQuotaRepository) Create(c echo.Context, quota *models.Quota,
 	now := time.Now()
 
 	if *quota.IsPerUser == models.IsPerUserFalse && *quota.NumberOfDays != models.QuotaUnlimited {
-		nextCheck, _ = time.Parse(time.RFC3339, reward.Campaign.StartDate)
+		nextCheck, _ = time.Parse(models.DateFormat, reward.Campaign.StartDate)
 		nextCheck = nextCheck.AddDate(0, 0, int(*quota.NumberOfDays-1))
 	} else {
-		nextCheck, _ = time.Parse(time.RFC3339, reward.Campaign.EndDate)
+		nextCheck, _ = time.Parse(models.DateFormat, reward.Campaign.EndDate)
 	}
 
 	query := `INSERT INTO quotas (number_of_days, amount, is_per_user, reward_id, available, last_check, next_check, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
 	stmt, err := quotRepo.Conn.Prepare(query)
 
 	if err != nil {

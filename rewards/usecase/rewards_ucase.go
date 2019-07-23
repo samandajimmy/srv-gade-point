@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo"
+	"github.com/sirupsen/logrus"
 )
 
 type rewardUseCase struct {
@@ -231,7 +232,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	}
 
 	// insert data to reward history
-	rewardTrx, err := rwd.rwdTrxRepo.Create(c, *plValidator, rewardSelected.ID, rwdResponse)
+	rewardTrx, err := rwd.createRewardTrx(c, *plValidator, rewardSelected.ID, rwdResponse)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -315,6 +316,35 @@ func (rwd *rewardUseCase) CheckTransaction(c echo.Context, rwdPayment *models.Re
 	return responseData, nil
 }
 
+func (rwd *rewardUseCase) RefreshTrx() {
+	// update trx that should be timeout
+	err := rwd.rwdTrxRepo.UpdateTimeoutTrx()
+
+	if err != nil {
+		logrus.Debug(err)
+	}
+
+	// get trx that need to be timeout later
+	rewardTrx, err := rwd.rwdTrxRepo.GetInquiredTrx()
+
+	if err != nil {
+		logrus.Debug(err)
+	}
+
+	for _, rwdTrx := range rewardTrx {
+		diff := rwdTrx.TimeoutDate.Sub(*rwdTrx.InquiredDate)
+		delay := time.Duration(diff.Seconds())
+
+		go func(rwdTrx models.RewardTrx, delay time.Duration) {
+			logrus.Debug("Store job to background for ref ID: " + rwdTrx.RefID)
+			time.Sleep(delay * time.Second)
+			logrus.Debug("Start to make ref ID: " + rwdTrx.RefID + " expired!")
+			rwd.rwdTrxRepo.RewardTrxTimeout(rwdTrx)
+		}(rwdTrx, delay)
+
+	}
+}
+
 func (rwd *rewardUseCase) putRewards(c echo.Context, campaigns []*models.Campaign) []models.Reward {
 	var rewards []models.Reward
 
@@ -341,4 +371,30 @@ func (rwd *rewardUseCase) validatePromoCode(tags []models.Tag, validPC, promoCod
 	}
 
 	return models.ErrPromoCode
+}
+
+func (rwd *rewardUseCase) createRewardTrx(c echo.Context, plValidator models.PayloadValidator, rewardID int64, rwdResponse []models.RewardResponse) (*models.RewardTrx, error) {
+	rewardTrx, err := rwd.rwdTrxRepo.Create(c, plValidator, rewardID, rwdResponse)
+
+	if err != nil {
+		return nil, err
+	}
+
+	rwd.timeoutTrxJob(c, rewardTrx)
+
+	return &rewardTrx, nil
+}
+
+func (rwd *rewardUseCase) timeoutTrxJob(c echo.Context, rewardTrx models.RewardTrx) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	diff := rewardTrx.TimeoutDate.Sub(*rewardTrx.InquiredDate)
+	delay := time.Duration(diff.Seconds())
+
+	go func(rwdTrx models.RewardTrx, delay time.Duration) {
+		requestLogger.Debug("Store job to background for ref ID: " + rwdTrx.RefID)
+		time.Sleep(delay * time.Second)
+		requestLogger.Debug("Start to make ref ID: " + rwdTrx.RefID + " expired!")
+		rwd.rwdTrxRepo.RewardTrxTimeout(rwdTrx)
+	}(rewardTrx, delay)
 }

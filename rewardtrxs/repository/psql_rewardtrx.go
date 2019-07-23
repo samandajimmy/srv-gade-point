@@ -6,9 +6,12 @@ import (
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewardtrxs"
 	"math/rand"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/labstack/echo"
+	"github.com/sirupsen/logrus"
 )
 
 type psqlRewardTrxRepository struct {
@@ -28,9 +31,11 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
 	refID := randRefID(20)
+	expTime, _ := strconv.ParseInt(os.Getenv(`REWARD_TRX_TIMEOUT`), 10, 64)
+	timeoutDate := now.Add(time.Duration(expTime) * time.Minute)
 
-	query := `INSERT INTO reward_transactions (status, ref_id, cif, reward_id, used_promo_code, transaction_date, inquired_date, request_data, response_data, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`
+	query := `INSERT INTO reward_transactions (status, ref_id, cif, reward_id, used_promo_code, transaction_date, inquired_date, request_data, response_data, created_at, timeout_date)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`
 
 	stmt, err := rwdTrxRepo.Conn.Prepare(query)
 
@@ -69,11 +74,12 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 		RequestData:     string(requestData),
 		ResponseData:    string(responseData),
 		CreatedAt:       &now,
+		TimeoutDate:     &timeoutDate,
 	}
 
 	err = stmt.QueryRow(
 		&rewardTrx.Status, &rewardTrx.RefID, &rewardTrx.CIF, &rewardTrx.RewardID, &rewardTrx.UsedPromoCode, &rewardTrx.TransactionDate,
-		&rewardTrx.InquiredDate, &rewardTrx.RequestData, &rewardTrx.ResponseData, &rewardTrx.CreatedAt,
+		&rewardTrx.InquiredDate, &rewardTrx.RequestData, &rewardTrx.ResponseData, &rewardTrx.CreatedAt, &rewardTrx.TimeoutDate,
 	).Scan(&lastID)
 
 	if err != nil {
@@ -259,6 +265,84 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CheckByTransactionDate(c echo.Context
 	}
 
 	return rewardsInquiry, nil
+}
+
+func (rwdTrxRepo *psqlRewardTrxRepository) RewardTrxTimeout(rewardTrx models.RewardTrx) {
+	now := time.Now()
+	query := `UPDATE reward_transactions SET status = $1, updated_at = $2 where status = $3 and ref_id = $4`
+	stmt, err := rwdTrxRepo.Conn.Prepare(query)
+
+	if err != nil {
+		logrus.Debug(err)
+	}
+
+	_, err = stmt.Query(&models.RewardTrxTimeOut, &now, &models.RewardTrxInquired, &rewardTrx.RefID)
+
+	if err != nil {
+		logrus.Debug(err)
+	}
+}
+
+func (rwdTrxRepo *psqlRewardTrxRepository) UpdateTimeoutTrx() error {
+	now := time.Now()
+	query := `UPDATE reward_transactions SET status = $1, updated_at = $2 where timeout_date <= $3 and status = $4`
+	stmt, err := rwdTrxRepo.Conn.Prepare(query)
+
+	if err != nil {
+		logrus.Debug(err)
+	}
+
+	_, err = stmt.Query(&models.RewardTrxTimeOut, &now, &now, &models.RewardTrxInquired)
+
+	if err != nil {
+		logrus.Debug(err)
+	}
+
+	return nil
+}
+
+func (rwdTrxRepo *psqlRewardTrxRepository) GetInquiredTrx() ([]models.RewardTrx, error) {
+	var result []models.RewardTrx
+	now := time.Now()
+	query := `select id, status, coalesce(ref_core, ''), ref_id, reward_id, cif, used_promo_code, inquired_date, succeeded_date, timeout_date,
+		rejected_date, transaction_date from reward_transactions
+		where timeout_date >= $1 and status = $2`
+
+	rows, err := rwdTrxRepo.Conn.Query(query, &now, &models.RewardTrxInquired)
+
+	if err != nil {
+		logrus.Debug(err)
+
+		return nil, err
+	}
+
+	for rows.Next() {
+		var t models.RewardTrx
+		err = rows.Scan(
+			&t.ID,
+			&t.Status,
+			&t.RefCore,
+			&t.RefID,
+			&t.RewardID,
+			&t.CIF,
+			&t.UsedPromoCode,
+			&t.InquiredDate,
+			&t.SucceededDate,
+			&t.TimeoutDate,
+			&t.RejectedDate,
+			&t.TransactionDate,
+		)
+
+		if err != nil {
+			logrus.Debug(err)
+
+			return nil, err
+		}
+
+		result = append(result, t)
+	}
+
+	return result, nil
 }
 
 func randRefID(n int) string {

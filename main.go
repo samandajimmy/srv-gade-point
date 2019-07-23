@@ -6,6 +6,7 @@ import (
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/middleware"
 	"gade/srv-gade-point/models"
+	"gade/srv-gade-point/services"
 	"gade/srv-gade-point/vouchers"
 	"net/http"
 	"os"
@@ -47,8 +48,6 @@ import (
 	_voucherHttpDelivery "gade/srv-gade-point/vouchers/delivery/http"
 	_voucherRepository "gade/srv-gade-point/vouchers/repository"
 	_voucherUseCase "gade/srv-gade-point/vouchers/usecase"
-
-	"gade/srv-gade-point/services"
 
 	"github.com/carlescere/scheduler"
 	"github.com/golang-migrate/migrate/v4"
@@ -169,6 +168,9 @@ func main() {
 
 	// Run every day.
 	updateStatusBasedOnStartDate(campaignUseCase, voucherUseCase)
+
+	// run refresh reward trx
+	rewardUseCase.RefreshTrx()
 
 	ech.Start(":" + os.Getenv(`PORT`))
 

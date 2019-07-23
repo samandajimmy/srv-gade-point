@@ -13,4 +13,5 @@ type UseCase interface {
 	Inquiry(echo.Context, *models.PayloadValidator) (models.RewardsInquiry, *models.ResponseErrors)
 	Payment(echo.Context, *models.RewardPayment) error
 	CheckTransaction(echo.Context, *models.RewardPayment) (models.RewardTrxResponse, error)
+	RefreshTrx()
 }

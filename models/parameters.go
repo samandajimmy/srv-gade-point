@@ -48,6 +48,9 @@ var (
 	// DateTimeFormat to store a date time format of timestamp
 	DateTimeFormat = "2006-01-02 15:04:05"
 
+	// DateTimeFormatMillisecond to store a date time format of timestamp to millisecond
+	DateTimeFormatMillisecond = "2006-01-02 15:04:05.000"
+
 	// DateFormat to store a date format of timestamp
 	DateFormat = "2006-01-02"
 

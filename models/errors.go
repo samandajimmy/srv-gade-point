@@ -224,4 +224,7 @@ var (
 
 	// ErrMessageNoRewards to store a no rewards message response of data
 	ErrMessageNoRewards = errors.New("Sorry, no rewards available")
+
+	// ErrMessageRewardTrxAlreadyExists to store reward transaction already exists
+	ErrMessageRewardTrxAlreadyExists = errors.New("Reward transaction already exists")
 )

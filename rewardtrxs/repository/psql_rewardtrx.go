@@ -50,7 +50,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 		return rewardTrx, err
 	}
 
-	trxDate, err := time.Parse(models.DateFormat, payload.TransactionDate)
+	trxDate, err := time.Parse(models.DateTimeFormatMillisecond, payload.TransactionDate)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrTrxDateFormat)
@@ -234,6 +234,31 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CountByCIF(c echo.Context, quot model
 	}
 
 	return counter, nil
+}
+
+func (rwdTrxRepo *psqlRewardTrxRepository) CheckByTransactionDate(c echo.Context, payload models.PayloadValidator) (*models.RewardsInquiry, error) {
+	var rewardsInquiry *models.RewardsInquiry
+	var rwdInquiry json.RawMessage
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	query := `SELECT response_data FROM reward_transactions WHERE request_data->>'transactionDate' = $1`
+	err := rwdTrxRepo.Conn.QueryRow(query, payload.TransactionDate).Scan(&rwdInquiry)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return rewardsInquiry, err
+	}
+
+	err = json.Unmarshal([]byte(rwdInquiry), &rewardsInquiry)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return rewardsInquiry, err
+	}
+
+	return rewardsInquiry, nil
 }
 
 func randRefID(n int) string {

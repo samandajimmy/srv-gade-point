@@ -125,7 +125,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	var rewardSelected models.Reward
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	trxDate, err := time.Parse(models.DateFormat, plValidator.TransactionDate)
+	trxDate, err := time.Parse(models.DateTimeFormatMillisecond, plValidator.TransactionDate)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrTrxDateFormat)
@@ -146,6 +146,15 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		}
 
 		return rwdInquiry, nil
+	}
+
+	// check request payload base on transactionDate
+	rwdTrxInquiry, err := rwd.rwdTrxRepo.CheckByTransactionDate(c, *plValidator)
+
+	if rwdTrxInquiry != nil {
+		requestLogger.Debug(models.ErrMessageRewardTrxAlreadyExists)
+
+		return *rwdTrxInquiry, nil
 	}
 
 	// check available campaign

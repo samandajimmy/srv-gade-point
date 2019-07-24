@@ -326,6 +326,7 @@ func (rwd *rewardUseCase) CheckTransaction(c echo.Context, rwdPayment *models.Re
 }
 
 func (rwd *rewardUseCase) RefreshTrx() {
+	now := time.Now()
 	// update trx that should be timeout
 	err := rwd.rwdTrxRepo.UpdateTimeoutTrx()
 
@@ -341,7 +342,7 @@ func (rwd *rewardUseCase) RefreshTrx() {
 	}
 
 	for _, rwdTrx := range rewardTrx {
-		diff := rwdTrx.TimeoutDate.Sub(*rwdTrx.InquiredDate)
+		diff := rwdTrx.TimeoutDate.Sub(now)
 		delay := time.Duration(diff.Seconds())
 
 		go func(rwdTrx models.RewardTrx, delay time.Duration) {

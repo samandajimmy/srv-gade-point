@@ -281,18 +281,57 @@ func (rwdTrxRepo *psqlRewardTrxRepository) RewardTrxTimeout(rewardTrx models.Rew
 	if err != nil {
 		logrus.Debug(err)
 	}
-}
 
-func (rwdTrxRepo *psqlRewardTrxRepository) UpdateTimeoutTrx() error {
-	now := time.Now()
-	query := `UPDATE reward_transactions SET status = $1, updated_at = $2 where timeout_date <= $3 and status = $4`
-	stmt, err := rwdTrxRepo.Conn.Prepare(query)
+	zero := int64(0)
+	query = `UPDATE voucher_codes SET status = $1, user_id = $2, bought_date = NULL, updated_at = $3 where status = 1 and ref_id = $4`
+	stmt, err = rwdTrxRepo.Conn.Prepare(query)
 
 	if err != nil {
 		logrus.Debug(err)
 	}
 
-	_, err = stmt.Query(&models.RewardTrxTimeOut, &now, &now, &models.RewardTrxInquired)
+	_, err = stmt.Query(&zero, "", &now, &rewardTrx.RefID)
+
+	if err != nil {
+		logrus.Debug(err)
+	}
+
+	query = `UPDATE quotas SET available = available + 1 WHERE reward_id = $1 and is_per_user = $2`
+	stmt, err = rwdTrxRepo.Conn.Prepare(query)
+
+	if err != nil {
+		logrus.Debug(err)
+	}
+
+	_, err = stmt.Query(&rewardTrx.RewardID, models.IsPerUserFalse)
+
+	if err != nil {
+		logrus.Debug(err)
+	}
+}
+
+func (rwdTrxRepo *psqlRewardTrxRepository) UpdateTimeoutTrx() error {
+	now := time.Now()
+	query := `UPDATE reward_transactions SET status = $1, updated_at = $2 where timeout_date <= $3 and status = $4`
+	rows, err := rwdTrxRepo.Conn.Query(query, &models.RewardTrxTimeOut, &now, &now, &models.RewardTrxInquired)
+
+	if err != nil {
+		logrus.Debug(err)
+	}
+
+	for rows.Next() {
+		var t models.RewardTrx
+		err = rows.Scan(
+			&t.RewardID,
+			&t.RefCore,
+		)
+
+		if err != nil {
+			logrus.Debug(err)
+		}
+
+		rwdTrxRepo.updateLockedQuota(*t.RewardID, t.RefID)
+	}
 
 	if err != nil {
 		logrus.Debug(err)
@@ -343,6 +382,36 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetInquiredTrx() ([]models.RewardTrx,
 	}
 
 	return result, nil
+}
+
+func (rwdTrxRepo *psqlRewardTrxRepository) updateLockedQuota(rewardID int64, refID string) {
+	now := time.Now()
+	zero := int64(0)
+	query := `UPDATE voucher_codes SET status = $1, user_id = $2, bought_date = NULL, updated_at = $3 where status = 1 and ref_id = $4`
+	stmt, err := rwdTrxRepo.Conn.Prepare(query)
+
+	if err != nil {
+		logrus.Debug(err)
+	}
+
+	_, err = stmt.Query(&zero, "", &now, &refID)
+
+	if err != nil {
+		logrus.Debug(err)
+	}
+
+	query = `UPDATE quotas SET available = available + 1 WHERE reward_id = $1 and is_per_user = $2`
+	stmt, err = rwdTrxRepo.Conn.Prepare(query)
+
+	if err != nil {
+		logrus.Debug(err)
+	}
+
+	_, err = stmt.Query(rewardID, models.IsPerUserFalse)
+
+	if err != nil {
+		logrus.Debug(err)
+	}
 }
 
 func randRefID(n int) string {

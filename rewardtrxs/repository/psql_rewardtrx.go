@@ -215,7 +215,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CountByCIF(c echo.Context, quot model
 		endDate = quot.LastCheck.AddDate(0, 0, int(*quot.NumberOfDays-1))
 	}
 
-	query := `select count(ID) from reward_transactions where cif = $1 and transaction_date::date >= $2 and transaction_date::date <= $3 and status != $4 and reward_id = $5`
+	query := `select count(ID) from reward_transactions where cif = $1 and transaction_date::date >= $2 and transaction_date::date <= $3 and status in($4, $5) and reward_id = $6`
 	stmt, err := rwdTrxRepo.Conn.Prepare(query)
 	if err != nil {
 		requestLogger.Debug(err)
@@ -231,7 +231,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CountByCIF(c echo.Context, quot model
 		return 0, err
 	}
 
-	err = stmt.QueryRow(&cif, startDate, endDate, models.RewardTrxRejected, rwd.ID).Scan(&counter)
+	err = stmt.QueryRow(&cif, startDate, endDate, models.RewardTrxInquired, models.RewardTrxSucceeded, rwd.ID).Scan(&counter)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -242,29 +242,41 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CountByCIF(c echo.Context, quot model
 	return counter, nil
 }
 
-func (rwdTrxRepo *psqlRewardTrxRepository) CheckByTransactionDate(c echo.Context, payload models.PayloadValidator) (*models.RewardsInquiry, error) {
-	var rewardsInquiry *models.RewardsInquiry
-	var rwdInquiry json.RawMessage
+func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardByPayload(c echo.Context, payload models.PayloadValidator) (*models.Reward, string, error) {
+	result := new(models.Reward)
+	refID := ""
+	var validator json.RawMessage
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	query := `SELECT response_data FROM reward_transactions WHERE request_data->>'transactionDate' = $1`
-	err := rwdTrxRepo.Conn.QueryRow(query, payload.TransactionDate).Scan(&rwdInquiry)
+
+	query := `SELECT r.id, r.campaign_id, r.journal_account, r.type, r.validators, rt.ref_id
+		FROM reward_transactions rt  join rewards r on rt.reward_id = r.id WHERE rt.status = $1 and rt.cif= $2 and rt.used_promo_code= $3`
+
+	err := rwdTrxRepo.Conn.QueryRow(query, models.RewardTrxInquired, payload.CIF, payload.PromoCode).Scan(
+		&result.ID,
+		&result.CampaignID,
+		&result.JournalAccount,
+		&result.Type,
+		&validator,
+		&refID,
+	)
+
+	if refID != "" {
+		err = json.Unmarshal([]byte(validator), &result.Validators)
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, "", err
+		}
+	}
 
 	if err != nil {
 		requestLogger.Debug(err)
 
-		return rewardsInquiry, err
+		return nil, "", err
 	}
 
-	err = json.Unmarshal([]byte(rwdInquiry), &rewardsInquiry)
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return rewardsInquiry, err
-	}
-
-	return rewardsInquiry, nil
+	return result, refID, nil
 }
 
 func (rwdTrxRepo *psqlRewardTrxRepository) RewardTrxTimeout(rewardTrx models.RewardTrx) {

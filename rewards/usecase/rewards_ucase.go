@@ -124,6 +124,8 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	var voucherCode *models.VoucherCode
 	var respErrors models.ResponseErrors
 	var rewardSelected models.Reward
+	var rwdTrx *models.Reward
+	refID := ""
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	trxDate, err := time.Parse(models.DateTimeFormatMillisecond, plValidator.TransactionDate)
@@ -150,12 +152,23 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	}
 
 	// check request payload base on transactionDate
-	rwdTrxInquiry, err := rwd.rwdTrxRepo.CheckByTransactionDate(c, *plValidator)
-
-	if rwdTrxInquiry != nil {
+	rwdTrx, refID, err = rwd.rwdTrxRepo.GetRewardByPayload(c, *plValidator)
+	if rwdTrx != nil {
+		var rr []models.RewardResponse
 		requestLogger.Debug(models.ErrMessageRewardTrxAlreadyExists)
 
-		return *rwdTrxInquiry, nil
+		// get response reward
+		respData, err := rwd.responseReward(c, *rwdTrx, voucherCode, plValidator)
+		rr = append(rr, *respData)
+
+		if err != nil {
+			requestLogger.Debug(err)
+			respErrors.AddError(err.Error())
+		}
+
+		rwdInquiry.RefTrx = refID
+		rwdInquiry.Rewards = &rr
+		return rwdInquiry, nil
 	}
 
 	// check available campaign
@@ -172,7 +185,6 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	rewards := rwd.putRewards(c, campaigns)
 
 	for _, reward := range rewards {
-		var rwdResp models.RewardResponse
 		rewardLogger := logger.GetRequestLogger(c, reward.Validators)
 
 		// validate promo code
@@ -192,44 +204,13 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 			continue
 		}
 
-		// validate each reward
-		if err = reward.Validators.Validate(plValidator); err != nil {
-			rewardLogger.Debug(err)
-			respErrors.AddError(err.Error())
+		// get response reward
+		rwdResp, err := rwd.responseReward(c, reward, voucherCode, plValidator)
 
-			continue
+		if rwdResp != nil {
+			rwdResponse = append(rwdResponse, *rwdResp)
 		}
 
-		// get the rewards value/benefit
-		rwdValue, _ := reward.Validators.GetRewardValue(plValidator)
-
-		// check rewards voucher if any
-		rwdVoucher, _ := reward.Validators.GetVoucherResult()
-
-		if rwdVoucher != 0 {
-			plVoucherBuy := &models.PayloadVoucherBuy{
-				CIF:       plValidator.CIF,
-				VoucherID: strconv.FormatInt(rwdVoucher, 10),
-			}
-
-			voucherCode, err = rwd.voucherUC.VoucherGive(c, plVoucherBuy)
-
-			if err != nil {
-				requestLogger.Debug(models.ErrVoucherUnavailable)
-				respErrors.AddError(models.ErrVoucherUnavailable.Error())
-
-				continue
-			}
-
-			rwdResp.VoucherName = voucherCode.Voucher.Name
-			rwdValue = 0 // if voucher reward is exist then reward value should be nil
-		}
-
-		// populate reward response
-		rwdResp.Type = reward.GetRewardTypeText()
-		rwdResp.Value = rwdValue
-		rwdResp.JournalAccount = reward.JournalAccount
-		rwdResponse = append(rwdResponse, rwdResp)
 		rewardSelected = reward
 	}
 
@@ -268,6 +249,53 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	rwd.quotaUC.UpdateReduceQuota(c, rewardSelected.ID)
 
 	return rwdInquiry, nil
+}
+
+func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward, voucherCode *models.VoucherCode, plValidator *models.PayloadValidator) (*models.RewardResponse, error) {
+	var rwdResp models.RewardResponse
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	rewardLogger := logger.GetRequestLogger(c, reward.Validators)
+
+	// validate each reward
+	err := reward.Validators.Validate(plValidator)
+	if err != nil {
+		rewardLogger.Debug(err)
+
+		return nil, err
+	}
+
+	// get the rewards value/benefit
+	rwdValue, _ := reward.Validators.GetRewardValue(plValidator)
+
+	// check rewards voucher if any
+	rwdVoucher, _ := reward.Validators.GetVoucherResult()
+
+	if rwdVoucher != 0 {
+		plVoucherBuy := &models.PayloadVoucherBuy{
+			CIF:       plValidator.CIF,
+			VoucherID: strconv.FormatInt(rwdVoucher, 10),
+		}
+
+		voucherCode, err = rwd.voucherUC.VoucherGive(c, plVoucherBuy)
+
+		if err != nil {
+			requestLogger.Debug(models.ErrVoucherUnavailable)
+
+			return nil, err
+
+		}
+
+		rwdResp.VoucherName = voucherCode.Voucher.Name
+		rwdValue = 0 // if voucher reward is exist then reward value should be nil
+	}
+
+	// populate reward response
+	rwdResp.Type = reward.GetRewardTypeText()
+	rwdResp.Value = rwdValue
+	rwdResp.JournalAccount = reward.JournalAccount
+
+	return &rwdResp, nil
 }
 
 func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayment) error {

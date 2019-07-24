@@ -12,7 +12,7 @@ type Repository interface {
 	GetByRefID(echo.Context, string) (models.RewardsInquiry, error)
 	CountByCIF(echo.Context, models.Quota, models.Reward, string) (int64, error)
 	UpdateRewardTrx(echo.Context, *models.RewardPayment, int64) error
-	CheckTrx(echo.Context, string, string) (*models.RewardTrx, error)
+	CheckTrx(echo.Context, string) (*models.RewardTrx, error)
 	CheckRefID(echo.Context, string) (*models.RewardTrx, error)
 	GetRewardByPayload(echo.Context, models.PayloadValidator) (*models.Reward, string, error)
 	RewardTrxTimeout(models.RewardTrx)

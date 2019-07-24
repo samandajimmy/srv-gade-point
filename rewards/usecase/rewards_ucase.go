@@ -151,8 +151,9 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		return rwdInquiry, nil
 	}
 
-	// check request payload base on transactionDate
+	// check request payload base on cif and promo code
 	rwdTrx, refID, err = rwd.rwdTrxRepo.GetRewardByPayload(c, *plValidator)
+
 	if rwdTrx != nil {
 		var rr []models.RewardResponse
 		requestLogger.Debug(models.ErrMessageRewardTrxAlreadyExists)
@@ -302,8 +303,8 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
-	// check available reward transaction based in CIF and ref_id
-	rewardtrx, err := rwd.rwdTrxRepo.CheckTrx(c, rwdPayment.CIF, rwdPayment.RefTrx)
+	// check available reward transaction based in ref_id
+	rewardtrx, err := rwd.rwdTrxRepo.CheckTrx(c, rwdPayment.RefTrx)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrRefTrxNotFound)

@@ -105,7 +105,7 @@ func (quot *quotaUseCase) CheckQuota(c echo.Context, reward models.Reward, plVal
 			return true, nil
 		}
 
-		if *quota.IsPerUser == models.IsPerUserTrue {
+		if *quota.IsPerUser == models.IsPerUserTrue && plValidator.CIF != "" {
 			count, err := quot.rwdTrxUC.CountByCIF(c, *quota, reward, plValidator.CIF)
 
 			if err != nil {

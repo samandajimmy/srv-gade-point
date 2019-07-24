@@ -116,12 +116,12 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetByRefID(c echo.Context, refID stri
 	return rewardInquiry, nil
 }
 
-func (rwdTrxRepo *psqlRewardTrxRepository) CheckTrx(c echo.Context, CIF string, refID string) (*models.RewardTrx, error) {
+func (rwdTrxRepo *psqlRewardTrxRepository) CheckTrx(c echo.Context, refID string) (*models.RewardTrx, error) {
 	var result models.RewardTrx
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	query := `SELECT id, status, coalesce(ref_core, ''), ref_id, reward_id, cif, inquired_date, transaction_date from reward_transactions where cif = $1 and ref_id = $2 and status = $3`
-	err := rwdTrxRepo.Conn.QueryRow(query, CIF, refID, models.RewardTrxInquired).Scan(
+	query := `SELECT id, status, coalesce(ref_core, ''), ref_id, reward_id, cif, inquired_date, transaction_date from reward_transactions where ref_id = $1 and status = $2`
+	err := rwdTrxRepo.Conn.QueryRow(query, refID, models.RewardTrxInquired).Scan(
 		&result.ID,
 		&result.Status,
 		&result.RefCore,
@@ -167,7 +167,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CheckRefID(c echo.Context, refID stri
 }
 
 func (rwdTrxRepo *psqlRewardTrxRepository) UpdateRewardTrx(c echo.Context, rwdPayment *models.RewardPayment, status int64) error {
-	var refCore string
+	var refCore, cif string
 	var succeedDate, rejectedDate *time.Time
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
@@ -175,13 +175,15 @@ func (rwdTrxRepo *psqlRewardTrxRepository) UpdateRewardTrx(c echo.Context, rwdPa
 
 	if status == models.RewardTrxSucceeded {
 		refCore = rwdPayment.RefCore
+		cif = rwdPayment.CIF
 		succeedDate = &now
 	} else {
 		rejectedDate = &now
+		cif = rwdPayment.CIF
 	}
 
-	query := `UPDATE reward_transactions SET ref_core = $1 , status = $2, succeeded_date = $3, rejected_date = $4,
-		updated_at = $5 where status = $6 and ref_id = $7 and cif = $8`
+	query := `UPDATE reward_transactions SET cif = $1, ref_core = $2 , status = $3, succeeded_date = $4, rejected_date = $5,
+		updated_at = $6 where status = $7 and ref_id = $8`
 
 	stmt, err := rwdTrxRepo.Conn.Prepare(query)
 
@@ -191,7 +193,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) UpdateRewardTrx(c echo.Context, rwdPa
 		return err
 	}
 
-	_, err = stmt.Query(&refCore, &status, succeedDate, rejectedDate, &now, &models.RewardTrxInquired, &rwdPayment.RefTrx, &rwdPayment.CIF)
+	_, err = stmt.Query(&cif, &refCore, &status, succeedDate, rejectedDate, &now, &models.RewardTrxInquired, &rwdPayment.RefTrx)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -294,32 +296,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) RewardTrxTimeout(rewardTrx models.Rew
 		logrus.Debug(err)
 	}
 
-	zero := int64(0)
-	query = `UPDATE voucher_codes SET status = $1, user_id = $2, bought_date = NULL, updated_at = $3 where status = 1 and ref_id = $4`
-	stmt, err = rwdTrxRepo.Conn.Prepare(query)
-
-	if err != nil {
-		logrus.Debug(err)
-	}
-
-	_, err = stmt.Query(&zero, "", &now, &rewardTrx.RefID)
-
-	if err != nil {
-		logrus.Debug(err)
-	}
-
-	query = `UPDATE quotas SET available = available + 1 WHERE reward_id = $1 and is_per_user = $2`
-	stmt, err = rwdTrxRepo.Conn.Prepare(query)
-
-	if err != nil {
-		logrus.Debug(err)
-	}
-
-	_, err = stmt.Query(&rewardTrx.RewardID, models.IsPerUserFalse)
-
-	if err != nil {
-		logrus.Debug(err)
-	}
+	rwdTrxRepo.updateLockedQuota(*rewardTrx.RewardID, rewardTrx.RefID)
 }
 
 func (rwdTrxRepo *psqlRewardTrxRepository) UpdateTimeoutTrx() error {

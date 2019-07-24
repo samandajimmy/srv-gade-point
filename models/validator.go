@@ -37,7 +37,7 @@ type Validator struct {
 type PayloadValidator struct {
 	BranchCode        string     `json:"branchCode,omitempty"`
 	CampaignID        string     `json:"campaignId,omitempty"`
-	CIF               string     `json:"cif,omitempty" validate:"required"`
+	CIF               string     `json:"cif,omitempty"`
 	CustomerName      string     `json:"customerName,omitempty"`
 	LoanAmount        *float64   `json:"loanAmount,omitempty"`
 	Phone             string     `json:"phone,omitempty"`

@@ -160,15 +160,18 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 		// get response reward
 		respData, err := rwd.responseReward(c, *rwdTrx, voucherCode, plValidator)
-		rr = append(rr, *respData)
 
 		if err != nil {
 			requestLogger.Debug(err)
-			respErrors.AddError(err.Error())
+			respErrors.SetTitle(err.Error())
+
+			return rwdInquiry, &respErrors
 		}
 
+		rr = append(rr, *respData)
 		rwdInquiry.RefTrx = refID
 		rwdInquiry.Rewards = &rr
+
 		return rwdInquiry, nil
 	}
 
@@ -207,6 +210,13 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 		// get response reward
 		rwdResp, err := rwd.responseReward(c, reward, voucherCode, plValidator)
+
+		if err != nil {
+			rewardLogger.Debug(err)
+			respErrors.SetTitle(err.Error())
+
+			return rwdInquiry, &respErrors
+		}
 
 		if rwdResp != nil {
 			rwdResponse = append(rwdResponse, *rwdResp)
@@ -260,6 +270,7 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward, v
 
 	// validate each reward
 	err := reward.Validators.Validate(plValidator)
+
 	if err != nil {
 		rewardLogger.Debug(err)
 

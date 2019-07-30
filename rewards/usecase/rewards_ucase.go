@@ -338,24 +338,17 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 		// update reward quota
 	} else if rwdPayment.RefCore != "" && (*rwdInquiry.Status == models.RewardTrxInquired || *rwdInquiry.Status == models.RewardTrxTimeOut) {
 		// succeeded
-
-		if err != nil {
-			requestLogger.Debug(models.ErrRefTrxNotFound)
-
-			return responseData, models.ErrRefTrxNotFound
-		}
-
 		if *rwdInquiry.Status == models.RewardTrxTimeOut {
 			// update reward trx timeout force to Succedeed
 			rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxTimeOutForceToSucceeded)
+
+			// update reduce reward quota
+			rwd.quotaUC.UpdateReduceQuota(c, *rwdInquiry.RewardID)
 
 		} else if *rwdInquiry.Status == models.RewardTrxInquired {
 			// update reward trx to Succedeed
 			rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxSucceeded)
 		}
-
-		// update reduce reward quota
-		rwd.quotaUC.UpdateReduceQuota(c, *rwdInquiry.RewardID)
 
 	} else {
 		responseData.StatusCode = rwdInquiry.Status

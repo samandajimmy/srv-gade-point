@@ -310,20 +310,21 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward, v
 	return &rwdResp, nil
 }
 
-func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayment) error {
+func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayment) (models.RewardTrxResponse, error) {
+	var responseData models.RewardTrxResponse
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
 	// check available reward transaction based in ref_id
-	rewardtrx, err := rwd.rwdTrxRepo.CheckTrx(c, rwdPayment.RefTrx)
+	rwdInquiry, err := rwd.rwdTrxRepo.CheckRefID(c, rwdPayment.RefTrx)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrRefTrxNotFound)
 
-		return models.ErrRefTrxNotFound
+		return responseData, models.ErrRefTrxNotFound
 	}
 
-	if rwdPayment.RefCore == "" {
+	if rwdPayment.RefCore == "" && *rwdInquiry.Status == models.RewardTrxInquired {
 		// rejected
 		// update voucher code
 		rwd.voucherCodeRepo.UpdateVoucherCodeRejected(c, rwdPayment.RefTrx)
@@ -332,17 +333,35 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 		rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxRejected)
 
 		// update add reward quota
-		rwd.quotaUC.UpdateAddQuota(c, *rewardtrx.RewardID)
+		rwd.quotaUC.UpdateAddQuota(c, *rwdInquiry.RewardID)
 
 		// update reward quota
-	} else {
+	} else if rwdPayment.RefCore != "" && (*rwdInquiry.Status == models.RewardTrxInquired || *rwdInquiry.Status == models.RewardTrxTimeOut) {
 		// succeeded
-		// update reward trx
-		rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxSucceeded)
 
+		if err != nil {
+			requestLogger.Debug(models.ErrRefTrxNotFound)
+
+			return responseData, models.ErrRefTrxNotFound
+		}
+
+		if *rwdInquiry.Status == models.RewardTrxTimeOut {
+			// update reward trx timeout force to Succedeed
+			rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxTimeOutForceToSucceeded)
+
+		} else if *rwdInquiry.Status == models.RewardTrxInquired {
+			// update reward trx to Succedeed
+			rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxSucceeded)
+		}
+
+	} else {
+		responseData.StatusCode = rwdInquiry.Status
+		responseData.Status = rwdInquiry.GetstatusRewardTrxText()
+
+		return responseData, nil
 	}
 
-	return nil
+	return responseData, nil
 }
 
 func (rwd *rewardUseCase) CheckTransaction(c echo.Context, rwdPayment *models.RewardPayment) (models.RewardTrxResponse, error) {

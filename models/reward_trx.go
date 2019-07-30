@@ -14,13 +14,17 @@ var (
 
 	// RewardTrxTimeOut to store reward time out status
 	RewardTrxTimeOut int64 = 3
+
+	// RewardTrxTimeOutForceToSucceeded to store reward time out force to success status
+	RewardTrxTimeOutForceToSucceeded int64 = 4
 )
 
 var statusRewardTrx = map[int64]string{
-	RewardTrxInquired:  "inquired",
-	RewardTrxSucceeded: "succeeded",
-	RewardTrxRejected:  "rejected",
-	RewardTrxTimeOut:   "time out",
+	RewardTrxInquired:                "inquiry",
+	RewardTrxSucceeded:               "berhasil",
+	RewardTrxRejected:                "ditolak",
+	RewardTrxTimeOut:                 "time out",
+	RewardTrxTimeOutForceToSucceeded: "time out yang berhasil",
 }
 
 // RewardTrx is represent a reward_transactions model

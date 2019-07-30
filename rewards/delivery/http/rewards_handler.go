@@ -61,6 +61,7 @@ func (rwd *RewardHandler) rewardInquiry(echTx echo.Context) error {
 
 func (rwd *RewardHandler) rewardPayment(echTx echo.Context) error {
 	var rwdPayment models.RewardPayment
+	var responseData models.RewardTrxResponse
 	response = models.Response{}
 	respErrors := &models.ResponseErrors{}
 	logger := models.RequestLogger{}
@@ -82,7 +83,7 @@ func (rwd *RewardHandler) rewardPayment(echTx echo.Context) error {
 		return echTx.JSON(http.StatusBadRequest, response)
 	}
 
-	err = rwd.RewardUseCase.Payment(echTx, &rwdPayment)
+	responseData, err = rwd.RewardUseCase.Payment(echTx, &rwdPayment)
 
 	if err != nil {
 		respErrors.SetTitle(err.Error())
@@ -92,7 +93,12 @@ func (rwd *RewardHandler) rewardPayment(echTx echo.Context) error {
 		return echTx.JSON(getStatusCode(err), response)
 	}
 
+	if responseData.Status != "" {
+		respErrors.SetTitle(models.ErrRefIDStatus.Error() + responseData.Status)
+	}
+
 	response.SetResponse(nil, respErrors)
+
 	logger.DataLog(echTx, response).Info("End of payment rewards.")
 
 	return echTx.JSON(getStatusCode(err), response)
@@ -133,11 +139,15 @@ func (rwd *RewardHandler) checkTransaction(echTx echo.Context) error {
 	}
 
 	if models.RewardTrxInquired != *responseData.StatusCode {
-		respErrors.SetTitle("Ref transaction ID has been " + responseData.Status)
+		respErrors.SetTitle(models.ErrRefIDStatus.Error() + responseData.Status)
 	}
 
 	response.SetResponse(nil, respErrors)
 	logger.DataLog(echTx, response).Info("End of check rewards transaction.")
+
+	if models.RewardTrxInquired == *responseData.StatusCode {
+		response.Message = models.ErrRefIDStatus.Error() + responseData.Status
+	}
 
 	return echTx.JSON(getStatusCode(err), response)
 }

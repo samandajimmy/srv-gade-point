@@ -177,13 +177,17 @@ func (rwdTrxRepo *psqlRewardTrxRepository) UpdateRewardTrx(c echo.Context, rwdPa
 		refCore = rwdPayment.RefCore
 		cif = rwdPayment.CIF
 		succeedDate = &now
+	} else if status == models.RewardTrxTimeOutForceToSucceeded {
+		refCore = rwdPayment.RefCore
+		cif = rwdPayment.CIF
+		succeedDate = &now
 	} else {
 		rejectedDate = &now
 		cif = rwdPayment.CIF
 	}
 
 	query := `UPDATE reward_transactions SET cif = $1, ref_core = $2 , status = $3, succeeded_date = $4, rejected_date = $5,
-		updated_at = $6 where status = $7 and ref_id = $8`
+		updated_at = $6 where ref_id = $7`
 
 	stmt, err := rwdTrxRepo.Conn.Prepare(query)
 
@@ -193,7 +197,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) UpdateRewardTrx(c echo.Context, rwdPa
 		return err
 	}
 
-	_, err = stmt.Query(&cif, &refCore, &status, succeedDate, rejectedDate, &now, &models.RewardTrxInquired, &rwdPayment.RefTrx)
+	_, err = stmt.Query(&cif, &refCore, &status, succeedDate, rejectedDate, &now, &rwdPayment.RefTrx)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -217,7 +221,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CountByCIF(c echo.Context, quot model
 		endDate = quot.LastCheck.AddDate(0, 0, int(*quot.NumberOfDays-1))
 	}
 
-	query := `select count(ID) from reward_transactions where cif = $1 and transaction_date::date >= $2 and transaction_date::date <= $3 and status in($4, $5) and reward_id = $6`
+	query := `select count(ID) from reward_transactions where cif = $1 and transaction_date::date >= $2 and transaction_date::date <= $3 and status in($4, $5, $6) and reward_id = $7`
 	stmt, err := rwdTrxRepo.Conn.Prepare(query)
 	if err != nil {
 		requestLogger.Debug(err)
@@ -233,7 +237,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CountByCIF(c echo.Context, quot model
 		return 0, err
 	}
 
-	err = stmt.QueryRow(&cif, startDate, endDate, models.RewardTrxInquired, models.RewardTrxSucceeded, rwd.ID).Scan(&counter)
+	err = stmt.QueryRow(&cif, startDate, endDate, models.RewardTrxInquired, models.RewardTrxSucceeded, models.RewardTrxTimeOutForceToSucceeded, rwd.ID).Scan(&counter)
 
 	if err != nil {
 		requestLogger.Debug(err)

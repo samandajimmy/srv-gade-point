@@ -354,6 +354,9 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 			rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxSucceeded)
 		}
 
+		// update reduce reward quota
+		rwd.quotaUC.UpdateReduceQuota(c, *rwdInquiry.RewardID)
+
 	} else {
 		responseData.StatusCode = rwdInquiry.Status
 		responseData.Status = rwdInquiry.GetstatusRewardTrxText()

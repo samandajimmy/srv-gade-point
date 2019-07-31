@@ -4,43 +4,43 @@ import "github.com/labstack/echo"
 
 var (
 	// StatusSuccess to store a status response success
-	StatusSuccess = "Success"
+	StatusSuccess = "Berhasil"
 
 	// StatusError to store a status response error
-	StatusError = "Error"
+	StatusError = "Gagal"
 
 	// MessageSaveSuccess to store a success message response of save
-	MessageSaveSuccess = "Successfully Saved"
+	MessageSaveSuccess = "Berhasil Disimpan"
 
 	// MessageUpdateSuccess to store a success message response of update
-	MessageUpdateSuccess = "Successfully Updated"
+	MessageUpdateSuccess = "Berhasil Diperbaharui"
 
 	// MessageUploadSuccess to store a success message response of upload
-	MessageUploadSuccess = "Successfully Upload"
+	MessageUploadSuccess = "Berhasil Unggah"
 
 	// MessageDataSuccess to store a success message response of data
-	MessageDataSuccess = "Data Successfully Sent"
+	MessageDataSuccess = "Data Berhasil Dikirim"
 
 	// MessagePointSuccess to store a success message response of data
-	MessagePointSuccess = "Data Successfully Sent"
+	MessagePointSuccess = "Data Berhasil Dikirim"
 
 	// MessageUpdateError to store an errpr message response 0f update
-	MessageUpdateError = "Update Error"
+	MessageUpdateError = "Gagal Mempebaharui"
 
 	// MessageUploadError to store en erro message response of upload
-	MessageUploadError = "Upload Failed"
+	MessageUploadError = "Gagal Unggah"
 
 	// MessageValidationError to store an error message response of field validation
-	MessageValidationError = "Field validation error"
+	MessageValidationError = "Gagal Validasi Kolom"
 
 	// MessageDataNotFound to store a message response of data not found
-	MessageDataNotFound = "Data Not Found"
+	MessageDataNotFound = "Data Tidak Ditemukan"
 
 	// MessageUnprocessableEntity to store a message response of unproccessable entity
-	MessageUnprocessableEntity = "Unprocessable Entity"
+	MessageUnprocessableEntity = "Entitas Tidak Dapat Diproses"
 
 	// MessageTokenFailed to store a message response token failure
-	MessageTokenFailed = "Creating token failed!"
+	MessageTokenFailed = "Gagal Membuat Token!"
 
 	// MicroTimeFormat to store a time format of micro timestamp
 	MicroTimeFormat = "20060102150405.000000"

@@ -4,10 +4,10 @@ import "github.com/labstack/echo"
 
 var (
 	// StatusSuccess to store a status response success
-	StatusSuccess = "Berhasil"
+	StatusSuccess = "Success"
 
 	// StatusError to store a status response error
-	StatusError = "Gagal"
+	StatusError = "Error"
 
 	// MessageSaveSuccess to store a success message response of save
 	MessageSaveSuccess = "Berhasil Disimpan"

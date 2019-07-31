@@ -21,10 +21,10 @@ var (
 
 var statusRewardTrx = map[int64]string{
 	RewardTrxInquired:                "inquiry",
-	RewardTrxSucceeded:               "berhasil",
-	RewardTrxRejected:                "ditolak",
-	RewardTrxTimeOut:                 "time out",
-	RewardTrxTimeOutForceToSucceeded: "time out yang berhasil",
+	RewardTrxSucceeded:               "telah sukses sebelumnya",
+	RewardTrxRejected:                "telah ditolak sebelumnya",
+	RewardTrxTimeOut:                 "telah Kedaluwarsa",
+	RewardTrxTimeOutForceToSucceeded: "telah sukses sebelumnya",
 }
 
 // RewardTrx is represent a reward_transactions model

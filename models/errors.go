@@ -229,5 +229,5 @@ var (
 	ErrMessageRewardTrxAlreadyExists = errors.New("Transaksi reward sudah ada")
 
 	// ErrRefIDStatus to not found ref_trx error message
-	ErrRefIDStatus = errors.New("Status ID transaksi: ")
+	ErrRefIDStatus = errors.New("Transaksi ID ")
 )

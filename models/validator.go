@@ -57,7 +57,7 @@ var tightenValidator = map[string]string{
 	"minLoanAmount":        "loanAmount",
 	"maxLoanAmount":        "loanAmount",
 }
-var customErrMsg = "%s transaksi ini tidak valid untuk mendapatkan benefit"
+var customErrMsg = "%s untuk transaksi ini tidak valid untuk mendapatkan benefit"
 
 // GetRewardValue is to get value of the reward
 func (v *Validator) GetRewardValue(payloadValidator *PayloadValidator) (float64, error) {

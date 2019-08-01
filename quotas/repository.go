@@ -15,4 +15,5 @@ type Repository interface {
 	UpdateReduceQuota(echo.Context, int64) error
 	CheckRefreshQuota(echo.Context, *models.PayloadValidator) ([]*models.Quota, error)
 	RefreshQuota(echo.Context, *models.Quota, *models.PayloadValidator) error
+	GetQuotaByReward(echo.Context, int64) ([]models.Quota, error)
 }

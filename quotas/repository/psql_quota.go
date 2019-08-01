@@ -263,3 +263,45 @@ func (quotRepo *psqlQuotaRepository) RefreshQuota(c echo.Context, qList *models.
 
 	return nil
 }
+
+func (quotRepo *psqlQuotaRepository) GetQuotaByReward(c echo.Context, rewardID int64) ([]models.Quota, error) {
+	var result []models.Quota
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	query := `SELECT id, number_of_days, amount, is_per_user, available, last_check, next_check ,created_at, updated_at FROM quotas where reward_id = $1`
+	rows, err := quotRepo.Conn.Query(query, rewardID)
+	defer rows.Close()
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	for rows.Next() {
+		var r models.Quota
+
+		err = rows.Scan(
+			&r.ID,
+			&r.NumberOfDays,
+			&r.Amount,
+			&r.IsPerUser,
+			&r.Available,
+			&r.LastCheck,
+			&r.NextCheck,
+			&r.CreatedAt,
+			&r.UpdatedAt,
+		)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		result = append(result, r)
+	}
+
+	return result, err
+}

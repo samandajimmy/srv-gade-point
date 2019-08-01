@@ -136,7 +136,7 @@ func (m *psqlCampaignRepository) GetCampaign(c echo.Context, payload map[string]
 	requestLogger := logger.GetRequestLogger(c, nil)
 	paging := ""
 	where := ""
-	query := `SELECT id, name, description, start_date, end_date, status, type, validators, updated_at, created_at FROM campaigns WHERE id IS NOT NULL`
+	query := `SELECT id, name, description, start_date, end_date, status, updated_at, created_at FROM campaigns WHERE id IS NOT NULL`
 
 	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
 		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))

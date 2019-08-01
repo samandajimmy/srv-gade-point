@@ -138,7 +138,7 @@ func main() {
 	_voucherCodeHttpDelivery.NewVoucherCodesHandler(echoGroup, voucherCodeUseCase)
 
 	// REWARD
-	rewardRepository := _rewardRepository.NewPsqlRewardRepository(dbConn)
+	rewardRepository := _rewardRepository.NewPsqlRewardRepository(dbConn, quotaRepository, tagRepository)
 	campaignRepository := _campaignRepository.NewPsqlCampaignRepository(dbConn, rewardRepository)
 	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, campaignRepository, pHistoryRepository)
 	_voucherHttpDelivery.NewVouchersHandler(echoGroup, voucherUseCase)

@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"gade/srv-gade-point/models"
+	"gade/srv-gade-point/quotas"
 	"gade/srv-gade-point/rewards"
+	"gade/srv-gade-point/tags"
 	"time"
 
 	"github.com/labstack/echo"
@@ -12,12 +14,14 @@ import (
 )
 
 type psqlRewardRepository struct {
-	Conn *sql.DB
+	Conn     *sql.DB
+	quotRepo quotas.Repository
+	tagRepo  tags.Repository
 }
 
 // NewPsqlRewardRepository will create an object that represent the rewards.Repository interface
-func NewPsqlRewardRepository(Conn *sql.DB) rewards.Repository {
-	return &psqlRewardRepository{Conn}
+func NewPsqlRewardRepository(Conn *sql.DB, quotRepo quotas.Repository, tagRepo tags.Repository) rewards.Repository {
+	return &psqlRewardRepository{Conn, quotRepo, tagRepo}
 }
 
 func (rwdRepo *psqlRewardRepository) CreateReward(c echo.Context, reward *models.Reward, campaignID int64) error {
@@ -175,6 +179,27 @@ func (rwdRepo *psqlRewardRepository) GetRewardByCampaign(c echo.Context, campaig
 
 		reward.CreatedAt = &createDate.Time
 		reward.UpdatedAt = &updateDate.Time
+
+		// get quotas
+		quotas, err := rwdRepo.quotRepo.GetQuotaByReward(c, reward.ID)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		// get tags
+		tags, err := rwdRepo.tagRepo.GetTagByReward(c, reward.ID)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		reward.Quotas = &quotas
+		reward.Tags = &tags
 
 		if err = json.Unmarshal([]byte(validator), &reward.Validators); err != nil {
 			requestLogger.Debug(err)

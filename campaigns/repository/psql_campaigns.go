@@ -327,7 +327,7 @@ func (m *psqlCampaignRepository) GetCampaignDetail(c echo.Context, id int64) (*m
 	var createDate, updateDate pq.NullTime
 	result := new(models.Campaign)
 
-	query := `SELECT id, name, description, start_date, end_date, status, type, validators, updated_at, created_at FROM campaigns WHERE id = $1`
+	query := `SELECT id, name, description, start_date, end_date, status, updated_at, created_at FROM campaigns WHERE id = $1`
 
 	err := m.Conn.QueryRow(query, id).Scan(
 		&result.ID,

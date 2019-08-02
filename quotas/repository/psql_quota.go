@@ -82,6 +82,7 @@ func (quotRepo *psqlQuotaRepository) DeleteByReward(c echo.Context, rewardID int
 		return err
 	}
 
+	defer result.Close()
 	requestLogger.Debug("quotas deleted: ", result)
 
 	return nil
@@ -94,13 +95,14 @@ func (quotRepo *psqlQuotaRepository) CheckQuota(c echo.Context, rewardID int64) 
 
 	query := `SELECT id, available, is_per_user, amount, number_of_days, last_check FROM quotas where reward_id = $1`
 	rows, err := quotRepo.Conn.Query(query, rewardID)
-	defer rows.Close()
 
 	if err != nil {
 		requestLogger.Debug(err)
 
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		var r models.Quota
@@ -143,13 +145,15 @@ func (quotRepo *psqlQuotaRepository) UpdateAddQuota(c echo.Context, rewardID int
 		return err
 	}
 
-	_, err = stmt.Query(&rewardID, models.IsPerUserFalse)
+	rows, err := stmt.Query(&rewardID, models.IsPerUserFalse)
 
 	if err != nil {
 		requestLogger.Debug(err)
 
 		return err
 	}
+
+	defer rows.Close()
 
 	return nil
 }
@@ -167,13 +171,15 @@ func (quotRepo *psqlQuotaRepository) UpdateReduceQuota(c echo.Context, rewardID 
 		return err
 	}
 
-	_, err = stmt.Query(&rewardID, models.IsPerUserFalse)
+	rows, err := stmt.Query(&rewardID, models.IsPerUserFalse)
 
 	if err != nil {
 		requestLogger.Debug(err)
 
 		return err
 	}
+
+	defer rows.Close()
 
 	return nil
 }
@@ -196,13 +202,13 @@ func (quotRepo *psqlQuotaRepository) CheckRefreshQuota(c echo.Context, payload *
 		models.IsLimitAmount,
 	)
 
-	defer rows.Close()
-
 	if err != nil {
 		requestLogger.Debug(err)
 
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		var r models.Quota
@@ -253,13 +259,15 @@ func (quotRepo *psqlQuotaRepository) RefreshQuota(c echo.Context, qList *models.
 		return err
 	}
 
-	_, err = stmt.Query(qList.Amount, lastCheckDate, nextCheckDate, qList.ID)
+	rows, err := stmt.Query(qList.Amount, lastCheckDate, nextCheckDate, qList.ID)
 
 	if err != nil {
 		requestLogger.Debug(err)
 
 		return err
 	}
+
+	defer rows.Close()
 
 	return nil
 }
@@ -271,13 +279,14 @@ func (quotRepo *psqlQuotaRepository) GetQuotaByReward(c echo.Context, rewardID i
 
 	query := `SELECT id, number_of_days, amount, is_per_user, available, last_check, next_check ,created_at, updated_at FROM quotas where reward_id = $1`
 	rows, err := quotRepo.Conn.Query(query, rewardID)
-	defer rows.Close()
 
 	if err != nil {
 		requestLogger.Debug(err)
 
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		var r models.Quota

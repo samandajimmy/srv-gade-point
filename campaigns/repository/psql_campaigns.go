@@ -45,7 +45,8 @@ func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models
 		return err
 	}
 
-	err = stmt.QueryRow(campaign.Name, campaign.Description, campaign.StartDate, campaign.EndDate, campaign.Status, &now).Scan(&lastID)
+	err = stmt.QueryRow(campaign.Name, campaign.Description, campaign.StartDate, campaign.EndDate,
+		campaign.Status, &now).Scan(&lastID)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -58,7 +59,10 @@ func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models
 	return nil
 }
 
-func (m *psqlCampaignRepository) UpdateCampaign(c echo.Context, id int64, updateCampaign *models.Campaign) error {
+func (m *psqlCampaignRepository) UpdateCampaign(c echo.Context, id int64,
+	updateCampaign *models.Campaign) error {
+
+	var lastID int64
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
@@ -71,7 +75,6 @@ func (m *psqlCampaignRepository) UpdateCampaign(c echo.Context, id int64, update
 		return err
 	}
 
-	var lastID int64
 	err = stmt.QueryRow(updateCampaign.Status, &now, id).Scan(&lastID)
 
 	if err != nil {
@@ -84,10 +87,12 @@ func (m *psqlCampaignRepository) UpdateCampaign(c echo.Context, id int64, update
 }
 
 func (m *psqlCampaignRepository) UpdateExpiryDate(c echo.Context) error {
+	var lastID int64
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
-	query := `UPDATE campaigns SET status = 0, updated_at = $1 WHERE end_date::timestamp::date < now()::date AND status = 1`
+	query := `UPDATE campaigns SET status = 0, updated_at = $1
+		WHERE end_date::timestamp::date < now()::date AND status = 1`
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
@@ -96,7 +101,6 @@ func (m *psqlCampaignRepository) UpdateExpiryDate(c echo.Context) error {
 		return err
 	}
 
-	var lastID int64
 	err = stmt.QueryRow(&now).Scan(&lastID)
 
 	if err != nil {
@@ -109,8 +113,10 @@ func (m *psqlCampaignRepository) UpdateExpiryDate(c echo.Context) error {
 }
 
 func (m *psqlCampaignRepository) UpdateStatusBasedOnStartDate() error {
+	var lastID int64
 	now := time.Now()
-	query := `UPDATE campaigns SET status = 1, updated_at = $1 WHERE start_date::timestamp::date = now()::date`
+	query := `UPDATE campaigns SET status = 1, updated_at = $1
+		WHERE start_date::timestamp::date = now()::date`
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
@@ -119,7 +125,6 @@ func (m *psqlCampaignRepository) UpdateStatusBasedOnStartDate() error {
 		return err
 	}
 
-	var lastID int64
 	err = stmt.QueryRow(&now).Scan(&lastID)
 
 	if err != nil {
@@ -177,13 +182,14 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 	result := make([]*models.Campaign, 0)
 
 	rows, err := m.Conn.Query(query)
-	defer rows.Close()
 
 	if err != nil {
 		requestLogger.Debug(err)
 
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		t := new(models.Campaign)
@@ -372,6 +378,7 @@ func (m *psqlCampaignRepository) Delete(c echo.Context, id int64) error {
 		return err
 	}
 
+	defer result.Close()
 	requestLogger.Debug("Result delete campaign: ", result)
 
 	return nil

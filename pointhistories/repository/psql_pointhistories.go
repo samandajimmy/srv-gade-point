@@ -67,6 +67,8 @@ func (psqlRepo *psqlPointHistoryRepository) GetUsers(c echo.Context, payload map
 		return nil, err
 	}
 
+	defer rows.Close()
+
 	for rows.Next() {
 		var pntHstry models.PointHistory
 
@@ -166,6 +168,8 @@ func (psqlRepo *psqlPointHistoryRepository) GetUserPointHistory(c echo.Context, 
 
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		var ph models.PointHistory

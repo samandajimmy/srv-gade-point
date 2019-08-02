@@ -560,6 +560,7 @@ func (m *psqlVoucherRepository) DeleteVoucher(c echo.Context, id int64) error {
 		return err
 	}
 
+	defer result.Close()
 	requestLogger.Debug("Result delete vouchers: ", result)
 
 	return nil
@@ -708,7 +709,7 @@ func (m *psqlVoucherRepository) insertVoucherCodes(c echo.Context, pCodes []*mod
 		return err
 	}
 
-	_, err = stmt.Query(valueArgs...)
+	rows, err := stmt.Query(valueArgs...)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -716,6 +717,7 @@ func (m *psqlVoucherRepository) insertVoucherCodes(c echo.Context, pCodes []*mod
 		return err
 	}
 
+	defer rows.Close()
 	requestLogger.Debugf("%d voucher code(s) are created concurrently!", counter)
 
 	return nil

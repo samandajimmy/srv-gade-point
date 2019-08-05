@@ -197,13 +197,15 @@ func (rwdTrxRepo *psqlRewardTrxRepository) UpdateRewardTrx(c echo.Context, rwdPa
 		return err
 	}
 
-	_, err = stmt.Query(&cif, &refCore, &status, succeedDate, rejectedDate, &now, &rwdPayment.RefTrx)
+	rows, err := stmt.Query(&cif, &refCore, &status, succeedDate, rejectedDate, &now, &rwdPayment.RefTrx)
 
 	if err != nil {
 		requestLogger.Debug(err)
 
 		return err
 	}
+
+	defer rows.Close()
 
 	return nil
 }
@@ -294,11 +296,13 @@ func (rwdTrxRepo *psqlRewardTrxRepository) RewardTrxTimeout(rewardTrx models.Rew
 		logrus.Debug(err)
 	}
 
-	_, err = stmt.Query(&models.RewardTrxTimeOut, &now, &models.RewardTrxInquired, &rewardTrx.RefID)
+	rows, err := stmt.Query(&models.RewardTrxTimeOut, &now, &models.RewardTrxInquired, &rewardTrx.RefID)
 
 	if err != nil {
 		logrus.Debug(err)
 	}
+
+	defer rows.Close()
 
 	rwdTrxRepo.updateLockedQuota(*rewardTrx.RewardID, rewardTrx.RefID)
 }
@@ -311,6 +315,8 @@ func (rwdTrxRepo *psqlRewardTrxRepository) UpdateTimeoutTrx() error {
 	if err != nil {
 		logrus.Debug(err)
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		var t models.RewardTrx
@@ -347,6 +353,8 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetInquiredTrx() ([]models.RewardTrx,
 
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		var t models.RewardTrx
@@ -387,11 +395,13 @@ func (rwdTrxRepo *psqlRewardTrxRepository) updateLockedQuota(rewardID int64, ref
 		logrus.Debug(err)
 	}
 
-	_, err = stmt.Query(&zero, "", &now, &refID)
+	rowVC, err := stmt.Query(&zero, "", &now, &refID)
 
 	if err != nil {
 		logrus.Debug(err)
 	}
+
+	defer rowVC.Close()
 
 	query = `UPDATE quotas SET available = available + 1 WHERE reward_id = $1 and is_per_user = $2`
 	stmt, err = rwdTrxRepo.Conn.Prepare(query)
@@ -400,11 +410,13 @@ func (rwdTrxRepo *psqlRewardTrxRepository) updateLockedQuota(rewardID int64, ref
 		logrus.Debug(err)
 	}
 
-	_, err = stmt.Query(rewardID, models.IsPerUserFalse)
+	rowQ, err := stmt.Query(rewardID, models.IsPerUserFalse)
 
 	if err != nil {
 		logrus.Debug(err)
 	}
+
+	defer rowQ.Close()
 }
 
 func randRefID(n int) string {

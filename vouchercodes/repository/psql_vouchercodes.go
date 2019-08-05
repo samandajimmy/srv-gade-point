@@ -343,13 +343,15 @@ func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeRefID(c echo.Context
 		return err
 	}
 
-	_, err = stmt.Query(&refID, &now, &voucherCode.ID)
+	rows, err := stmt.Query(&refID, &now, &voucherCode.ID)
 
 	if err != nil {
 		requestLogger.Debug(err)
 
 		return err
 	}
+
+	defer rows.Close()
 
 	return nil
 }
@@ -368,13 +370,15 @@ func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeRejected(c echo.Cont
 		return err
 	}
 
-	_, err = stmt.Query(&zero, "", &now, &refID)
+	rows, err := stmt.Query(&zero, "", &now, &refID)
 
 	if err != nil {
 		requestLogger.Debug(err)
 
 		return err
 	}
+
+	defer rows.Close()
 
 	return nil
 }

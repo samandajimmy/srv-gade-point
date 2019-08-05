@@ -73,6 +73,7 @@ func (tgRepo *psqlTagRepository) Delete(c echo.Context, tagID int64) error {
 		return err
 	}
 
+	defer result.Close()
 	requestLogger.Debug("tags deleted: ", result)
 
 	return nil
@@ -85,13 +86,14 @@ func (tgRepo *psqlTagRepository) GetTagByReward(c echo.Context, rewardID int64) 
 
 	query := `SELECT t.id, t.name, t.created_at, t.updated_at FROM reward_tags rt join tags t on rt.tag_id = t.id where rt.reward_id = $1`
 	rows, err := tgRepo.Conn.Query(query, rewardID)
-	defer rows.Close()
 
 	if err != nil {
 		requestLogger.Debug(err)
 
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		var t models.Tag

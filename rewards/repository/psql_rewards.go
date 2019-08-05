@@ -85,6 +85,7 @@ func (rwdRepo *psqlRewardRepository) DeleteByCampaign(c echo.Context, campaignID
 		return err
 	}
 
+	defer result.Close()
 	requestLogger.Debug("rewards deleted: ", result)
 
 	return nil
@@ -141,6 +142,7 @@ func (rwdRepo *psqlRewardRepository) DeleteRewardTag(c echo.Context, rewardID in
 		return err
 	}
 
+	defer result.Close()
 	requestLogger.Debug("reward_tags deleted: ", result)
 
 	return nil
@@ -153,13 +155,14 @@ func (rwdRepo *psqlRewardRepository) GetRewardByCampaign(c echo.Context, campaig
 	query := `SELECT id, name, description, terms_and_conditions, how_to_use, journal_account, promo_code, is_promo_code, custom_period, type, validators,
 		campaign_id, created_at, updated_at FROM rewards WHERE campaign_id = $1`
 	rows, err := rwdRepo.Conn.Query(query, campaignID)
-	defer rows.Close()
 
 	if err != nil {
 		requestLogger.Debug(err)
 
 		return rewards, err
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		var reward models.Reward
@@ -219,13 +222,14 @@ func (rwdRepo *psqlRewardRepository) GetRewardTags(c echo.Context, reward *model
 	requestLogger := logger.GetRequestLogger(c, nil)
 	query := `SELECT t.name FROM reward_tags rt JOIN tags t ON rt.tag_id = t.id  WHERE reward_id = $1`
 	rows, err := rwdRepo.Conn.Query(query, reward.ID)
-	defer rows.Close()
 
 	if err != nil {
 		requestLogger.Debug(err)
 
 		return reward, err
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		var tag models.Tag

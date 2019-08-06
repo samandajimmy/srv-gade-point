@@ -7,12 +7,14 @@ import (
 var (
 	// RewardTypePoint to store reward type point
 	RewardTypePoint int64
-	// RewardTypeDiscount to store reward type discount
-	RewardTypeDiscount int64 = 1
+	// RewardTypeDirectDiscount to store reward type direct discount
+	RewardTypeDirectDiscount int64 = 1
+	// RewardTypePercentageDiscount to store reward type percentage discount
+	RewardTypePercentageDiscount int64 = 2
 	// RewardTypeGoldback to store reward type goldback
-	RewardTypeGoldback int64 = 2
+	RewardTypeGoldback int64 = 3
 	// RewardTypeVoucher to store reward type voucher
-	RewardTypeVoucher int64 = 3
+	RewardTypeVoucher int64 = 4
 
 	// IsPromoCodeFalse to store is promo code false
 	IsPromoCodeFalse int64
@@ -21,10 +23,11 @@ var (
 )
 
 var rewardType = map[int64]string{
-	RewardTypePoint:    "point",
-	RewardTypeDiscount: "discount",
-	RewardTypeGoldback: "goldback",
-	RewardTypeVoucher:  "voucher",
+	RewardTypePoint:              "point",
+	RewardTypeDirectDiscount:     "direct-discount",
+	RewardTypePercentageDiscount: "percentage-discount",
+	RewardTypeGoldback:           "goldback",
+	RewardTypeVoucher:            "voucher",
 }
 
 // Reward is represent a reward model

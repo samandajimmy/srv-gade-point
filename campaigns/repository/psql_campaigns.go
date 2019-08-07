@@ -141,10 +141,13 @@ func (m *psqlCampaignRepository) GetCampaign(c echo.Context, payload map[string]
 	requestLogger := logger.GetRequestLogger(c, nil)
 	paging := ""
 	where := ""
-	query := `SELECT id, name, description, start_date, end_date, status, updated_at, created_at FROM campaigns WHERE id IS NOT NULL`
+	query := `SELECT id, name, description, start_date, end_date, status, updated_at, created_at,
+		DATE_PART('day', end_date::timestamp - now()::timestamp) as days_remaining
+		FROM campaigns WHERE id IS NOT NULL`
 
 	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
-		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
+		paging = fmt.Sprintf(" LIMIT %d OFFSET %d",
+			payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
 	}
 
 	if payload["name"].(string) != "" {
@@ -163,7 +166,7 @@ func (m *psqlCampaignRepository) GetCampaign(c echo.Context, payload map[string]
 		where += " AND end_date <= '" + payload["endDate"].(string) + "'"
 	}
 
-	query += where + " ORDER BY created_at DESC" + paging
+	query += where + " ORDER BY status DESC, days_remaining ASC" + paging
 	res, err := m.getCampaign(c, query)
 
 	if err != nil {
@@ -194,6 +197,7 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 	for rows.Next() {
 		t := new(models.Campaign)
 		var createDate, updateDate pq.NullTime
+		var daysRemaining int64
 
 		err = rows.Scan(
 			&t.ID,
@@ -204,6 +208,7 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 			&t.Status,
 			&updateDate,
 			&createDate,
+			&daysRemaining,
 		)
 
 		if err != nil {
@@ -236,7 +241,8 @@ func (m *psqlCampaignRepository) GetCampaignAvailable(c echo.Context, today stri
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
-	query := fmt.Sprintf(`SELECT id, name, description, start_date, end_date, status, updated_at, created_at
+	query := fmt.Sprintf(`SELECT id, name, description, start_date, end_date, status, updated_at,
+		created_at, DATE_PART('day', end_date::timestamp - now()::timestamp) as days_remaining
 		FROM campaigns WHERE status = 1 AND start_date::date <= '%s'
 		AND end_date::date >= '%s' ORDER BY start_date DESC`, today, today)
 

@@ -441,16 +441,28 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardTrxs(c echo.Context, payload
 	query := `SELECT id, status, coalesce(ref_core, ''), ref_id, reward_id, cif, used_promo_code, inquired_date, succeeded_date, rejected_date,
 		timeout_date, transaction_date FROM reward_transactions`
 
-	if payload["startDate"].(string) != "" {
-		where += " WHERE transaction_date::timestamp::date >= '" + payload["startDate"].(string) + "'"
-	}
-
-	if payload["endDate"].(string) != "" {
-		where += " AND transaction_date::timestamp::date <= '" + payload["endDate"].(string) + "'"
-	}
-
 	if payload["id"].(string) != "" {
-		where += " AND reward_id = '" + payload["id"].(string) + "'"
+		where += " WHERE reward_id = '" + payload["id"].(string) + "'"
+	}
+
+	if payload["startTransactionDate"].(string) != "" {
+		where += " AND transaction_date::timestamp::date >= '" + payload["startTransactionDate"].(string) + "'"
+	}
+
+	if payload["endTransactionDate"].(string) != "" {
+		where += " AND transaction_date::timestamp::date <= '" + payload["endTransactionDate"].(string) + "'"
+	}
+
+	if payload["startSuccededDate"].(string) != "" {
+		where += " AND succeeded_date::timestamp::date >= '" + payload["startSuccededDate"].(string) + "'"
+	}
+
+	if payload["endSuccededDate"].(string) != "" {
+		where += " AND succeeded_date::timestamp::date <= '" + payload["endSuccededDate"].(string) + "'"
+	}
+
+	if payload["status"].(string) != "" {
+		where += " AND status = '" + payload["status"].(string) + "'"
 	}
 
 	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {

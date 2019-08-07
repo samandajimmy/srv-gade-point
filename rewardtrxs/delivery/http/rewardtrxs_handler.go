@@ -33,10 +33,13 @@ func NewRewardTrxHandler(echoGroup models.EchoGroup, us rewardtrxs.UseCase) {
 func (rwd *RewardTrxHandler) getRewardTrxs(c echo.Context) error {
 	response = models.Response{}
 	idStr := c.QueryParam("id")
+	statusStr := c.QueryParam("status")
 	pageStr := c.QueryParam("page")
 	limitStr := c.QueryParam("limit")
-	startDate := c.QueryParam("startDate")
-	endDate := c.QueryParam("endDate")
+	startTransactionDate := c.QueryParam("startTransactionDate")
+	endTransactionDate := c.QueryParam("endTransactionDate")
+	startSuccededDate := c.QueryParam("startSuccededDate")
+	endSuccededDate := c.QueryParam("endSuccededDate")
 
 	if pageStr == "" {
 		pageStr = "0"
@@ -47,11 +50,14 @@ func (rwd *RewardTrxHandler) getRewardTrxs(c echo.Context) error {
 	}
 
 	payload := map[string]interface{}{
-		"id":        idStr,
-		"page":      pageStr,
-		"limit":     limitStr,
-		"startDate": startDate,
-		"endDate":   endDate,
+		"id":                   idStr,
+		"status":               statusStr,
+		"page":                 pageStr,
+		"limit":                limitStr,
+		"startTransactionDate": startTransactionDate,
+		"endTransactionDate":   endTransactionDate,
+		"startSuccededDate":    startSuccededDate,
+		"endSuccededDate":      endSuccededDate,
 	}
 
 	logger := models.RequestLogger{
@@ -82,7 +88,7 @@ func (rwd *RewardTrxHandler) getRewardTrxs(c echo.Context) error {
 
 	dateFmtRgx := regexp.MustCompile(models.DateFormatRegex)
 
-	if startDate != "" && !dateFmtRgx.MatchString(startDate) {
+	if startTransactionDate != "" && !dateFmtRgx.MatchString(startTransactionDate) {
 		requestLogger.Debug(models.ErrStartDateFormat)
 		response.Status = models.StatusError
 		response.Message = models.ErrStartDateFormat.Error()
@@ -90,7 +96,23 @@ func (rwd *RewardTrxHandler) getRewardTrxs(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, response)
 	}
 
-	if endDate != "" && !dateFmtRgx.MatchString(endDate) {
+	if endTransactionDate != "" && !dateFmtRgx.MatchString(endTransactionDate) {
+		requestLogger.Debug(models.ErrEndDateFormat)
+		response.Status = models.StatusError
+		response.Message = models.ErrEndDateFormat.Error()
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	if startSuccededDate != "" && !dateFmtRgx.MatchString(startSuccededDate) {
+		requestLogger.Debug(models.ErrStartDateFormat)
+		response.Status = models.StatusError
+		response.Message = models.ErrStartDateFormat.Error()
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	if endSuccededDate != "" && !dateFmtRgx.MatchString(endSuccededDate) {
 		requestLogger.Debug(models.ErrEndDateFormat)
 		response.Status = models.StatusError
 		response.Message = models.ErrEndDateFormat.Error()

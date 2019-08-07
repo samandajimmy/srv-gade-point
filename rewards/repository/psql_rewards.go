@@ -3,10 +3,12 @@ package repository
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/quotas"
 	"gade/srv-gade-point/rewards"
 	"gade/srv-gade-point/tags"
+	"strconv"
 	"time"
 
 	"github.com/labstack/echo"
@@ -248,4 +250,50 @@ func (rwdRepo *psqlRewardRepository) GetRewardTags(c echo.Context, reward *model
 	reward.Tags = &tags
 
 	return reward, nil
+}
+
+func (rwdRepo *psqlRewardRepository) GetRewards(c echo.Context, payload map[string]interface{}) ([]models.Reward, string, error) {
+	var data []models.Reward
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	var paging, where string
+	var counter int64
+
+	query := `SELECT id, name, promo_code FROM rewards`
+
+	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
+		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
+	}
+
+	query += where + " order by updated_at desc" + paging + ";"
+	rows, err := rwdRepo.Conn.Query(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, "", err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var rwd models.Reward
+
+		err = rows.Scan(
+			&rwd.ID,
+			&rwd.Name,
+			&rwd.PromoCode,
+		)
+		counter++
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, "", err
+		}
+
+		data = append(data, rwd)
+	}
+
+	return data, strconv.FormatInt(counter, 10), nil
 }

@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewardtrxs"
 	"math/rand"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo"
+	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
 
@@ -427,4 +429,78 @@ func randRefID(n int) string {
 		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
 	}
 	return string(b)
+}
+
+func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardTrxs(c echo.Context, payload map[string]interface{}) ([]models.RewardTrx, string, error) {
+	var data []models.RewardTrx
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	var paging, where string
+	var counter int64
+
+	query := `SELECT id, status, coalesce(ref_core, ''), ref_id, reward_id, cif, used_promo_code, inquired_date, succeeded_date, rejected_date,
+		timeout_date, transaction_date FROM reward_transactions`
+
+	if payload["startDate"].(string) != "" {
+		where += " WHERE transaction_date::timestamp::date >= '" + payload["startDate"].(string) + "'"
+	}
+
+	if payload["endDate"].(string) != "" {
+		where += " AND transaction_date::timestamp::date <= '" + payload["endDate"].(string) + "'"
+	}
+
+	if payload["id"].(string) != "" {
+		where += " AND reward_id = '" + payload["id"].(string) + "'"
+	}
+
+	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
+		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
+	}
+
+	query += where + " order by transaction_date desc" + paging + ";"
+	rows, err := rwdTrxRepo.Conn.Query(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, "", err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var rwdTrx models.RewardTrx
+		var inquiredDate, succeededDate, rejectedDate, timeoutDate pq.NullTime
+
+		err = rows.Scan(
+			&rwdTrx.ID,
+			&rwdTrx.Status,
+			&rwdTrx.RefCore,
+			&rwdTrx.RefID,
+			&rwdTrx.RewardID,
+			&rwdTrx.CIF,
+			&rwdTrx.UsedPromoCode,
+			&inquiredDate,
+			&succeededDate,
+			&rejectedDate,
+			&timeoutDate,
+			&rwdTrx.TransactionDate,
+		)
+		counter++
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, "", err
+		}
+
+		rwdTrx.InquiredDate = &inquiredDate.Time
+		rwdTrx.SucceededDate = &succeededDate.Time
+		rwdTrx.RejectedDate = &rejectedDate.Time
+		rwdTrx.TimeoutDate = &timeoutDate.Time
+
+		data = append(data, rwdTrx)
+	}
+
+	return data, strconv.FormatInt(counter, 10), nil
 }

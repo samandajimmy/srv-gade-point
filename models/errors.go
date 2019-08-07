@@ -156,6 +156,9 @@ var (
 	// ErrMappingVchrCodesImport to store allowed file ext error message
 	ErrMappingVchrCodesImport = errors.New("Terjadi kesalahan dalam mengimport mapping data dari file yang diupload")
 
+	// ErrGetReward to store get reward error message
+	ErrGetReward = errors.New("Terjadi kesalahan dalam mengambil reward")
+
 	// ErrRewardFailed to store create reward failed error message
 	ErrRewardFailed = errors.New("Gagal untuk membuat reward")
 
@@ -221,6 +224,9 @@ var (
 
 	// ErrRefTrxNotFound to not found ref_trx error message
 	ErrRefTrxNotFound = errors.New("ID transaksi tidak ditemukan")
+
+	// ErrGetRewardTrx to store get reward transaction error message
+	ErrGetRewardTrx = errors.New("Terjadi kesalahan dalam mengambil reward transaction")
 
 	// ErrMessageNoRewards to store a no rewards message response of data
 	ErrMessageNoRewards = errors.New("Maaf, tidak ada reward yang tersedia")

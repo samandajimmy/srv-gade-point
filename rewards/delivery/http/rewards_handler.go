@@ -4,6 +4,7 @@ import (
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewards"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/labstack/echo"
@@ -21,6 +22,9 @@ func NewRewardHandler(echoGroup models.EchoGroup, us rewards.UseCase) {
 	handler := &RewardHandler{
 		RewardUseCase: us,
 	}
+
+	// End Point For CMS
+	echoGroup.Admin.GET("/rewards", handler.getRewards)
 
 	// End Point For External
 	echoGroup.API.POST("/rewards/inquiry", handler.rewardInquiry)
@@ -150,6 +154,75 @@ func (rwd *RewardHandler) checkTransaction(echTx echo.Context) error {
 	}
 
 	return echTx.JSON(getStatusCode(err), response)
+}
+
+// getRewards a handler to get rewards
+func (rwd *RewardHandler) getRewards(c echo.Context) error {
+	response = models.Response{}
+	pageStr := c.QueryParam("page")
+	limitStr := c.QueryParam("limit")
+
+	if pageStr == "" {
+		pageStr = "0"
+	}
+
+	if limitStr == "" {
+		limitStr = "0"
+	}
+
+	payload := map[string]interface{}{
+		"page":  pageStr,
+		"limit": limitStr,
+	}
+
+	logger := models.RequestLogger{
+		Payload: payload,
+	}
+
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	page, err := strconv.Atoi(payload["page"].(string))
+
+	if err != nil {
+		requestLogger.Debug(err)
+		response.Status = models.StatusError
+		response.Message = http.StatusText(http.StatusBadRequest)
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	limit, err := strconv.Atoi(payload["limit"].(string))
+
+	if err != nil {
+		requestLogger.Debug(err)
+		response.Status = models.StatusError
+		response.Message = http.StatusText(http.StatusBadRequest)
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	payload["page"] = page
+	payload["limit"] = limit
+	requestLogger.Info("Start to get rewards.")
+	data, counter, err := rwd.RewardUseCase.GetRewards(c, payload)
+
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	if len(data) > 0 {
+		response.Data = data
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MessageDataSuccess
+	response.TotalCount = counter
+
+	requestLogger.Info("End of get rewards.")
+
+	return c.JSON(getStatusCode(err), response)
 }
 
 func getStatusCode(err error) int {

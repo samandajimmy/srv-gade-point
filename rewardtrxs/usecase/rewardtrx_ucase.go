@@ -62,3 +62,19 @@ func (rwdTrx *rewardTrxUseCase) CountByCIF(c echo.Context, quot models.Quota, re
 
 	return count, nil
 }
+
+func (rwdTrx *rewardTrxUseCase) GetRewardTrxs(c echo.Context, payload map[string]interface{}) ([]models.RewardTrx, string, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	// get data and counter
+	data, counter, err := rwdTrx.rewardTrxRepo.GetRewardTrxs(c, payload)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrGetRewardTrx)
+
+		return nil, "", models.ErrGetRewardTrx
+	}
+
+	return data, counter, err
+}

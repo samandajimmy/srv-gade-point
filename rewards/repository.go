@@ -14,4 +14,5 @@ type Repository interface {
 	DeleteRewardTag(echo.Context, int64) error
 	GetRewardByCampaign(echo.Context, int64) ([]models.Reward, error)
 	GetRewardTags(echo.Context, *models.Reward) (*models.Reward, error)
+	GetRewards(echo.Context, map[string]interface{}) ([]models.Reward, string, error)
 }

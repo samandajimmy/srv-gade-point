@@ -50,16 +50,18 @@ type Reward struct {
 	Quotas             *[]Quota   `json:"quotas,omitempty"`
 	Tags               *[]Tag     `json:"tags,omitempty"`
 	Vouchers           *[]Voucher `json:"vouchers,omitempty"`
+	RefID              string     `json:"-"`
 }
 
 // RewardsInquiry is represent a inquire reward response model
 type RewardsInquiry struct {
-	RefTrx  string            `json:"refTrx,omitempty"`
 	Rewards *[]RewardResponse `json:"rewards,omitempty"`
 }
 
 // RewardResponse is represent a reward response model
 type RewardResponse struct {
+	RewardID       int64   `json:"-"`
+	RefTrx         string  `json:"refTrx,omitempty"`
 	Type           string  `json:"type,omitempty"`
 	JournalAccount string  `json:"journalAccount,omitempty"`
 	Value          float64 `json:"value,omitempty"`

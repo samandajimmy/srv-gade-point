@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewardtrxs"
-	"math/rand"
 	"os"
 	"strconv"
 	"time"
@@ -20,74 +19,80 @@ type psqlRewardTrxRepository struct {
 	Conn *sql.DB
 }
 
-const letterBytes = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
 // NewPsqlRewardTrxRepository will create an object that represent the rewardtrxs.Repository interface
 func NewPsqlRewardTrxRepository(Conn *sql.DB) rewardtrxs.Repository {
 	return &psqlRewardTrxRepository{Conn}
 }
 
-func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models.PayloadValidator, rewardID int64, resp []models.RewardResponse) (models.RewardTrx, error) {
-	var rewardTrx models.RewardTrx
+func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models.PayloadValidator,
+	resp models.RewardsInquiry) ([]*models.RewardTrx, error) {
+
+	var rewardTrx []*models.RewardTrx
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
-	refID := randRefID(20)
-	expTime, _ := strconv.ParseInt(os.Getenv(`REWARD_TRX_TIMEOUT`), 10, 64)
-	timeoutDate := now.Add(time.Duration(expTime) * time.Minute)
 
-	query := `INSERT INTO reward_transactions (status, ref_id, cif, reward_id, used_promo_code, transaction_date, inquired_date, request_data, response_data, created_at, timeout_date)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`
+	for _, rwdResp := range *resp.Rewards {
+		refID := rwdResp.RefTrx
+		expTime, _ := strconv.ParseInt(os.Getenv(`REWARD_TRX_TIMEOUT`), 10, 64)
+		timeoutDate := now.Add(time.Duration(expTime) * time.Minute)
 
-	stmt, err := rwdTrxRepo.Conn.Prepare(query)
+		query := `INSERT INTO reward_transactions (status, ref_id, cif, reward_id, used_promo_code,
+			transaction_date, inquired_date, request_data, response_data, created_at, timeout_date)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`
 
-	if err != nil {
-		requestLogger.Debug(err)
+		stmt, err := rwdTrxRepo.Conn.Prepare(query)
 
-		return rewardTrx, err
-	}
+		if err != nil {
+			requestLogger.Debug(err)
 
-	var lastID int64
-	requestData, err := json.Marshal(payload)
-	responseData, err := json.Marshal(models.RewardsInquiry{RefTrx: refID, Rewards: &resp})
+			return rewardTrx, err
+		}
 
-	if err != nil {
-		requestLogger.Debug(err)
+		var lastID int64
+		requestData, err := json.Marshal(payload)
+		responseData, err := json.Marshal(resp)
 
-		return rewardTrx, err
-	}
+		if err != nil {
+			requestLogger.Debug(err)
 
-	trxDate, err := time.Parse(models.DateTimeFormatMillisecond, payload.TransactionDate)
+			return rewardTrx, err
+		}
 
-	if err != nil {
-		requestLogger.Debug(models.ErrTrxDateFormat)
+		trxDate, err := time.Parse(models.DateTimeFormatMillisecond, payload.TransactionDate)
 
-		return rewardTrx, err
-	}
+		if err != nil {
+			requestLogger.Debug(models.ErrTrxDateFormat)
 
-	rewardTrx = models.RewardTrx{
-		Status:          &models.RewardTrxInquired,
-		RefID:           refID,
-		RewardID:        &rewardID,
-		CIF:             payload.CIF,
-		UsedPromoCode:   payload.PromoCode,
-		TransactionDate: &trxDate,
-		InquiredDate:    &now,
-		RequestData:     string(requestData),
-		ResponseData:    string(responseData),
-		CreatedAt:       &now,
-		TimeoutDate:     &timeoutDate,
-	}
+			return rewardTrx, err
+		}
 
-	err = stmt.QueryRow(
-		&rewardTrx.Status, &rewardTrx.RefID, &rewardTrx.CIF, &rewardTrx.RewardID, &rewardTrx.UsedPromoCode, &rewardTrx.TransactionDate,
-		&rewardTrx.InquiredDate, &rewardTrx.RequestData, &rewardTrx.ResponseData, &rewardTrx.CreatedAt, &rewardTrx.TimeoutDate,
-	).Scan(&lastID)
+		rwdTrx := models.RewardTrx{
+			Status:          &models.RewardTrxInquired,
+			RefID:           refID,
+			RewardID:        &rwdResp.RewardID,
+			CIF:             payload.CIF,
+			UsedPromoCode:   payload.PromoCode,
+			TransactionDate: &trxDate,
+			InquiredDate:    &now,
+			RequestData:     string(requestData),
+			ResponseData:    string(responseData),
+			CreatedAt:       &now,
+			TimeoutDate:     &timeoutDate,
+		}
 
-	if err != nil {
-		requestLogger.Debug(err)
+		err = stmt.QueryRow(
+			&rwdTrx.Status, &rwdTrx.RefID, &rwdTrx.CIF, &rwdTrx.RewardID, &rwdTrx.UsedPromoCode, &rwdTrx.TransactionDate,
+			&rwdTrx.InquiredDate, &rwdTrx.RequestData, &rwdTrx.ResponseData, &rwdTrx.CreatedAt, &rwdTrx.TimeoutDate,
+		).Scan(&lastID)
 
-		return rewardTrx, err
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return rewardTrx, err
+		}
+
+		rewardTrx = append(rewardTrx, &rwdTrx)
 	}
 
 	return rewardTrx, nil
@@ -252,41 +257,59 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CountByCIF(c echo.Context, quot model
 	return counter, nil
 }
 
-func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardByPayload(c echo.Context, payload models.PayloadValidator) (*models.Reward, string, error) {
-	result := new(models.Reward)
-	refID := ""
+func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardByPayload(c echo.Context,
+	payload models.PayloadValidator) ([]*models.Reward, error) {
+
+	var reward []*models.Reward
 	var validator json.RawMessage
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
-	query := `SELECT r.id, r.campaign_id, r.journal_account, r.type, r.validators, rt.ref_id
-		FROM reward_transactions rt  join rewards r on rt.reward_id = r.id WHERE rt.status = $1 and rt.cif= $2 and rt.used_promo_code= $3`
+	query := `SELECT rt.ref_id, r.id, r.campaign_id, r.journal_account, r.type, r.validators
+		FROM reward_transactions rt  join rewards r on rt.reward_id = r.id
+		WHERE rt.status = $1 and rt.cif= $2 and rt.used_promo_code= $3`
 
-	err := rwdTrxRepo.Conn.QueryRow(query, models.RewardTrxInquired, payload.CIF, payload.PromoCode).Scan(
-		&result.ID,
-		&result.CampaignID,
-		&result.JournalAccount,
-		&result.Type,
-		&validator,
-		&refID,
-	)
-
-	if refID != "" {
-		err = json.Unmarshal([]byte(validator), &result.Validators)
-		if err != nil {
-			requestLogger.Debug(err)
-
-			return nil, "", err
-		}
-	}
+	rows, err := rwdTrxRepo.Conn.Query(query, models.RewardTrxInquired, payload.CIF,
+		payload.PromoCode)
 
 	if err != nil {
 		requestLogger.Debug(err)
 
-		return nil, "", err
+		return nil, err
 	}
 
-	return result, refID, nil
+	defer rows.Close()
+
+	for rows.Next() {
+		var r models.Reward
+
+		err = rows.Scan(
+			&r.RefID,
+			&r.ID,
+			&r.CampaignID,
+			&r.JournalAccount,
+			&r.Type,
+			&validator,
+		)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		err = json.Unmarshal([]byte(validator), &r.Validators)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		reward = append(reward, &r)
+	}
+
+	return reward, nil
 }
 
 func (rwdTrxRepo *psqlRewardTrxRepository) RewardTrxTimeout(rewardTrx models.RewardTrx) {
@@ -419,16 +442,6 @@ func (rwdTrxRepo *psqlRewardTrxRepository) updateLockedQuota(rewardID int64, ref
 	}
 
 	defer rowQ.Close()
-}
-
-func randRefID(n int) string {
-	rand.Seed(time.Now().UnixNano())
-
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
-	}
-	return string(b)
 }
 
 func (rwdTrxRepo *psqlRewardTrxRepository) CountRewardTrxs(c echo.Context, rewardPayload *models.RewardsPayload) (int64, error) {

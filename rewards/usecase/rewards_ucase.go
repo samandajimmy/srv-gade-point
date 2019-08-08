@@ -10,7 +10,9 @@ import (
 	"gade/srv-gade-point/vouchercodes"
 	"gade/srv-gade-point/vouchers"
 	"math"
+	"math/rand"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo"
@@ -122,11 +124,7 @@ func (rwd *rewardUseCase) DeleteByCampaign(c echo.Context, campaignID int64) err
 func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadValidator) (models.RewardsInquiry, *models.ResponseErrors) {
 	var rwdInquiry models.RewardsInquiry
 	var rwdResponse []models.RewardResponse
-	var voucherCode *models.VoucherCode
 	var respErrors models.ResponseErrors
-	var rewardSelected models.Reward
-	var rwdTrx *models.Reward
-	refID := ""
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	trxDate, err := time.Parse(models.DateTimeFormatMillisecond, plValidator.TransactionDate)
@@ -153,24 +151,27 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	}
 
 	// check request payload base on cif and promo code
-	rwdTrx, refID, err = rwd.rwdTrxRepo.GetRewardByPayload(c, *plValidator)
+	rwrds, err := rwd.rwdTrxRepo.GetRewardByPayload(c, *plValidator)
 
-	if rwdTrx != nil {
+	if rwrds != nil {
 		var rr []models.RewardResponse
+
 		requestLogger.Debug(models.ErrMessageRewardTrxAlreadyExists)
 
-		// get response reward
-		respData, err := rwd.responseReward(c, *rwdTrx, voucherCode, plValidator)
+		for _, reward := range rwrds {
+			// get response reward
+			respData, err := rwd.responseReward(c, *reward, plValidator)
 
-		if err != nil {
-			requestLogger.Debug(err)
-			respErrors.SetTitle(err.Error())
+			if err != nil {
+				requestLogger.Debug(err)
+				respErrors.SetTitle(err.Error())
 
-			return rwdInquiry, &respErrors
+				return rwdInquiry, &respErrors
+			}
+
+			rr = append(rr, *respData)
 		}
 
-		rr = append(rr, *respData)
-		rwdInquiry.RefTrx = refID
 		rwdInquiry.Rewards = &rr
 
 		return rwdInquiry, nil
@@ -210,7 +211,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		}
 
 		// get response reward
-		rwdResp, err := rwd.responseReward(c, reward, voucherCode, plValidator)
+		rwdResp, err := rwd.responseReward(c, reward, plValidator)
 
 		if err != nil {
 			rewardLogger.Debug(err)
@@ -223,7 +224,8 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 			rwdResponse = append(rwdResponse, *rwdResp)
 		}
 
-		rewardSelected = reward
+		// update reward quota
+		rwd.quotaUC.UpdateReduceQuota(c, reward.ID)
 	}
 
 	if len(rwdResponse) == 0 {
@@ -233,38 +235,25 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		return rwdInquiry, &respErrors
 	}
 
-	// insert data to reward history
-	rewardTrx, err := rwd.createRewardTrx(c, *plValidator, rewardSelected.ID, rwdResponse)
-
-	if err != nil {
-		requestLogger.Debug(err)
-		respErrors.SetTitle(err.Error())
-
-		return rwdInquiry, &respErrors
-	}
-
-	// update voucher code ref_id
-	err = rwd.voucherCodeRepo.UpdateVoucherCodeRefID(c, voucherCode, rewardTrx.RefID)
-
-	if err != nil {
-		requestLogger.Debug(err)
-		respErrors.SetTitle(err.Error())
-
-		return rwdInquiry, &respErrors
-	}
-
-	// generate an unique ref ID
-	rwdInquiry.RefTrx = rewardTrx.RefID
 	rwdInquiry.Rewards = &rwdResponse
 
-	// update reward quota
-	rwd.quotaUC.UpdateReduceQuota(c, rewardSelected.ID)
+	// insert data to reward transaction
+	_, err = rwd.createRewardTrx(c, *plValidator, rwdInquiry)
+
+	if err != nil {
+		requestLogger.Debug(err)
+		respErrors.SetTitle(err.Error())
+
+		return rwdInquiry, &respErrors
+	}
 
 	return rwdInquiry, nil
 }
 
-func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward, voucherCode *models.VoucherCode, plValidator *models.PayloadValidator) (*models.RewardResponse, error) {
+func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
+	plValidator *models.PayloadValidator) (*models.RewardResponse, error) {
 	var rwdResp models.RewardResponse
+	var voucherCode *models.VoucherCode
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	rewardLogger := logger.GetRequestLogger(c, reward.Validators)
@@ -303,10 +292,27 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward, v
 		rwdValue = 0 // if voucher reward is exist then reward value should be nil
 	}
 
+	if reward.RefID == "" {
+		reward.RefID = randRefID(20)
+	}
+
 	// populate reward response
 	rwdResp.Type = reward.GetRewardTypeText()
 	rwdResp.Value = roundDown(rwdValue, 0)
 	rwdResp.JournalAccount = reward.JournalAccount
+	rwdResp.RefTrx = reward.RefID
+	rwdResp.RewardID = reward.ID
+
+	if rwdValue == 0 {
+		// update voucher code ref_id
+		err = rwd.voucherCodeRepo.UpdateVoucherCodeRefID(c, voucherCode, rwdResp.RefTrx)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+	}
 
 	return &rwdResp, nil
 }
@@ -315,47 +321,52 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 	var responseData models.RewardTrxResponse
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
+	trimmedString := strings.Replace(rwdPayment.RefTrx, " ", "", -1)
+	refIDs := strings.Split(trimmedString, ";")
 
-	// check available reward transaction based in ref_id
-	rwdInquiry, err := rwd.rwdTrxRepo.CheckRefID(c, rwdPayment.RefTrx)
+	for _, refID := range refIDs {
+		rwdPayment.RefTrx = refID
 
-	if err != nil {
-		requestLogger.Debug(models.ErrRefTrxNotFound)
+		// check available reward transaction based in ref_id
+		rwdInquiry, err := rwd.rwdTrxRepo.CheckRefID(c, rwdPayment.RefTrx)
 
-		return responseData, models.ErrRefTrxNotFound
-	}
+		if err != nil {
+			requestLogger.Debug(models.ErrRefTrxNotFound)
 
-	if rwdPayment.RefCore == "" && *rwdInquiry.Status == models.RewardTrxInquired {
-		// rejected
-		// update voucher code
-		rwd.voucherCodeRepo.UpdateVoucherCodeRejected(c, rwdPayment.RefTrx)
-
-		// update reward trx
-		rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxRejected)
-
-		// update add reward quota
-		rwd.quotaUC.UpdateAddQuota(c, *rwdInquiry.RewardID)
-
-		// update reward quota
-	} else if rwdPayment.RefCore != "" && (*rwdInquiry.Status == models.RewardTrxInquired || *rwdInquiry.Status == models.RewardTrxTimeOut) {
-		// succeeded
-		if *rwdInquiry.Status == models.RewardTrxTimeOut {
-			// update reward trx timeout force to Succedeed
-			rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxTimeOutForceToSucceeded)
-
-			// update reduce reward quota
-			rwd.quotaUC.UpdateReduceQuota(c, *rwdInquiry.RewardID)
-
-		} else if *rwdInquiry.Status == models.RewardTrxInquired {
-			// update reward trx to Succedeed
-			rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxSucceeded)
+			return responseData, models.ErrRefTrxNotFound
 		}
 
-	} else {
-		responseData.StatusCode = rwdInquiry.Status
-		responseData.Status = rwdInquiry.GetstatusRewardTrxText()
+		if rwdPayment.RefCore == "" && *rwdInquiry.Status == models.RewardTrxInquired {
+			// rejected
+			// update voucher code
+			rwd.voucherCodeRepo.UpdateVoucherCodeRejected(c, rwdPayment.RefTrx)
 
-		return responseData, nil
+			// update reward trx
+			rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxRejected)
+
+			// update add reward quota
+			rwd.quotaUC.UpdateAddQuota(c, *rwdInquiry.RewardID)
+
+			// update reward quota
+		} else if rwdPayment.RefCore != "" && (*rwdInquiry.Status == models.RewardTrxInquired || *rwdInquiry.Status == models.RewardTrxTimeOut) {
+			// succeeded
+			if *rwdInquiry.Status == models.RewardTrxTimeOut {
+				// update reward trx timeout force to Succedeed
+				rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxTimeOutForceToSucceeded)
+
+				// update reduce reward quota
+				rwd.quotaUC.UpdateReduceQuota(c, *rwdInquiry.RewardID)
+
+			} else if *rwdInquiry.Status == models.RewardTrxInquired {
+				// update reward trx to Succedeed
+				rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxSucceeded)
+			}
+		} else {
+			responseData.StatusCode = rwdInquiry.Status
+			responseData.Status = rwdInquiry.GetstatusRewardTrxText()
+
+			return responseData, nil
+		}
 	}
 
 	return responseData, nil
@@ -439,16 +450,20 @@ func (rwd *rewardUseCase) validatePromoCode(tags []models.Tag, validPC, promoCod
 	return models.ErrPromoCode
 }
 
-func (rwd *rewardUseCase) createRewardTrx(c echo.Context, plValidator models.PayloadValidator, rewardID int64, rwdResponse []models.RewardResponse) (*models.RewardTrx, error) {
-	rewardTrx, err := rwd.rwdTrxRepo.Create(c, plValidator, rewardID, rwdResponse)
+func (rwd *rewardUseCase) createRewardTrx(c echo.Context, plValidator models.PayloadValidator,
+	rwdResponse models.RewardsInquiry) ([]*models.RewardTrx, error) {
+
+	rewardTrx, err := rwd.rwdTrxRepo.Create(c, plValidator, rwdResponse)
 
 	if err != nil {
 		return nil, err
 	}
 
-	rwd.timeoutTrxJob(c, rewardTrx)
+	for _, trx := range rewardTrx {
+		rwd.timeoutTrxJob(c, *trx)
+	}
 
-	return &rewardTrx, nil
+	return rewardTrx, nil
 }
 
 func (rwd *rewardUseCase) timeoutTrxJob(c echo.Context, rewardTrx models.RewardTrx) {
@@ -496,4 +511,15 @@ func roundDown(input float64, places int) (newVal float64) {
 	round = math.Floor(digit)
 	newVal = round / pow
 	return
+}
+
+func randRefID(n int) string {
+	rand.Seed(time.Now().UnixNano())
+	b := make([]byte, n)
+
+	for i := range b {
+		b[i] = models.LetterBytes[rand.Int63()%int64(len(models.LetterBytes))]
+	}
+
+	return string(b)
 }

@@ -19,21 +19,6 @@ func NewRewardtrxUseCase(rwdTrxRepo rewardtrxs.Repository) rewardtrxs.UseCase {
 	}
 }
 
-func (rwdTrx *rewardTrxUseCase) Create(c echo.Context, payload models.PayloadValidator, rewardID int64, resp []models.RewardResponse) (models.RewardTrx, error) {
-	var rewardTrx models.RewardTrx
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-	rewardTrx, err := rwdTrx.rewardTrxRepo.Create(c, payload, rewardID, resp)
-
-	if err != nil {
-		requestLogger.Debug(models.ErrRewardTrxFailed)
-
-		return rewardTrx, models.ErrRewardTrxFailed
-	}
-
-	return rewardTrx, nil
-}
-
 func (rwdTrx *rewardTrxUseCase) GetByRefID(c echo.Context, refID string) (models.RewardsInquiry, error) {
 	var rewardTrx models.RewardsInquiry
 	logger := models.RequestLogger{}

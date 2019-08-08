@@ -59,6 +59,9 @@ var (
 
 	// BatchSizeVoucherCodes to store a max length of data that need to be inserted for
 	BatchSizeVoucherCodes = 21845
+
+	// LetterBytes a string to generate random ID
+	LetterBytes = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
 // EchoGroup to store routes group

@@ -45,6 +45,7 @@ type RewardTrx struct {
 	ResponseData    string     `json:"responseData,omitempty"`
 	CreatedAt       *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt       *time.Time `json:"updatedAt,omitempty"`
+	Reward          *Reward    `json:"reward,omitempty"`
 }
 
 // RewardTrxResponse is represent a reward transaction response model

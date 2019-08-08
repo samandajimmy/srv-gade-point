@@ -9,6 +9,7 @@ import (
 	"gade/srv-gade-point/tags"
 	"gade/srv-gade-point/vouchercodes"
 	"gade/srv-gade-point/vouchers"
+	"math"
 	"strconv"
 	"time"
 
@@ -304,7 +305,7 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward, v
 
 	// populate reward response
 	rwdResp.Type = reward.GetRewardTypeText()
-	rwdResp.Value = rwdValue
+	rwdResp.Value = roundDown(rwdValue, 0)
 	rwdResp.JournalAccount = reward.JournalAccount
 
 	return &rwdResp, nil
@@ -486,4 +487,13 @@ func (rwd *rewardUseCase) GetRewards(c echo.Context, rewardPayload *models.Rewar
 	}
 
 	return data, strconv.FormatInt(counter, 10), err
+}
+
+func roundDown(input float64, places int) (newVal float64) {
+	var round float64
+	pow := math.Pow(10, float64(places))
+	digit := pow * input
+	round = math.Floor(digit)
+	newVal = round / pow
+	return
 }

@@ -24,8 +24,8 @@ var (
 
 var rewardType = map[int64]string{
 	RewardTypePoint:              "point",
-	RewardTypeDirectDiscount:     "direct-discount",
-	RewardTypePercentageDiscount: "percentage-discount",
+	RewardTypeDirectDiscount:     "discount",
+	RewardTypePercentageDiscount: "discount",
 	RewardTypeGoldback:           "goldback",
 	RewardTypeVoucher:            "voucher",
 }

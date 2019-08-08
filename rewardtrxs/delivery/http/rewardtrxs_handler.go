@@ -5,7 +5,6 @@ import (
 	"gade/srv-gade-point/rewardtrxs"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/labstack/echo"
@@ -30,118 +29,78 @@ func NewRewardTrxHandler(echoGroup models.EchoGroup, us rewardtrxs.UseCase) {
 }
 
 // getRewardTrxs a handler to get reward transaction
-func (rwd *RewardTrxHandler) getRewardTrxs(c echo.Context) error {
+func (rwdTrx *RewardTrxHandler) getRewardTrxs(echTx echo.Context) error {
+	var rwdPayload models.RewardsPayload
 	response = models.Response{}
-	idStr := c.QueryParam("id")
-	statusStr := c.QueryParam("status")
-	pageStr := c.QueryParam("page")
-	limitStr := c.QueryParam("limit")
-	startTransactionDate := c.QueryParam("startTransactionDate")
-	endTransactionDate := c.QueryParam("endTransactionDate")
-	startSuccededDate := c.QueryParam("startSuccededDate")
-	endSuccededDate := c.QueryParam("endSuccededDate")
-
-	if pageStr == "" {
-		pageStr = "0"
-	}
-
-	if limitStr == "" {
-		limitStr = "0"
-	}
-
-	payload := map[string]interface{}{
-		"id":                   idStr,
-		"status":               statusStr,
-		"page":                 pageStr,
-		"limit":                limitStr,
-		"startTransactionDate": startTransactionDate,
-		"endTransactionDate":   endTransactionDate,
-		"startSuccededDate":    startSuccededDate,
-		"endSuccededDate":      endSuccededDate,
-	}
-
-	logger := models.RequestLogger{
-		Payload: payload,
-	}
-
-	requestLogger := logger.GetRequestLogger(c, nil)
-
-	page, err := strconv.Atoi(payload["page"].(string))
+	respErrors := &models.ResponseErrors{}
+	logger := models.RequestLogger{}
+	err := echTx.Bind(&rwdPayload)
+	logger.DataLog(echTx, rwdPayload).Info("Start to get rewards transaction.")
 
 	if err != nil {
-		requestLogger.Debug(err)
-		response.Status = models.StatusError
-		response.Message = http.StatusText(http.StatusBadRequest)
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
+		logger.DataLog(echTx, response).Info("End of get rewards transaction.")
 
-		return c.JSON(http.StatusBadRequest, response)
+		return echTx.JSON(http.StatusUnprocessableEntity, response)
 	}
 
-	limit, err := strconv.Atoi(payload["limit"].(string))
+	if err := echTx.Validate(rwdPayload); err != nil {
+		respErrors.SetTitle(err.Error())
+		logger.DataLog(echTx, response).Info("End of get rewards transaction.")
 
-	if err != nil {
-		requestLogger.Debug(err)
-		response.Status = models.StatusError
-		response.Message = http.StatusText(http.StatusBadRequest)
-
-		return c.JSON(http.StatusBadRequest, response)
+		return echTx.JSON(http.StatusBadRequest, response)
 	}
 
 	dateFmtRgx := regexp.MustCompile(models.DateFormatRegex)
 
-	if startTransactionDate != "" && !dateFmtRgx.MatchString(startTransactionDate) {
-		requestLogger.Debug(models.ErrStartDateFormat)
-		response.Status = models.StatusError
-		response.Message = models.ErrStartDateFormat.Error()
+	if rwdPayload.StartTransactionDate != "" && !dateFmtRgx.MatchString(rwdPayload.StartTransactionDate) {
+		respErrors.SetTitle(err.Error())
+		logger.DataLog(echTx, response).Info("End of get rewards transaction.")
 
-		return c.JSON(http.StatusBadRequest, response)
+		return echTx.JSON(http.StatusBadRequest, response)
 	}
 
-	if endTransactionDate != "" && !dateFmtRgx.MatchString(endTransactionDate) {
-		requestLogger.Debug(models.ErrEndDateFormat)
-		response.Status = models.StatusError
-		response.Message = models.ErrEndDateFormat.Error()
+	if rwdPayload.EndTransactionDate != "" && !dateFmtRgx.MatchString(rwdPayload.EndTransactionDate) {
+		respErrors.SetTitle(err.Error())
+		logger.DataLog(echTx, response).Info("End of get rewards transaction.")
 
-		return c.JSON(http.StatusBadRequest, response)
+		return echTx.JSON(http.StatusBadRequest, response)
 	}
 
-	if startSuccededDate != "" && !dateFmtRgx.MatchString(startSuccededDate) {
-		requestLogger.Debug(models.ErrStartDateFormat)
-		response.Status = models.StatusError
-		response.Message = models.ErrStartDateFormat.Error()
+	if rwdPayload.StartSuccededDate != "" && !dateFmtRgx.MatchString(rwdPayload.StartSuccededDate) {
+		respErrors.SetTitle(err.Error())
+		logger.DataLog(echTx, response).Info("End of get rewards transaction.")
 
-		return c.JSON(http.StatusBadRequest, response)
+		return echTx.JSON(http.StatusBadRequest, response)
 	}
 
-	if endSuccededDate != "" && !dateFmtRgx.MatchString(endSuccededDate) {
-		requestLogger.Debug(models.ErrEndDateFormat)
-		response.Status = models.StatusError
-		response.Message = models.ErrEndDateFormat.Error()
+	if rwdPayload.EndSuccededDate != "" && !dateFmtRgx.MatchString(rwdPayload.EndSuccededDate) {
+		respErrors.SetTitle(err.Error())
+		logger.DataLog(echTx, response).Info("End of get rewards transaction.")
 
-		return c.JSON(http.StatusBadRequest, response)
+		return echTx.JSON(http.StatusBadRequest, response)
 	}
 
-	payload["page"] = page
-	payload["limit"] = limit
-	requestLogger.Info("Start to get rewards transaction.")
-	data, counter, err := rwd.RewardTrxUseCase.GetRewardTrxs(c, payload)
+	responseData, counter, err := rwdTrx.RewardTrxUseCase.GetRewardTrxs(echTx, &rwdPayload)
 
 	if err != nil {
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		return c.JSON(getStatusCode(err), response)
+		respErrors.SetTitle(err.Error())
+		logger.DataLog(echTx, response).Info("End of get rewards transaction.")
+
+		return echTx.JSON(http.StatusBadRequest, response)
 	}
 
-	if len(data) > 0 {
-		response.Data = data
+	if len(responseData) > 0 {
+		response.Data = responseData
 	}
 
-	response.Status = models.StatusSuccess
-	response.Message = models.MessageDataSuccess
 	response.TotalCount = counter
 
-	requestLogger.Info("End of get reward transaction.")
+	response.SetResponse(responseData, respErrors)
+	logger.DataLog(echTx, response).Info("End of check rewards transaction.")
 
-	return c.JSON(getStatusCode(err), response)
+	return echTx.JSON(getStatusCode(err), response)
 }
 
 func getStatusCode(err error) int {

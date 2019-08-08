@@ -8,7 +8,6 @@ import (
 	"gade/srv-gade-point/quotas"
 	"gade/srv-gade-point/rewards"
 	"gade/srv-gade-point/tags"
-	"strconv"
 	"time"
 
 	"github.com/labstack/echo"
@@ -252,48 +251,67 @@ func (rwdRepo *psqlRewardRepository) GetRewardTags(c echo.Context, reward *model
 	return reward, nil
 }
 
-func (rwdRepo *psqlRewardRepository) GetRewards(c echo.Context, payload map[string]interface{}) ([]models.Reward, string, error) {
+func (rwdRepo *psqlRewardRepository) CountRewards(c echo.Context, rewardPayload *models.RewardsPayload) (int64, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	var count int64
+
+	query := `SELECT count(ID) FROM rewards`
+
+	err := rwdRepo.Conn.QueryRow(query).Scan(&count)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (rwdRepo *psqlRewardRepository) GetRewards(c echo.Context, rewardPayload *models.RewardsPayload) ([]models.Reward, error) {
 	var data []models.Reward
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	var paging, where string
-	var counter int64
 
-	query := `SELECT id, name, promo_code FROM rewards`
+	query := `SELECT r.id, r.name, r.promo_code, r.campaign_id, c.name FROM rewards r join campaigns c on r.campaign_id = c.id`
 
-	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
-		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
+	if rewardPayload.Page > 0 || rewardPayload.Limit > 0 {
+		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", rewardPayload.Limit, ((rewardPayload.Page - 1) * rewardPayload.Limit))
 	}
 
-	query += where + " order by updated_at desc" + paging + ";"
+	query += where + " order by r.updated_at desc" + paging + ";"
 	rows, err := rwdRepo.Conn.Query(query)
 
 	if err != nil {
 		requestLogger.Debug(err)
 
-		return nil, "", err
+		return nil, err
 	}
 
 	defer rows.Close()
 
 	for rows.Next() {
 		var rwd models.Reward
+		rwd.Campaign = &models.Campaign{}
 
 		err = rows.Scan(
 			&rwd.ID,
 			&rwd.Name,
 			&rwd.PromoCode,
+			&rwd.CampaignID,
+			&rwd.Campaign.Name,
 		)
-		counter++
 
 		if err != nil {
 			requestLogger.Debug(err)
 
-			return nil, "", err
+			return nil, err
 		}
 
 		data = append(data, rwd)
 	}
 
-	return data, strconv.FormatInt(counter, 10), nil
+	return data, nil
 }

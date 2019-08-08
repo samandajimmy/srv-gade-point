@@ -431,42 +431,85 @@ func randRefID(n int) string {
 	return string(b)
 }
 
-func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardTrxs(c echo.Context, payload map[string]interface{}) ([]models.RewardTrx, string, error) {
+func (rwdTrxRepo *psqlRewardTrxRepository) CountRewardTrxs(c echo.Context, rewardPayload *models.RewardsPayload) (int64, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	var where string
+	var count int64
+
+	query := `SELECT count(ID) FROM reward_transactions`
+
+	if rewardPayload.RewardID != "" {
+		where += " WHERE reward_id = '" + rewardPayload.RewardID + "'"
+	}
+
+	if rewardPayload.StartTransactionDate != "" {
+		where += " AND transaction_date::timestamp::date >= '" + rewardPayload.StartTransactionDate + "'"
+	}
+
+	if rewardPayload.EndTransactionDate != "" {
+		where += " AND transaction_date::timestamp::date <= '" + rewardPayload.EndTransactionDate + "'"
+	}
+
+	if rewardPayload.StartSuccededDate != "" {
+		where += " AND succeeded_date::timestamp::date >= '" + rewardPayload.StartSuccededDate + "'"
+	}
+
+	if rewardPayload.EndTransactionDate != "" {
+		where += " AND succeeded_date::timestamp::date <= '" + rewardPayload.EndTransactionDate + "'"
+	}
+
+	if rewardPayload.Status != "" {
+		where += " AND status = '" + rewardPayload.Status + "'"
+	}
+
+	query += where + ";"
+	err := rwdTrxRepo.Conn.QueryRow(query).Scan(&count)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardTrxs(c echo.Context, rewardPayload *models.RewardsPayload) ([]models.RewardTrx, error) {
 	var data []models.RewardTrx
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	var paging, where string
-	var counter int64
 
 	query := `SELECT id, status, coalesce(ref_core, ''), ref_id, reward_id, cif, used_promo_code, inquired_date, succeeded_date, rejected_date,
 		timeout_date, transaction_date FROM reward_transactions`
 
-	if payload["id"].(string) != "" {
-		where += " WHERE reward_id = '" + payload["id"].(string) + "'"
+	if rewardPayload.RewardID != "" {
+		where += " WHERE reward_id = '" + rewardPayload.RewardID + "'"
 	}
 
-	if payload["startTransactionDate"].(string) != "" {
-		where += " AND transaction_date::timestamp::date >= '" + payload["startTransactionDate"].(string) + "'"
+	if rewardPayload.StartTransactionDate != "" {
+		where += " AND transaction_date::timestamp::date >= '" + rewardPayload.StartTransactionDate + "'"
 	}
 
-	if payload["endTransactionDate"].(string) != "" {
-		where += " AND transaction_date::timestamp::date <= '" + payload["endTransactionDate"].(string) + "'"
+	if rewardPayload.EndTransactionDate != "" {
+		where += " AND transaction_date::timestamp::date <= '" + rewardPayload.EndTransactionDate + "'"
 	}
 
-	if payload["startSuccededDate"].(string) != "" {
-		where += " AND succeeded_date::timestamp::date >= '" + payload["startSuccededDate"].(string) + "'"
+	if rewardPayload.StartSuccededDate != "" {
+		where += " AND succeeded_date::timestamp::date >= '" + rewardPayload.StartSuccededDate + "'"
 	}
 
-	if payload["endSuccededDate"].(string) != "" {
-		where += " AND succeeded_date::timestamp::date <= '" + payload["endSuccededDate"].(string) + "'"
+	if rewardPayload.EndSuccededDate != "" {
+		where += " AND succeeded_date::timestamp::date <= '" + rewardPayload.EndSuccededDate + "'"
 	}
 
-	if payload["status"].(string) != "" {
-		where += " AND status = '" + payload["status"].(string) + "'"
+	if rewardPayload.Status != "" {
+		where += " AND status = '" + rewardPayload.Status + "'"
 	}
 
-	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
-		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
+	if rewardPayload.Page > 0 || rewardPayload.Limit > 0 {
+		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", rewardPayload.Limit, (rewardPayload.Page-1)*rewardPayload.Limit)
 	}
 
 	query += where + " order by transaction_date desc" + paging + ";"
@@ -475,7 +518,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardTrxs(c echo.Context, payload
 	if err != nil {
 		requestLogger.Debug(err)
 
-		return nil, "", err
+		return nil, err
 	}
 
 	defer rows.Close()
@@ -498,12 +541,11 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardTrxs(c echo.Context, payload
 			&timeoutDate,
 			&rwdTrx.TransactionDate,
 		)
-		counter++
 
 		if err != nil {
 			requestLogger.Debug(err)
 
-			return nil, "", err
+			return nil, err
 		}
 
 		rwdTrx.InquiredDate = &inquiredDate.Time
@@ -514,5 +556,5 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardTrxs(c echo.Context, payload
 		data = append(data, rwdTrx)
 	}
 
-	return data, strconv.FormatInt(counter, 10), nil
+	return data, nil
 }

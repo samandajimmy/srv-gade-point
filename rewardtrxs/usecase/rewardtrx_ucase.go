@@ -3,6 +3,7 @@ package usecase
 import (
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewardtrxs"
+	"strconv"
 
 	"github.com/labstack/echo"
 )
@@ -63,12 +64,20 @@ func (rwdTrx *rewardTrxUseCase) CountByCIF(c echo.Context, quot models.Quota, re
 	return count, nil
 }
 
-func (rwdTrx *rewardTrxUseCase) GetRewardTrxs(c echo.Context, payload map[string]interface{}) ([]models.RewardTrx, string, error) {
+func (rwdTrx *rewardTrxUseCase) GetRewardTrxs(c echo.Context, rewardPayload *models.RewardsPayload) ([]models.RewardTrx, string, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
-	// get data and counter
-	data, counter, err := rwdTrx.rewardTrxRepo.GetRewardTrxs(c, payload)
+	// counter data
+	counter, err := rwdTrx.rewardTrxRepo.CountRewardTrxs(c, rewardPayload)
+	if err != nil {
+		requestLogger.Debug(models.ErrGetRewardTrxCounter)
+
+		return nil, "", models.ErrGetRewardTrxCounter
+	}
+
+	// get data
+	data, err := rwdTrx.rewardTrxRepo.GetRewardTrxs(c, rewardPayload)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrGetRewardTrx)
@@ -76,5 +85,5 @@ func (rwdTrx *rewardTrxUseCase) GetRewardTrxs(c echo.Context, payload map[string
 		return nil, "", models.ErrGetRewardTrx
 	}
 
-	return data, counter, err
+	return data, strconv.FormatInt(counter, 10), err
 }

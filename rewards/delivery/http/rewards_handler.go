@@ -4,7 +4,6 @@ import (
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewards"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/labstack/echo"
@@ -157,72 +156,48 @@ func (rwd *RewardHandler) checkTransaction(echTx echo.Context) error {
 }
 
 // getRewards a handler to get rewards
-func (rwd *RewardHandler) getRewards(c echo.Context) error {
+func (rwd *RewardHandler) getRewards(echTx echo.Context) error {
+	var rwdPayload models.RewardsPayload
 	response = models.Response{}
-	pageStr := c.QueryParam("page")
-	limitStr := c.QueryParam("limit")
-
-	if pageStr == "" {
-		pageStr = "0"
-	}
-
-	if limitStr == "" {
-		limitStr = "0"
-	}
-
-	payload := map[string]interface{}{
-		"page":  pageStr,
-		"limit": limitStr,
-	}
-
-	logger := models.RequestLogger{
-		Payload: payload,
-	}
-
-	requestLogger := logger.GetRequestLogger(c, nil)
-
-	page, err := strconv.Atoi(payload["page"].(string))
+	respErrors := &models.ResponseErrors{}
+	logger := models.RequestLogger{}
+	err := echTx.Bind(&rwdPayload)
+	logger.DataLog(echTx, rwdPayload).Info("Start to get rewards.")
 
 	if err != nil {
-		requestLogger.Debug(err)
-		response.Status = models.StatusError
-		response.Message = http.StatusText(http.StatusBadRequest)
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
+		logger.DataLog(echTx, response).Info("End of check rewards.")
 
-		return c.JSON(http.StatusBadRequest, response)
+		return echTx.JSON(http.StatusUnprocessableEntity, response)
 	}
 
-	limit, err := strconv.Atoi(payload["limit"].(string))
+	if err := echTx.Validate(rwdPayload); err != nil {
+		respErrors.SetTitle(err.Error())
+		logger.DataLog(echTx, response).Info("End of check rewards.")
+
+		return echTx.JSON(http.StatusBadRequest, response)
+	}
+
+	responseData, counter, err := rwd.RewardUseCase.GetRewards(echTx, &rwdPayload)
 
 	if err != nil {
-		requestLogger.Debug(err)
-		response.Status = models.StatusError
-		response.Message = http.StatusText(http.StatusBadRequest)
+		respErrors.SetTitle(err.Error())
+		logger.DataLog(echTx, response).Info("End of check rewards.")
 
-		return c.JSON(http.StatusBadRequest, response)
+		return echTx.JSON(http.StatusBadRequest, response)
 	}
 
-	payload["page"] = page
-	payload["limit"] = limit
-	requestLogger.Info("Start to get rewards.")
-	data, counter, err := rwd.RewardUseCase.GetRewards(c, payload)
-
-	if err != nil {
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		return c.JSON(getStatusCode(err), response)
+	if len(responseData) > 0 {
+		response.Data = responseData
 	}
 
-	if len(data) > 0 {
-		response.Data = data
-	}
-
-	response.Status = models.StatusSuccess
-	response.Message = models.MessageDataSuccess
 	response.TotalCount = counter
 
-	requestLogger.Info("End of get rewards.")
+	response.SetResponse(responseData, respErrors)
+	logger.DataLog(echTx, response).Info("End of check rewards.")
 
-	return c.JSON(getStatusCode(err), response)
+	return echTx.JSON(getStatusCode(err), response)
 }
 
 func getStatusCode(err error) int {

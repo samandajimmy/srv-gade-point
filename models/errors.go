@@ -159,6 +159,9 @@ var (
 	// ErrGetReward to store get reward error message
 	ErrGetReward = errors.New("Terjadi kesalahan dalam mengambil reward")
 
+	// ErrGetRewardCounter to get reward counter error message
+	ErrGetRewardCounter = errors.New("Terjadi kesalahan dalam mengambil total reward")
+
 	// ErrRewardFailed to store create reward failed error message
 	ErrRewardFailed = errors.New("Gagal untuk membuat reward")
 
@@ -208,7 +211,7 @@ var (
 	ErrRefreshQuotaFailed = errors.New("Terjadi kesalahan dalam me-refresh Kuota")
 
 	// ErrCreateTagsFailed to store create tags failed message
-	ErrCreateTagsFailed = errors.New("Terjad kesalahan dalam membuat Tag")
+	ErrCreateTagsFailed = errors.New("Terjadi kesalahan dalam membuat Tag")
 
 	// ErrPromoCode to store promo code error message
 	ErrPromoCode = errors.New("Promo Code tidak tersedia")
@@ -224,6 +227,9 @@ var (
 
 	// ErrRefTrxNotFound to not found ref_trx error message
 	ErrRefTrxNotFound = errors.New("ID transaksi tidak ditemukan")
+
+	// ErrGetRewardTrxCounter to get reward transaction counter error message
+	ErrGetRewardTrxCounter = errors.New("Terjadi kesalahan dalam mengambil total reward transaction")
 
 	// ErrGetRewardTrx to store get reward transaction error message
 	ErrGetRewardTrx = errors.New("Terjadi kesalahan dalam mengambil reward transaction")

@@ -73,6 +73,18 @@ type RewardPayment struct {
 	RefCore string `json:"refCore,omitempty"`
 }
 
+// RewardsPayload is represent a inquire reward and reward transactiomn response model
+type RewardsPayload struct {
+	RewardID             string `json:"rewardID,omitempty"`
+	Status               string `json:"status,omitempty"`
+	Page                 int    `json:"page,omitempty"`
+	Limit                int    `json:"limit,omitempty"`
+	StartTransactionDate string `json:"startTransactionDate,omitempty"`
+	EndTransactionDate   string `json:"endTransactionDate,omitempty"`
+	StartSuccededDate    string `json:"startSuccededDate,omitempty"`
+	EndSuccededDate      string `json:"endSuccededDate,omitempty"`
+}
+
 // GetRewardTypeText to get text of reward type
 func (rwd Reward) GetRewardTypeText() string {
 	return rewardType[*rwd.Type]

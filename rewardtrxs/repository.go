@@ -18,4 +18,6 @@ type Repository interface {
 	RewardTrxTimeout(models.RewardTrx)
 	UpdateTimeoutTrx() error
 	GetInquiredTrx() ([]models.RewardTrx, error)
+	GetRewardTrxs(echo.Context, *models.RewardsPayload) ([]models.RewardTrx, error)
+	CountRewardTrxs(echo.Context, *models.RewardsPayload) (int64, error)
 }

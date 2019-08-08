@@ -463,3 +463,27 @@ func (rwd *rewardUseCase) timeoutTrxJob(c echo.Context, rewardTrx models.RewardT
 		rwd.rwdTrxRepo.RewardTrxTimeout(rwdTrx)
 	}(rewardTrx, delay)
 }
+
+func (rwd *rewardUseCase) GetRewards(c echo.Context, rewardPayload *models.RewardsPayload) ([]models.Reward, string, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	// counter data
+	counter, err := rwd.rewardRepo.CountRewards(c, rewardPayload)
+	if err != nil {
+		requestLogger.Debug(models.ErrGetRewardCounter)
+
+		return nil, "", models.ErrGetRewardCounter
+	}
+
+	// get data
+	data, err := rwd.rewardRepo.GetRewards(c, rewardPayload)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrGetReward)
+
+		return nil, "", models.ErrGetReward
+	}
+
+	return data, strconv.FormatInt(counter, 10), err
+}

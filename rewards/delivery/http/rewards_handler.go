@@ -22,6 +22,9 @@ func NewRewardHandler(echoGroup models.EchoGroup, us rewards.UseCase) {
 		RewardUseCase: us,
 	}
 
+	// End Point For CMS
+	echoGroup.Admin.GET("/rewards", handler.getRewards)
+
 	// End Point For External
 	echoGroup.API.POST("/rewards/inquiry", handler.rewardInquiry)
 	echoGroup.API.POST("/rewards/succeeded", handler.rewardPayment)
@@ -148,6 +151,51 @@ func (rwd *RewardHandler) checkTransaction(echTx echo.Context) error {
 	if models.RewardTrxInquired == *responseData.StatusCode {
 		response.Message = models.ErrRefIDStatus.Error() + responseData.Status
 	}
+
+	return echTx.JSON(getStatusCode(err), response)
+}
+
+// getRewards a handler to get rewards
+func (rwd *RewardHandler) getRewards(echTx echo.Context) error {
+	var rwdPayload models.RewardsPayload
+	response = models.Response{}
+	respErrors := &models.ResponseErrors{}
+	logger := models.RequestLogger{}
+	err := echTx.Bind(&rwdPayload)
+	logger.DataLog(echTx, rwdPayload).Info("Start to get rewards.")
+
+	if err != nil {
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
+		logger.DataLog(echTx, response).Info("End of check rewards.")
+
+		return echTx.JSON(http.StatusUnprocessableEntity, response)
+	}
+
+	if err := echTx.Validate(rwdPayload); err != nil {
+		respErrors.SetTitle(err.Error())
+		logger.DataLog(echTx, response).Info("End of check rewards.")
+
+		return echTx.JSON(http.StatusBadRequest, response)
+	}
+
+	responseData, counter, err := rwd.RewardUseCase.GetRewards(echTx, &rwdPayload)
+
+	if err != nil {
+		respErrors.SetTitle(err.Error())
+		logger.DataLog(echTx, response).Info("End of check rewards.")
+
+		return echTx.JSON(http.StatusBadRequest, response)
+	}
+
+	if len(responseData) > 0 {
+		response.Data = responseData
+	}
+
+	response.TotalCount = counter
+
+	response.SetResponse(responseData, respErrors)
+	logger.DataLog(echTx, response).Info("End of check rewards.")
 
 	return echTx.JSON(getStatusCode(err), response)
 }

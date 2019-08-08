@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewardtrxs"
 	"math/rand"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo"
+	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
 
@@ -427,4 +429,132 @@ func randRefID(n int) string {
 		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
 	}
 	return string(b)
+}
+
+func (rwdTrxRepo *psqlRewardTrxRepository) CountRewardTrxs(c echo.Context, rewardPayload *models.RewardsPayload) (int64, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	var where string
+	var count int64
+
+	query := `SELECT count(ID) FROM reward_transactions`
+
+	if rewardPayload.RewardID != "" {
+		where += " WHERE reward_id = '" + rewardPayload.RewardID + "'"
+	}
+
+	if rewardPayload.StartTransactionDate != "" {
+		where += " AND transaction_date::timestamp::date >= '" + rewardPayload.StartTransactionDate + "'"
+	}
+
+	if rewardPayload.EndTransactionDate != "" {
+		where += " AND transaction_date::timestamp::date <= '" + rewardPayload.EndTransactionDate + "'"
+	}
+
+	if rewardPayload.StartSuccededDate != "" {
+		where += " AND succeeded_date::timestamp::date >= '" + rewardPayload.StartSuccededDate + "'"
+	}
+
+	if rewardPayload.EndTransactionDate != "" {
+		where += " AND succeeded_date::timestamp::date <= '" + rewardPayload.EndTransactionDate + "'"
+	}
+
+	if rewardPayload.Status != "" {
+		where += " AND status = '" + rewardPayload.Status + "'"
+	}
+
+	query += where + ";"
+	err := rwdTrxRepo.Conn.QueryRow(query).Scan(&count)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardTrxs(c echo.Context, rewardPayload *models.RewardsPayload) ([]models.RewardTrx, error) {
+	var data []models.RewardTrx
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	var paging, where string
+
+	query := `SELECT id, status, coalesce(ref_core, ''), ref_id, reward_id, cif, used_promo_code, inquired_date, succeeded_date, rejected_date,
+		timeout_date, transaction_date FROM reward_transactions`
+
+	if rewardPayload.RewardID != "" {
+		where += " WHERE reward_id = '" + rewardPayload.RewardID + "'"
+	}
+
+	if rewardPayload.StartTransactionDate != "" {
+		where += " AND transaction_date::timestamp::date >= '" + rewardPayload.StartTransactionDate + "'"
+	}
+
+	if rewardPayload.EndTransactionDate != "" {
+		where += " AND transaction_date::timestamp::date <= '" + rewardPayload.EndTransactionDate + "'"
+	}
+
+	if rewardPayload.StartSuccededDate != "" {
+		where += " AND succeeded_date::timestamp::date >= '" + rewardPayload.StartSuccededDate + "'"
+	}
+
+	if rewardPayload.EndSuccededDate != "" {
+		where += " AND succeeded_date::timestamp::date <= '" + rewardPayload.EndSuccededDate + "'"
+	}
+
+	if rewardPayload.Status != "" {
+		where += " AND status = '" + rewardPayload.Status + "'"
+	}
+
+	if rewardPayload.Page > 0 || rewardPayload.Limit > 0 {
+		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", rewardPayload.Limit, (rewardPayload.Page-1)*rewardPayload.Limit)
+	}
+
+	query += where + " order by transaction_date desc" + paging + ";"
+	rows, err := rwdTrxRepo.Conn.Query(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var rwdTrx models.RewardTrx
+		var inquiredDate, succeededDate, rejectedDate, timeoutDate pq.NullTime
+
+		err = rows.Scan(
+			&rwdTrx.ID,
+			&rwdTrx.Status,
+			&rwdTrx.RefCore,
+			&rwdTrx.RefID,
+			&rwdTrx.RewardID,
+			&rwdTrx.CIF,
+			&rwdTrx.UsedPromoCode,
+			&inquiredDate,
+			&succeededDate,
+			&rejectedDate,
+			&timeoutDate,
+			&rwdTrx.TransactionDate,
+		)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		rwdTrx.InquiredDate = &inquiredDate.Time
+		rwdTrx.SucceededDate = &succeededDate.Time
+		rwdTrx.RejectedDate = &rejectedDate.Time
+		rwdTrx.TimeoutDate = &timeoutDate.Time
+
+		data = append(data, rwdTrx)
+	}
+
+	return data, nil
 }

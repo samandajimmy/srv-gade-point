@@ -27,9 +27,42 @@ func NewRewardHandler(echoGroup models.EchoGroup, us rewards.UseCase) {
 
 	// End Point For External
 	echoGroup.API.POST("/rewards/inquiry", handler.rewardInquiry)
+	echoGroup.API.POST("/rewards/inquiry/multi", handler.multiRewardInquiry)
 	echoGroup.API.POST("/rewards/succeeded", handler.rewardPayment)
 	echoGroup.API.POST("/rewards/rejected", handler.rewardPayment)
 	echoGroup.API.POST("/rewards/check-transaction", handler.checkTransaction)
+}
+
+func (rwd *RewardHandler) multiRewardInquiry(echTx echo.Context) error {
+	var plValidator models.PayloadValidator
+	respErrors := &models.ResponseErrors{}
+	response = models.Response{}
+	logger := models.RequestLogger{}
+	err := echTx.Bind(&plValidator)
+	logger.DataLog(echTx, plValidator).Info("Start to inquiry multi rewards.")
+
+	if err != nil {
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
+		logger.DataLog(echTx, response).Info("End of inquiry multi rewards.")
+
+		return echTx.JSON(http.StatusUnprocessableEntity, response)
+	}
+
+	if err = echTx.Validate(plValidator); err != nil {
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+		logger.DataLog(echTx, response).Info("End of inquiry multi rewards.")
+
+		return echTx.JSON(http.StatusBadRequest, response)
+	}
+
+	plValidator.IsMulti = true
+	responseData, respErrors := rwd.RewardUseCase.Inquiry(echTx, &plValidator)
+	response.SetResponse(responseData, respErrors)
+	logger.DataLog(echTx, response).Info("End of inquiry multi rewards.")
+
+	return echTx.JSON(getStatusCode(err), response)
 }
 
 func (rwd *RewardHandler) rewardInquiry(echTx echo.Context) error {
@@ -55,6 +88,8 @@ func (rwd *RewardHandler) rewardInquiry(echTx echo.Context) error {
 
 		return echTx.JSON(http.StatusBadRequest, response)
 	}
+
+	plValidator.IsMulti = false
 	responseData, respErrors := rwd.RewardUseCase.Inquiry(echTx, &plValidator)
 	response.SetResponse(responseData, respErrors)
 	logger.DataLog(echTx, response).Info("End of inquiry rewards.")
@@ -130,7 +165,6 @@ func (rwd *RewardHandler) checkTransaction(echTx echo.Context) error {
 
 		return echTx.JSON(http.StatusBadRequest, response)
 	}
-
 	responseData, err = rwd.RewardUseCase.CheckTransaction(echTx, &rwdPayment)
 
 	if err != nil {

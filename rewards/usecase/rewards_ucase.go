@@ -174,6 +174,12 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 		rwdInquiry.Rewards = &rr
 
+		// if not multi
+		if plValidator.IsMulti == false {
+			rwdInquiry.RefTrx = rr[0].RefTrx
+			rr[0].RefTrx = ""
+		}
+
 		return rwdInquiry, nil
 	}
 
@@ -226,6 +232,11 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 		// update reward quota
 		rwd.quotaUC.UpdateReduceQuota(c, reward.ID)
+
+		// if not multi
+		if plValidator.IsMulti == false {
+			break
+		}
 	}
 
 	if len(rwdResponse) == 0 {
@@ -245,6 +256,12 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		respErrors.SetTitle(err.Error())
 
 		return rwdInquiry, &respErrors
+	}
+
+	// if not multi
+	if plValidator.IsMulti == false {
+		rwdInquiry.RefTrx = rwdResponse[0].RefTrx
+		rwdResponse[0].RefTrx = ""
 	}
 
 	return rwdInquiry, nil
@@ -376,18 +393,24 @@ func (rwd *rewardUseCase) CheckTransaction(c echo.Context, rwdPayment *models.Re
 	var responseData models.RewardTrxResponse
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
+	trimmedString := strings.Replace(rwdPayment.RefTrx, " ", "", -1)
+	refIDs := strings.Split(trimmedString, ";")
 
-	// check available reward transaction based in ref_id
-	rewardtrx, err := rwd.rwdTrxRepo.CheckRefID(c, rwdPayment.RefTrx)
+	for _, refID := range refIDs {
+		rwdPayment.RefTrx = refID
 
-	if err != nil {
-		requestLogger.Debug(models.ErrRefTrxNotFound)
+		// check available reward transaction based in ref_id
+		rewardtrx, err := rwd.rwdTrxRepo.CheckRefID(c, rwdPayment.RefTrx)
 
-		return responseData, models.ErrRefTrxNotFound
+		if err != nil {
+			requestLogger.Debug(models.ErrRefTrxNotFound)
+
+			return responseData, models.ErrRefTrxNotFound
+		}
+
+		responseData.StatusCode = rewardtrx.Status
+		responseData.Status = rewardtrx.GetstatusRewardTrxText()
 	}
-
-	responseData.StatusCode = rewardtrx.Status
-	responseData.Status = rewardtrx.GetstatusRewardTrxText()
 
 	return responseData, nil
 }

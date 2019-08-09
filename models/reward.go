@@ -55,6 +55,7 @@ type Reward struct {
 
 // RewardsInquiry is represent a inquire reward response model
 type RewardsInquiry struct {
+	RefTrx  string            `json:"refTrx,omitempty"`
 	Rewards *[]RewardResponse `json:"rewards,omitempty"`
 }
 

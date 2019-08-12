@@ -1,6 +1,9 @@
 package usecase
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/quotas"
@@ -9,8 +12,11 @@ import (
 	"gade/srv-gade-point/tags"
 	"gade/srv-gade-point/vouchercodes"
 	"gade/srv-gade-point/vouchers"
+	"io/ioutil"
 	"math"
 	"math/rand"
+	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -290,10 +296,15 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
 	// check rewards voucher if any
 	rwdVoucher, _ := reward.Validators.GetVoucherResult()
 
+	if reward.RefID == "" {
+		reward.RefID = randRefID(20)
+	}
+
 	if rwdVoucher != 0 {
 		plVoucherBuy := &models.PayloadVoucherBuy{
 			CIF:       plValidator.CIF,
 			VoucherID: strconv.FormatInt(rwdVoucher, 10),
+			RefID:     reward.RefID,
 		}
 
 		voucherCode, err = rwd.voucherUC.VoucherGive(c, plVoucherBuy)
@@ -309,27 +320,12 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
 		rwdValue = 0 // if voucher reward is exist then reward value should be nil
 	}
 
-	if reward.RefID == "" {
-		reward.RefID = randRefID(20)
-	}
-
 	// populate reward response
 	rwdResp.Type = reward.GetRewardTypeText()
 	rwdResp.Value = roundDown(rwdValue, 0)
 	rwdResp.JournalAccount = reward.JournalAccount
 	rwdResp.RefTrx = reward.RefID
 	rwdResp.RewardID = reward.ID
-
-	if rwdValue == 0 {
-		// update voucher code ref_id
-		err = rwd.voucherCodeRepo.UpdateVoucherCodeRefID(c, voucherCode, rwdResp.RefTrx)
-
-		if err != nil {
-			requestLogger.Debug(err)
-
-			return nil, err
-		}
-	}
 
 	return &rwdResp, nil
 }
@@ -367,6 +363,9 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 			// update reward quota
 		} else if rwdPayment.RefCore != "" && (*rwdInquiry.Status == models.RewardTrxInquired || *rwdInquiry.Status == models.RewardTrxTimeOut) {
 			// succeeded
+			// update voucher code
+			rwd.voucherCodeRepo.UpdateVoucherCodeSucceeded(c, rwdPayment.RefTrx)
+
 			if *rwdInquiry.Status == models.RewardTrxTimeOut {
 				// update reward trx timeout force to Succedeed
 				rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxTimeOutForceToSucceeded)
@@ -377,6 +376,12 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 			} else if *rwdInquiry.Status == models.RewardTrxInquired {
 				// update reward trx to Succedeed
 				rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxSucceeded)
+			}
+
+			// send sms notification only for voucher reward
+			if *rwdInquiry.Reward.Type == models.RewardTypeVoucher {
+				// ? TODO need to integration with PDS API
+				// go rwd.sendSmsVoucher(c, *rwdInquiry)
 			}
 		} else {
 			responseData.StatusCode = rwdInquiry.Status
@@ -443,6 +448,47 @@ func (rwd *rewardUseCase) RefreshTrx() {
 		}(rwdTrx, delay)
 
 	}
+}
+
+func (rwd *rewardUseCase) sendSmsVoucher(c echo.Context, rewardTrx models.RewardTrx) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	client := &http.Client{}
+	voucherCode, err := rwd.voucherCodeRepo.GetVoucherCodeRefID(c, rewardTrx.RefID)
+
+	if err != nil {
+		requestLogger.Info(err)
+		requestLogger.Info(models.DynamicErr(models.ErrSMSNotSent, rewardTrx.RefID))
+	}
+
+	message := map[string]interface{}{
+		"message": fmt.Sprintf(models.VoucherSMSMessage, voucherCode.Voucher.Name,
+			voucherCode.PromoCode, os.Getenv(`CS_NUMBER_1`), os.Getenv(`CS_NUMBER_2`)),
+		"noHp": rewardTrx.RequestData.Phone,
+	}
+
+	apiURL := os.Getenv(`PDS_API_HOST`) + os.Getenv(`SEND_SMS_PROMO_PATH`)
+	bytesRepresentation, err := json.Marshal(message)
+
+	if err != nil {
+		requestLogger.Info(err)
+		requestLogger.Info(models.DynamicErr(models.ErrSMSNotSent, rewardTrx.RefID))
+	}
+
+	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(bytesRepresentation))
+	req.Header.Add("Content-Type", "application/json")
+	req.SetBasicAuth(os.Getenv(`PDS_API_BASIC_USER`), os.Getenv(`PDS_API_BASIC_PASS`))
+	logger.DataLog(c, message).Info("Start sending sms request to PDS API")
+	response, err := client.Do(req)
+
+	if err != nil {
+		requestLogger.Info(err)
+		requestLogger.Info(models.DynamicErr(models.ErrSMSNotSent, rewardTrx.RefID))
+	}
+
+	defer response.Body.Close()
+	body, _ := ioutil.ReadAll(response.Body)
+	logger.DataLog(c, string(body)).Info("End sending sms request to PDS API")
 }
 
 func (rwd *rewardUseCase) putRewards(c echo.Context, campaigns []*models.Campaign) []models.Reward {

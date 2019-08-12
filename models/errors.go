@@ -1,6 +1,9 @@
 package models
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
 	// ErrInternalServerError to store internal server error message
@@ -243,3 +246,8 @@ var (
 	// ErrRefIDStatus to not found ref_trx error message
 	ErrRefIDStatus = errors.New("Transaksi ID ")
 )
+
+// DynamicErr to return parameterize errors
+func DynamicErr(message string, args ...string) error {
+	return fmt.Errorf(message, args[0])
+}

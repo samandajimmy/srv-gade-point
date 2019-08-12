@@ -16,6 +16,7 @@ type Repository interface {
 	GetVouchers(echo.Context, map[string]interface{}) ([]*models.Voucher, error)
 	GetVoucher(echo.Context, string) (*models.Voucher, error)
 	UpdatePromoCodeBought(echo.Context, string, string) (*models.VoucherCode, error)
+	BookVoucherCode(echo.Context, *models.PayloadVoucherBuy) (*models.VoucherCode, error)
 	GetVouchersUser(echo.Context, map[string]interface{}) ([]models.VoucherCode, error)
 	CountVouchers(echo.Context, map[string]interface{}, bool) (int, error)
 	DeleteVoucher(echo.Context, int64) error

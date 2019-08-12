@@ -632,6 +632,46 @@ func (m *psqlVoucherRepository) UpdatePromoCodeBought(c echo.Context, voucherID 
 	return result, nil
 }
 
+func (m *psqlVoucherRepository) BookVoucherCode(c echo.Context, payload *models.PayloadVoucherBuy) (
+	*models.VoucherCode, error) {
+	var voucherCode models.VoucherCode
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	now := time.Now()
+
+	querySelect := `SELECT id FROM voucher_codes WHERE status = $1 AND voucher_id = $2
+		ORDER BY promo_code ASC LIMIT 1`
+	err := m.Conn.QueryRow(querySelect, &models.VoucherCodeStatusAvailable,
+		payload.VoucherID).Scan(&voucherCode.ID)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	queryUpdate := `UPDATE voucher_codes SET status = $1, user_id = $2, updated_at = $3, ref_id = $4
+		WHERE id = $5 RETURNING promo_code`
+	stmt, err := m.Conn.Prepare(queryUpdate)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	err = stmt.QueryRow(&models.VoucherCodeStatusBooked, &payload.CIF, &now, &payload.RefID,
+		&voucherCode.ID).Scan(&voucherCode.PromoCode)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	return &voucherCode, nil
+}
+
 func (m *psqlVoucherRepository) UpdatePromoCodeRedeemed(c echo.Context, voucherID string, userID string, code string) (*models.VoucherCode, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)

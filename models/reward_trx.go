@@ -29,23 +29,29 @@ var statusRewardTrx = map[int64]string{
 
 // RewardTrx is represent a reward_transactions model
 type RewardTrx struct {
-	ID              int64      `json:"id,omitempty"`
-	Status          *int64     `json:"status,omitempty"`
-	RefCore         string     `json:"refCore,omitempty"`
-	RefID           string     `json:"refId,omitempty"`
-	RewardID        *int64     `json:"rewardId,omitempty"`
-	CIF             string     `json:"cif,omitempty"`
-	UsedPromoCode   string     `json:"usedPromoCode,omitempty"`
-	TransactionDate *time.Time `json:"transactionDate,omitempty"`
-	InquiredDate    *time.Time `json:"inquiredDate,omitempty"`
-	SucceededDate   *time.Time `json:"succeededDate,omitempty"`
-	RejectedDate    *time.Time `json:"rejectedDate,omitempty"`
-	TimeoutDate     *time.Time `json:"timeoutDate,omitempty"`
-	RequestData     string     `json:"requestData,omitempty"`
-	ResponseData    string     `json:"responseData,omitempty"`
-	CreatedAt       *time.Time `json:"createdAt,omitempty"`
-	UpdatedAt       *time.Time `json:"updatedAt,omitempty"`
-	Reward          *Reward    `json:"reward,omitempty"`
+	ID              int64             `json:"id,omitempty"`
+	Status          *int64            `json:"status,omitempty"`
+	RefCore         string            `json:"refCore,omitempty"`
+	RefID           string            `json:"refId,omitempty"`
+	RewardID        *int64            `json:"rewardId,omitempty"`
+	CIF             string            `json:"cif,omitempty"`
+	UsedPromoCode   string            `json:"usedPromoCode,omitempty"`
+	TransactionDate *time.Time        `json:"transactionDate,omitempty"`
+	InquiredDate    *time.Time        `json:"inquiredDate,omitempty"`
+	SucceededDate   *time.Time        `json:"succeededDate,omitempty"`
+	RejectedDate    *time.Time        `json:"rejectedDate,omitempty"`
+	TimeoutDate     *time.Time        `json:"timeoutDate,omitempty"`
+	RequestData     *RewardTrxReqData `json:"requestData,omitempty"`
+	ResponseData    string            `json:"responseData,omitempty"`
+	CreatedAt       *time.Time        `json:"createdAt,omitempty"`
+	UpdatedAt       *time.Time        `json:"updatedAt,omitempty"`
+	Reward          *Reward           `json:"reward,omitempty"`
+}
+
+// RewardTrxReqData is represent a reward_transactions request data model
+type RewardTrxReqData struct {
+	Phone        string `json:"phone,omitempty"`
+	CustomerName string `json:"customerName,omitempty"`
 }
 
 // RewardTrxResponse is represent a reward transaction response model

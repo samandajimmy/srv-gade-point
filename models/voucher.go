@@ -46,6 +46,7 @@ type PathVoucher struct {
 type PayloadVoucherBuy struct {
 	VoucherID string `json:"voucherId,omitempty"`
 	CIF       string `json:"CIF,omitempty"`
+	RefID     string `json:"refId,omitempty"`
 }
 
 // ResponseValidateVoucher to store response to validate a voucher

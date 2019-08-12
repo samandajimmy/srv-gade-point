@@ -1,0 +1,2 @@
+ALTER TABLE quotas
+ADD COLUMN next_check TIMESTAMP;

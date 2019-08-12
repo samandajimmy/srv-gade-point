@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
+	"gade/srv-gade-point/pointhistories"
 	"gade/srv-gade-point/vouchers"
 	"io"
 	"io/ioutil"
@@ -37,15 +38,15 @@ var (
 type voucherUseCase struct {
 	voucherRepo    vouchers.Repository
 	campaignRepo   campaigns.Repository
-	contextTimeout time.Duration
+	pHistoriesRepo pointhistories.Repository
 }
 
 // NewVoucherUseCase will create new an voucherUseCase object representation of vouchers.UseCase interface
-func NewVoucherUseCase(vchrRepo vouchers.Repository, campgnRepo campaigns.Repository, timeout time.Duration) vouchers.UseCase {
+func NewVoucherUseCase(vchrRepo vouchers.Repository, campgnRepo campaigns.Repository, pHistoriesRepo pointhistories.Repository) vouchers.UseCase {
 	return &voucherUseCase{
 		voucherRepo:    vchrRepo,
 		campaignRepo:   campgnRepo,
-		contextTimeout: timeout,
+		pHistoriesRepo: pHistoriesRepo,
 	}
 }
 
@@ -358,7 +359,7 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 
 	// check voucher limit per user
 	payloadPC := map[string]interface{}{
-		"userID":    payload.UserID,
+		"CIF":       payload.CIF,
 		"voucherID": payload.VoucherID,
 		"status":    "", // to get whatever status of promo codes
 	}
@@ -380,7 +381,7 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 	}
 
 	// get user current point
-	userPoint, err := vchr.campaignRepo.GetUserPoint(ech, payload.UserID)
+	userPoint, err := vchr.pHistoriesRepo.GetUserPoint(ech, payload.CIF)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrGetUserPoint)
@@ -397,7 +398,7 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 		return nil, err
 	}
 
-	voucherAmount, err := vchr.voucherRepo.CountBoughtVoucher(ech, payload.VoucherID, payload.UserID)
+	voucherAmount, err := vchr.voucherRepo.CountBoughtVoucher(ech, payload.VoucherID, payload.CIF)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -414,7 +415,7 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 		return nil, err
 	}
 
-	voucherCode, err := vchr.voucherRepo.UpdatePromoCodeBought(ech, payload.VoucherID, payload.UserID)
+	voucherCode, err := vchr.voucherRepo.UpdatePromoCodeBought(ech, payload.VoucherID, payload.CIF)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrUpdatePromoCodes)
@@ -440,7 +441,7 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 	pointAmount := math.Floor(parseFloat)
 
 	campaignTrx := &models.CampaignTrx{
-		UserID:          payload.UserID,
+		CIF:             payload.CIF,
 		PointAmount:     &pointAmount,
 		TransactionType: models.TransactionPointTypeKredit,
 		TransactionDate: &now,
@@ -464,13 +465,57 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 	return voucherCode, nil
 }
 
+func (vchr *voucherUseCase) VoucherGive(ech echo.Context, payload *models.PayloadVoucherBuy) (*models.VoucherCode, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(ech, nil)
+	now := time.Now()
+	voucherDetail, err := vchr.voucherRepo.GetVoucher(ech, payload.VoucherID)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrVoucherUnavailable)
+
+		return nil, models.ErrVoucherUnavailable
+	}
+
+	// check date expiry
+	vStartDate, _ := time.Parse(time.RFC3339, voucherDetail.StartDate)
+	vEndDate, _ := time.Parse(time.RFC3339, voucherDetail.EndDate)
+
+	if vStartDate.After(now) {
+		requestLogger.Debug(models.ErrVoucherExpired)
+
+		return nil, models.ErrVoucherNotStarted
+	}
+
+	if vEndDate.Before(now) {
+		requestLogger.Debug(models.ErrVoucherExpired)
+
+		return nil, models.ErrVoucherExpired
+	}
+
+	voucherCode, err := vchr.voucherRepo.UpdatePromoCodeBought(ech, payload.VoucherID, payload.CIF)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrUpdatePromoCodes)
+
+		return nil, models.ErrUpdatePromoCodes
+	}
+
+	voucherCode.Voucher = &models.Voucher{
+		ID:   voucherDetail.ID,
+		Name: voucherDetail.Name,
+	}
+
+	return voucherCode, nil
+}
+
 func (vchr *voucherUseCase) VoucherValidate(c echo.Context, validateVoucher *models.PayloadValidator) (*models.ResponseValidateVoucher, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
 
 	// check voucher codes
-	_, voucherID, err := vchr.voucherRepo.GetVoucherCode(c, validateVoucher.PromoCode, validateVoucher.UserID)
+	_, voucherID, err := vchr.voucherRepo.GetVoucherCode(c, validateVoucher.PromoCode, validateVoucher.CIF)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrVoucherCodeUnavailable)
@@ -523,7 +568,7 @@ func (vchr *voucherUseCase) VoucherValidate(c echo.Context, validateVoucher *mod
 func (vchr *voucherUseCase) VoucherRedeem(c echo.Context, voucherRedeem *models.PayloadValidator) (*models.VoucherCode, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	promoCode, err := vchr.voucherRepo.UpdatePromoCodeRedeemed(c, voucherRedeem.VoucherID, voucherRedeem.UserID, voucherRedeem.PromoCode)
+	promoCode, err := vchr.voucherRepo.UpdatePromoCodeRedeemed(c, voucherRedeem.VoucherID, voucherRedeem.CIF, voucherRedeem.PromoCode)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrRedeemVoucher)
@@ -571,7 +616,7 @@ func (vchr *voucherUseCase) BadaiEmasGift(c echo.Context, plValidator *models.Pa
 	// give the voucher to userID
 	payloadVoucherBuy := &models.PayloadVoucherBuy{
 		VoucherID: strconv.FormatInt(latestVoucher.ID, 10),
-		UserID:    plValidator.UserID,
+		CIF:       plValidator.CIF,
 	}
 
 	voucherCode, errMsg := vchr.VoucherBuy(c, payloadVoucherBuy)

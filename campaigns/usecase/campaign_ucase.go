@@ -4,25 +4,24 @@ import (
 	"errors"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
-	"math"
+	"gade/srv-gade-point/rewards"
 	"strconv"
 	"time"
 
-	"github.com/jinzhu/copier"
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
 )
 
 type campaignUseCase struct {
-	campaignRepo   campaigns.Repository
-	contextTimeout time.Duration
+	campaignRepo campaigns.Repository
+	rewardUC     rewards.UseCase
 }
 
 // NewCampaignUseCase will create new an campaignUseCase object representation of campaigns.UseCase interface
-func NewCampaignUseCase(cmpgn campaigns.Repository, timeout time.Duration) campaigns.UseCase {
+func NewCampaignUseCase(cmpgn campaigns.Repository, rwd rewards.UseCase) campaigns.UseCase {
 	return &campaignUseCase{
-		campaignRepo:   cmpgn,
-		contextTimeout: timeout,
+		campaignRepo: cmpgn,
+		rewardUC:     rwd,
 	}
 }
 
@@ -37,10 +36,28 @@ func (cmpgn *campaignUseCase) CreateCampaign(c echo.Context, campaign *models.Ca
 		return models.ErrCampaignFailed
 	}
 
+	// create array rewards
+	for _, reward := range *campaign.Rewards {
+		err = cmpgn.rewardUC.CreateReward(c, &reward, campaign)
+
+		if err != nil {
+			break
+		}
+	}
+
+	if err != nil {
+		_ = cmpgn.rewardUC.DeleteByCampaign(c, campaign.ID)
+		_ = cmpgn.campaignRepo.Delete(c, campaign.ID)
+
+		requestLogger.Debug(models.ErrCampaignFailed)
+
+		return models.ErrCreateRewardsFailed
+	}
+
 	return nil
 }
 
-func (cmpgn *campaignUseCase) UpdateCampaign(c echo.Context, id string, updateCampaign *models.UpdateCampaign) error {
+func (cmpgn *campaignUseCase) UpdateCampaign(c echo.Context, id string, updateCampaign *models.Campaign) error {
 	var campaignDetail *models.Campaign
 	now := time.Now()
 	logger := models.RequestLogger{}
@@ -149,16 +166,10 @@ func (cmpgn *campaignUseCase) GetCampaignDetail(c echo.Context, id string) (*mod
 	return campaignDetail, nil
 }
 
-func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.GetCampaignValue) (*models.UserPoint, error) {
-	var result float64
+func (cmpgn *campaignUseCase) GetCampaignAvailable(c echo.Context, today string) ([]*models.Campaign, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	payloadValidator := &models.PayloadValidator{}
-	payloadValidator.Validators = &models.Validator{}
-	now := time.Now()
-
-	// get available campaign
-	campaigns, err := cmpgn.campaignRepo.GetCampaignAvailable(c)
+	campaigns, err := cmpgn.campaignRepo.GetCampaignAvailable(c, today)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrNoCampaign)
@@ -166,116 +177,7 @@ func (cmpgn *campaignUseCase) GetCampaignValue(c echo.Context, payload *models.G
 		return nil, models.ErrNoCampaign
 	}
 
-	// validate available campaigns
-	validCampaigns := []*models.Campaign{}
-	copier.Copy(payloadValidator, payload)
-	copier.Copy(payloadValidator.Validators, payload)
-
-	for _, campaign := range campaigns {
-		//  validate each campaign
-		err = campaign.Validators.Validate(payloadValidator)
-
-		if err == nil {
-			validCampaigns = append(validCampaigns, campaign)
-		}
-	}
-
-	if len(validCampaigns) < 1 {
-		// no valid campaign available
-		requestLogger.Debug(err)
-
-		return nil, models.ErrNoCampaign
-	}
-
-	// get latest campaign
-	latestCampaign := validCampaigns[0]
-
-	// get campaign formula
-	if latestCampaign.Validators.Formula == "" {
-		result = float64(0)
-	} else {
-		result, err = latestCampaign.Validators.GetFormulaResult(payloadValidator)
-	}
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return nil, models.ErrCalculateFormulaCampaign
-	}
-
-	pointAmount := math.Floor(result)
-
-	// store campaign transaction
-	campaignTrx := &models.CampaignTrx{
-		UserID:          payload.UserID,
-		PointAmount:     &pointAmount,
-		TransactionType: models.TransactionPointTypeDebet,
-		TransactionDate: &now,
-		ReffCore:        payload.ReffCore,
-		Campaign:        latestCampaign,
-		CreatedAt:       &now,
-	}
-
-	err = cmpgn.campaignRepo.SavePoint(c, campaignTrx)
-
-	if err != nil {
-		requestLogger.Debug(models.ErrStoreCampaignTrx)
-
-		return nil, models.ErrStoreCampaignTrx
-	}
-
-	p := new(models.UserPoint)
-	p.UserPoint = &pointAmount
-
-	return p, nil
-}
-
-func (cmpgn *campaignUseCase) GetUserPoint(c echo.Context, userID string) (*models.UserPoint, error) {
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-	p := new(models.UserPoint)
-	zero := float64(0)
-	pointAmount, err := cmpgn.campaignRepo.GetUserPoint(c, userID)
-
-	if err != nil {
-		requestLogger.Debug(models.ErrGetUserPoint)
-		p.UserPoint = &zero
-
-		return p, models.ErrGetUserPoint
-	}
-
-	if pointAmount == 0 {
-		requestLogger.Debug(models.ErrUserPointNA)
-		p.UserPoint = &zero
-
-		return p, models.ErrUserPointNA
-	}
-
-	p.UserPoint = &pointAmount
-
-	return p, nil
-}
-
-func (cmpgn *campaignUseCase) GetUserPointHistory(c echo.Context, payload map[string]interface{}) ([]models.CampaignTrx, string, error) {
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-	counter, err := cmpgn.campaignRepo.CountUserPointHistory(c, payload)
-
-	if err != nil {
-		requestLogger.Debug(models.ErrUserPointHistoryNA)
-
-		return nil, "", models.ErrUserPointHistoryNA
-	}
-
-	dataHistory, err := cmpgn.campaignRepo.GetUserPointHistory(c, payload)
-
-	if err != nil {
-		requestLogger.Debug(models.ErrGetUserPointHistory)
-
-		return nil, "", models.ErrGetUserPointHistory
-	}
-
-	return dataHistory, counter, nil
+	return campaigns, nil
 }
 
 func (cmpgn *campaignUseCase) UpdateStatusBasedOnStartDate() error {

@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -9,46 +10,103 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
-	"github.com/labstack/gommon/log"
+	"github.com/sirupsen/logrus"
 	govaluate "gopkg.in/Knetic/govaluate.v2"
 )
 
 // Validator to store all validator data
 type Validator struct {
-	CampaignCode       string   `json:"campaignCode,omitempty"`
-	Channel            string   `json:"channel,omitempty"`
-	Product            string   `json:"product,omitempty"`
-	TransactionType    string   `json:"transactionType,omitempty"`
-	Unit               string   `json:"unit,omitempty"`
-	Multiplier         *float64 `json:"multiplier,omitempty"`
-	Value              *int64   `json:"value,omitempty"`
-	Formula            string   `json:"formula,omitempty"`
-	MinimalTransaction string   `json:"minimalTransaction,omitempty"`
-	Source             string   `json:"source,omitempty"` // device name that user used
-	MinLoanAmount      *float64 `json:"minLoanAmount,omitempty"`
-	MaxLoanAmount      *float64 `json:"maxLoanAmount,omitempty"`
+	CampaignCode         string   `json:"campaignCode,omitempty"`
+	Channel              string   `json:"channel,omitempty" validate:"required"`
+	Discount             *float64 `json:"discount,omitempty"`
+	Formula              string   `json:"formula,omitempty"`
+	MaxLoanAmount        *float64 `json:"maxLoanAmount,omitempty"`
+	MaxValue             *float64 `json:"maxValue,omitempty"`
+	MinLoanAmount        *float64 `json:"minLoanAmount,omitempty"`
+	MinTransactionAmount *float64 `json:"minTransactionAmount,omitempty"`
+	Multiplier           *float64 `json:"multiplier,omitempty"`
+	Product              string   `json:"product,omitempty" validate:"required"`
+	Source               string   `json:"source,omitempty"` // device name that user used
+	TransactionType      string   `json:"transactionType,omitempty" validate:"required"`
+	Unit                 string   `json:"unit,omitempty"`
+	Value                *float64 `json:"value,omitempty"`
+	ValueVoucherID       *int64   `json:"valueVoucherId,omitempty"`
 }
 
 // PayloadValidator to store a payload to validate a request
 type PayloadValidator struct {
-	PromoCode         string     `json:"promoCode,omitempty"`
-	VoucherID         string     `json:"voucherId,omitempty"`
+	BranchCode        string     `json:"branchCode,omitempty"`
+	IsMulti           bool       `json:"isMulti,omitempty"`
 	CampaignID        string     `json:"campaignId,omitempty"`
-	UserID            string     `json:"userId,omitempty"`
-	TransactionAmount float64    `json:"transactionAmount,omitempty"`
-	LoanAmount        float64    `json:"loanAmount,omitempty"`
+	CIF               string     `json:"cif,omitempty"`
+	CustomerName      string     `json:"customerName,omitempty"`
+	LoanAmount        *float64   `json:"loanAmount,omitempty"`
+	Phone             string     `json:"phone,omitempty"`
+	PromoCode         string     `json:"promoCode,omitempty" validate:"required"`
 	RedeemedDate      string     `json:"redeemedDate,omitempty"`
+	RefTrx            string     `json:"refTrx,omitempty"`
+	TransactionDate   string     `json:"transactionDate,omitempty" validate:"required"`
+	TransactionAmount *float64   `json:"transactionAmount,omitempty" validate:"required"`
+	VoucherID         string     `json:"voucherId,omitempty"`
 	Validators        *Validator `json:"validators,omitempty"`
 }
 
-var skippedValidator = []string{"multiplier", "value", "formula"}
-var compareEqual = []string{"channel", "product", "transactionType", "unit", "source", "campaignCode"}
+var skippedValidator = []string{"multiplier", "value", "formula", "maxValue", "unit"}
+var compareEqual = []string{"channel", "product", "transactionType", "source", "campaignCode"}
 var tightenValidator = map[string]string{
-	"minimalTransaction": "transactionAmount",
-	"minLoanAmount":      "loanAmount",
-	"maxLoanAmount":      "loanAmount",
+	"minTransactionAmount": "transactionAmount",
+	"minLoanAmount":        "loanAmount",
+	"maxLoanAmount":        "loanAmount",
 }
-var customErrMsg = "%s on this transaction is not valid to use the benefit"
+var customErrMsg = "%s untuk transaksi ini tidak valid untuk mendapatkan benefit"
+
+// GetRewardValue is to get value of the reward
+func (v *Validator) GetRewardValue(payloadValidator *PayloadValidator) (float64, error) {
+	var result float64
+	// validate eligibility
+	err := v.Validate(payloadValidator)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if v.Value != nil {
+		result = *v.Value
+	}
+
+	// calculate formula if any
+	formulaResult, err := v.GetFormulaResult(payloadValidator)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if formulaResult != 0 {
+		result = formulaResult
+	}
+
+	// calculate discount if any
+	discResult, err := v.CalculateDiscount(payloadValidator.TransactionAmount)
+
+	if err != nil {
+		return 0, err
+	}
+
+	result = result + discResult
+
+	// calculate maximum value if any
+	MaxResult, err := v.CalculateMaximumValue(&result)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if MaxResult != 0 {
+		result = MaxResult
+	}
+
+	return result, nil
+}
 
 // Validate to validate client input with admin input
 func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
@@ -56,7 +114,7 @@ func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
 	var payloadVal map[string]interface{}
 
 	if v == nil {
-		log.Error(ErrValidatorUnavailable)
+		logrus.Debug(ErrValidatorUnavailable)
 
 		return ErrValidatorUnavailable
 	}
@@ -86,18 +144,24 @@ func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
 			reqValidatorVal := fmt.Sprintf("%v", reqValidator[fieldName])
 
 			if !strings.Contains(fieldValue, reqValidatorVal) {
+				logrus.Debug(fmt.Errorf(customErrMsg, fieldName))
+
 				return fmt.Errorf(customErrMsg, fieldName)
 			}
 		case strings.Contains(fieldName, "min"):
 			minTrx, _ := strconv.ParseFloat(fieldValue, 64)
 
 			if minTrx > payloadVal[tightenValidator[fieldName]].(float64) {
+				logrus.Debug(fmt.Errorf(customErrMsg, fieldName))
+
 				return fmt.Errorf(customErrMsg, tightenValidator[fieldName])
 			}
 		case strings.Contains(fieldName, "max"):
 			maxTrx, _ := strconv.ParseFloat(fieldValue, 64)
 
 			if maxTrx < payloadVal[tightenValidator[fieldName]].(float64) {
+				logrus.Debug(fmt.Errorf(customErrMsg, fieldName))
+
 				return fmt.Errorf(customErrMsg, tightenValidator[fieldName])
 			}
 		}
@@ -108,10 +172,15 @@ func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
 
 // GetFormulaResult to proccess the formula then get the result
 func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float64, error) {
+	// check formula availability
+	if v.Formula == "" {
+		return float64(0), nil
+	}
+
 	expression, err := govaluate.NewEvaluableExpression(v.Formula)
 
 	if err != nil {
-		log.Error(err)
+		logrus.Debug(err)
 
 		return 0, err
 	}
@@ -120,7 +189,9 @@ func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float6
 	regex, err := regexp.Compile("[^a-zA-Z0-9]+")
 
 	if err != nil {
-		log.Fatal(err)
+		logrus.Debug(err)
+
+		return 0, nil
 	}
 
 	formulaVarStr := regex.ReplaceAllString(v.Formula, " ")
@@ -131,16 +202,24 @@ func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float6
 
 	// get formula parameters
 	parameters := make(map[string]interface{}, 8)
-	parameters["transactionAmount"] = payloadValidator.TransactionAmount
+	parameters["transactionAmount"] = *payloadValidator.TransactionAmount
 
 	for _, fVar := range formulaVar {
-		parameters[fVar] = v.getField(fVar)
+		parameters[fVar], err = v.getField(fVar)
+
+		if err != nil {
+			break
+		}
+	}
+
+	if err != nil {
+		return 0, err
 	}
 
 	result, err := expression.Evaluate(parameters)
 
 	if err != nil {
-		log.Error(err)
+		logrus.Debug(err)
 
 		return 0, err
 	}
@@ -149,12 +228,58 @@ func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float6
 	return getFloat(result)
 }
 
-func (v *Validator) getField(field string) interface{} {
+// GetVoucherResult to get voucher benefit
+func (v *Validator) GetVoucherResult() (int64, error) {
+	if v.ValueVoucherID == nil {
+		return 0, nil
+	}
+
+	if *v.ValueVoucherID == 0 {
+		return 0, nil
+	}
+
+	return *v.ValueVoucherID, nil
+}
+
+// CalculateDiscount to get the discount currency value
+func (v *Validator) CalculateDiscount(trxAmount *float64) (float64, error) {
+	if v.Discount == nil || *v.Discount == 0 {
+		return 0, nil
+	}
+
+	result := *trxAmount * (*v.Discount / 100)
+
+	return result, nil
+}
+
+// CalculateMaximumValue to get maximum value of a reward
+func (v *Validator) CalculateMaximumValue(value *float64) (float64, error) {
+	maxValue := v.MaxValue
+
+	if maxValue == nil || *maxValue == 0 {
+		return 0, nil
+
+	}
+
+	if *value < *maxValue {
+		return *value, nil
+	}
+
+	return *maxValue, nil
+}
+
+func (v *Validator) getField(field string) (interface{}, error) {
 	r := reflect.ValueOf(v)
-	f := reflect.Indirect(r).FieldByName(strings.Title(field)).Interface()
+	val := reflect.Indirect(r).FieldByName(strings.Title(field))
+
+	if !val.IsValid() {
+		return 0, errors.New("Formula is not valid")
+	}
+
+	f := val.Interface()
 
 	if f == nil {
-		return 0
+		return 0, nil
 	}
 
 	switch f.(type) {
@@ -162,15 +287,17 @@ func (v *Validator) getField(field string) interface{} {
 		v := getInterfaceValue(f)
 		result, _ := strconv.ParseFloat(v, 64)
 
-		return result
+		return result, nil
 	case *int64:
 		v := getInterfaceValue(f)
 		result, _ := strconv.ParseInt(v, 10, 64)
 
-		return result
+		return result, nil
 	}
 
-	return getInterfaceValue(f)
+	result := getInterfaceValue(f)
+
+	return result, nil
 }
 
 func contains(strings []string, str string) bool {

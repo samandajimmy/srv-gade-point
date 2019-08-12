@@ -10,46 +10,58 @@ var (
 	StatusError = "Error"
 
 	// MessageSaveSuccess to store a success message response of save
-	MessageSaveSuccess = "Successfully Saved"
+	MessageSaveSuccess = "Berhasil Disimpan"
 
 	// MessageUpdateSuccess to store a success message response of update
-	MessageUpdateSuccess = "Successfully Updated"
+	MessageUpdateSuccess = "Berhasil Diperbaharui"
 
 	// MessageUploadSuccess to store a success message response of upload
-	MessageUploadSuccess = "Successfully Upload"
+	MessageUploadSuccess = "Berhasil Unggah"
 
 	// MessageDataSuccess to store a success message response of data
-	MessageDataSuccess = "Data Successfully Sent"
+	MessageDataSuccess = "Data Berhasil Dikirim"
 
 	// MessagePointSuccess to store a success message response of data
-	MessagePointSuccess = "Data Successfully Sent"
+	MessagePointSuccess = "Data Berhasil Dikirim"
 
 	// MessageUpdateError to store an errpr message response 0f update
-	MessageUpdateError = "Update Error"
+	MessageUpdateError = "Gagal Mempebaharui"
 
 	// MessageUploadError to store en erro message response of upload
-	MessageUploadError = "Upload Failed"
+	MessageUploadError = "Gagal Unggah"
 
 	// MessageValidationError to store an error message response of field validation
-	MessageValidationError = "Field validation error"
+	MessageValidationError = "Gagal Validasi Kolom"
 
 	// MessageDataNotFound to store a message response of data not found
-	MessageDataNotFound = "Data Not Found"
+	MessageDataNotFound = "Data Tidak Ditemukan"
 
 	// MessageUnprocessableEntity to store a message response of unproccessable entity
-	MessageUnprocessableEntity = "Unprocessable Entity"
+	MessageUnprocessableEntity = "Entitas Tidak Dapat Diproses"
 
 	// MessageTokenFailed to store a message response token failure
-	MessageTokenFailed = "Creating token failed!"
+	MessageTokenFailed = "Gagal Membuat Token!"
 
 	// MicroTimeFormat to store a time format of micro timestamp
 	MicroTimeFormat = "20060102150405.000000"
+
+	// DateTimeFormat to store a date time format of timestamp
+	DateTimeFormat = "2006-01-02 15:04:05"
+
+	// DateTimeFormatMillisecond to store a date time format of timestamp to millisecond
+	DateTimeFormatMillisecond = "2006-01-02 15:04:05.000"
+
+	// DateFormat to store a date format of timestamp
+	DateFormat = "2006-01-02"
 
 	// DateFormatRegex to store a regex of dd/mm/yyyy date format
 	DateFormatRegex = "(^\\d{4}\\-(0[1-9]|1[012])\\-(0[1-9]|[12][0-9]|3[01])$)"
 
 	// BatchSizeVoucherCodes to store a max length of data that need to be inserted for
 	BatchSizeVoucherCodes = 21845
+
+	// LetterBytes a string to generate random ID
+	LetterBytes = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
 // EchoGroup to store routes group

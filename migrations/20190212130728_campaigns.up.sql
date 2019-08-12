@@ -8,7 +8,7 @@
         end_date TIMESTAMP NOT NULL,
         status SMALLINT DEFAULT 0,
         type SMALLINT DEFAULT 0,
-        validators JSONB NOT NULL, 
+        validators JSONB NOT NULL,
         updated_at TIMESTAMP DEFAULT NULL,
         created_at TIMESTAMP DEFAULT NULL
     );

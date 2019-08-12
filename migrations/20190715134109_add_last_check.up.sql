@@ -1,0 +1,2 @@
+ALTER TABLE quotas
+ADD COLUMN last_check TIMESTAMP;

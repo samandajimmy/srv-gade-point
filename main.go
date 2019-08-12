@@ -6,6 +6,7 @@ import (
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/middleware"
 	"gade/srv-gade-point/models"
+	"gade/srv-gade-point/services"
 	"gade/srv-gade-point/vouchers"
 	"net/http"
 	"os"
@@ -22,7 +23,20 @@ import (
 	_campaignTrxUseCase "gade/srv-gade-point/campaigntrxs/usecase"
 	_metricRepository "gade/srv-gade-point/metrics/repository"
 	_metricUseCase "gade/srv-gade-point/metrics/usecase"
+	_pHistoryHttpDelivery "gade/srv-gade-point/pointhistories/delivery/http"
+	_pHistoryRepository "gade/srv-gade-point/pointhistories/repository"
+	_pHistoryUseCase "gade/srv-gade-point/pointhistories/usecase"
+	_quotaRepository "gade/srv-gade-point/quotas/repository"
+	_quotaUseCase "gade/srv-gade-point/quotas/usecase"
+	_rewardHttpDelivery "gade/srv-gade-point/rewards/delivery/http"
+	_rewardRepository "gade/srv-gade-point/rewards/repository"
+	_rewardUseCase "gade/srv-gade-point/rewards/usecase"
+	_rewardTrxHttpDelivery "gade/srv-gade-point/rewardtrxs/delivery/http"
+	_rewardTrxRepository "gade/srv-gade-point/rewardtrxs/repository"
+	_rewardTrxUC "gade/srv-gade-point/rewardtrxs/usecase"
 	_metricService "gade/srv-gade-point/services"
+	_tagRepository "gade/srv-gade-point/tags/repository"
+	_tagUseCase "gade/srv-gade-point/tags/usecase"
 	_tokenHttpDelivery "gade/srv-gade-point/tokens/delivery/http"
 	_tokenRepository "gade/srv-gade-point/tokens/repository"
 	_tokenUseCase "gade/srv-gade-point/tokens/usecase"
@@ -35,8 +49,6 @@ import (
 	_voucherHttpDelivery "gade/srv-gade-point/vouchers/delivery/http"
 	_voucherRepository "gade/srv-gade-point/vouchers/repository"
 	_voucherUseCase "gade/srv-gade-point/vouchers/usecase"
-
-	"gade/srv-gade-point/services"
 
 	"github.com/carlescere/scheduler"
 	"github.com/golang-migrate/migrate/v4"
@@ -101,25 +113,48 @@ func main() {
 	tokenUseCase := _tokenUseCase.NewTokenUseCase(tokenRepository, timeoutContext)
 	_tokenHttpDelivery.NewTokensHandler(echoGroup, tokenUseCase)
 
+	// TAG
+	tagRepository := _tagRepository.NewPsqlTagRepository(dbConn)
+	tagUseCase := _tagUseCase.NewTagUseCase(tagRepository)
+
+	// POINTHISTORY
+	pHistoryRepository := _pHistoryRepository.NewPsqlPointHistoryRepository(dbConn)
+	pHistoryUseCase := _pHistoryUseCase.NewPointHistoryUseCase(pHistoryRepository)
+	_pHistoryHttpDelivery.NewPointHistoriesHandler(echoGroup, pHistoryUseCase)
+
+	// REWARDTRX
+	rewardTrxRepository := _rewardTrxRepository.NewPsqlRewardTrxRepository(dbConn)
+	rewardTrxUseCase := _rewardTrxUC.NewRewardtrxUseCase(rewardTrxRepository)
+	_rewardTrxHttpDelivery.NewRewardTrxHandler(echoGroup, rewardTrxUseCase)
+
+	// QUOTA
+	quotaRepository := _quotaRepository.NewPsqlQuotaRepository(dbConn)
+	quotaUseCase := _quotaUseCase.NewQuotaUseCase(quotaRepository, rewardTrxUseCase)
+
+	// VOUCHER
+	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn)
+
+	// VOUCHERCODE
+	voucherCodeRepository := _voucherCodeRepository.NewPsqlVoucherCodeRepository(dbConn)
+	voucherCodeUseCase := _voucherCodeUseCase.NewVoucherCodeUseCase(voucherCodeRepository, voucherRepository)
+	_voucherCodeHttpDelivery.NewVoucherCodesHandler(echoGroup, voucherCodeUseCase)
+
+	// REWARD
+	rewardRepository := _rewardRepository.NewPsqlRewardRepository(dbConn, quotaRepository, tagRepository)
+	campaignRepository := _campaignRepository.NewPsqlCampaignRepository(dbConn, rewardRepository)
+	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, campaignRepository, pHistoryRepository)
+	_voucherHttpDelivery.NewVouchersHandler(echoGroup, voucherUseCase)
+	rewardUseCase := _rewardUseCase.NewRewardUseCase(rewardRepository, campaignRepository, tagUseCase, quotaUseCase, voucherUseCase, voucherCodeRepository, rewardTrxRepository)
+	_rewardHttpDelivery.NewRewardHandler(echoGroup, rewardUseCase)
+
 	// CAMPAIGN
-	campaignRepository := _campaignRepository.NewPsqlCampaignRepository(dbConn)
-	campaignUseCase := _campaignUseCase.NewCampaignUseCase(campaignRepository, timeoutContext)
+	campaignUseCase := _campaignUseCase.NewCampaignUseCase(campaignRepository, rewardUseCase)
 	_campaignHttpDelivery.NewCampaignsHandler(echoGroup, campaignUseCase)
 
 	// CAMPAIGNTRX
 	campaignTrxRepository := _campaignTrxRepository.NewPsqlCampaignTrxRepository(dbConn)
 	campaignTrxUseCase := _campaignTrxUseCase.NewCampaignTrxUseCase(campaignTrxRepository)
 	_campaignTrxHttpDelivery.NewCampaignTrxsHandler(echoGroup, campaignTrxUseCase, campaignUseCase)
-
-	// VOUCHER
-	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn)
-	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, campaignRepository, timeoutContext)
-	_voucherHttpDelivery.NewVouchersHandler(echoGroup, voucherUseCase)
-
-	// VOUCHERCODE
-	voucherCodeRepository := _voucherCodeRepository.NewPsqlVoucherCodeRepository(dbConn)
-	voucherCodeUseCase := _voucherCodeUseCase.NewVoucherCodeUseCase(voucherCodeRepository, voucherRepository)
-	_voucherCodeHttpDelivery.NewVoucherCodesHandler(echoGroup, voucherCodeUseCase)
 
 	// USER
 	userRepository := _userRepository.NewPsqlUserRepository(dbConn)
@@ -129,11 +164,15 @@ func main() {
 	// METRIC
 	metricRepository := _metricRepository.NewPsqlMetricRepository(dbConn)
 	metricUseCase := _metricUseCase.NewMetricUseCase(metricRepository, timeoutContext)
+
 	// Add metric
 	_metricService.NewMetricHandler(metricUseCase)
 
 	// Run every day.
 	updateStatusBasedOnStartDate(campaignUseCase, voucherUseCase)
+
+	// run refresh reward trx
+	rewardUseCase.RefreshTrx()
 
 	ech.Start(":" + os.Getenv(`PORT`))
 

@@ -19,4 +19,5 @@ type Repository interface {
 	UpdateVoucherCodeRejected(echo.Context, string) error
 	UpdateVoucherCodeSucceeded(echo.Context, string) error
 	GetVoucherCodeRefID(echo.Context, string) (*models.VoucherCode, error)
+	ValidateVoucherGive(echo.Context, *models.PayloadVoucherBuy) (*models.VoucherCode, error)
 }

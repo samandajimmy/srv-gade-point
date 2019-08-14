@@ -444,3 +444,37 @@ func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeSucceeded(c echo.Con
 
 	return nil
 }
+
+func (psqlRepo *psqlVoucherCodeRepository) ValidateVoucherGive(c echo.Context, payloadVoucherBuy *models.PayloadVoucherBuy) (*models.VoucherCode, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	query := `SELECT vc.promo_code, v.name, vc.ref_id FROM voucher_codes vc left join vouchers
+		v on vc.voucher_id = v.id where ref_id = $1`
+
+	stmt, err := psqlRepo.Conn.Prepare(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	vchrCode := models.VoucherCode{}
+	voucher := models.Voucher{}
+	err = stmt.QueryRow(payloadVoucherBuy.RefID).Scan(
+		&vchrCode.PromoCode,
+		&voucher.Name,
+		&vchrCode.RefID,
+	)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	vchrCode.Voucher = &voucher
+
+	return &vchrCode, nil
+}

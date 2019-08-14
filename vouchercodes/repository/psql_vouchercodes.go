@@ -196,6 +196,39 @@ func (psqlRepo *psqlVoucherCodeRepository) GetVoucherCodes(c echo.Context, paylo
 	return result, nil
 }
 
+func (psqlRepo *psqlVoucherCodeRepository) GetVoucherCodeRefID(c echo.Context, refID string) (*models.VoucherCode, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	query := `SELECT vc.promo_code, v.name FROM voucher_codes vc
+		left join vouchers v on vc.voucher_id = v.id where ref_id = $1`
+
+	stmt, err := psqlRepo.Conn.Prepare(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	vchrCode := models.VoucherCode{}
+	voucher := models.Voucher{}
+	err = stmt.QueryRow(&refID).Scan(
+		&vchrCode.PromoCode,
+		&voucher.Name,
+	)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	vchrCode.Voucher = &voucher
+
+	return &vchrCode, nil
+}
+
 func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeRedeemed(c echo.Context, redeemDate string, userID string, promoCode string) (*models.VoucherCode, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
@@ -360,8 +393,8 @@ func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeRejected(c echo.Cont
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
-	zero := int64(0)
-	query := `UPDATE voucher_codes SET status = $1, user_id = $2, bought_date = NULL, updated_at = $3 where status = 1 and ref_id = $4`
+	query := `UPDATE voucher_codes SET status = $1, user_id = $2, bought_date = NULL, ref_id = ''
+		updated_at = $3 where status = $4 and ref_id = $5`
 	stmt, err := psqlRepo.Conn.Prepare(query)
 
 	if err != nil {
@@ -370,7 +403,8 @@ func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeRejected(c echo.Cont
 		return err
 	}
 
-	rows, err := stmt.Query(&zero, "", &now, &refID)
+	rows, err := stmt.Query(&models.VoucherCodeStatusAvailable, "", &now,
+		&models.VoucherCodeStatusBooked, &refID)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -381,4 +415,66 @@ func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeRejected(c echo.Cont
 	defer rows.Close()
 
 	return nil
+}
+
+func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeSucceeded(c echo.Context, refID string) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	now := time.Now()
+	query := `UPDATE voucher_codes SET status = $1, bought_date = $2, updated_at = $3
+		where status = $4 and ref_id = $5`
+	stmt, err := psqlRepo.Conn.Prepare(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	rows, err := stmt.Query(&models.VoucherCodeStatusBought, &now, &now,
+		models.VoucherCodeStatusBooked, &refID)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	defer rows.Close()
+
+	return nil
+}
+
+func (psqlRepo *psqlVoucherCodeRepository) ValidateVoucherGive(c echo.Context, payloadVoucherBuy *models.PayloadVoucherBuy) (*models.VoucherCode, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	query := `SELECT vc.promo_code, v.name, vc.ref_id FROM voucher_codes vc left join vouchers
+		v on vc.voucher_id = v.id where ref_id = $1`
+
+	stmt, err := psqlRepo.Conn.Prepare(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	vchrCode := models.VoucherCode{}
+	voucher := models.Voucher{}
+	err = stmt.QueryRow(payloadVoucherBuy.RefID).Scan(
+		&vchrCode.PromoCode,
+		&voucher.Name,
+		&vchrCode.RefID,
+	)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	vchrCode.Voucher = &voucher
+
+	return &vchrCode, nil
 }

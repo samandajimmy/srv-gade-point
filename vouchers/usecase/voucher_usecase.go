@@ -465,7 +465,8 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 	return voucherCode, nil
 }
 
-func (vchr *voucherUseCase) VoucherGive(ech echo.Context, payload *models.PayloadVoucherBuy) (*models.VoucherCode, error) {
+func (vchr *voucherUseCase) VoucherGive(ech echo.Context, payload *models.PayloadVoucherBuy) (
+	*models.VoucherCode, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(ech, nil)
 	now := time.Now()
@@ -493,7 +494,7 @@ func (vchr *voucherUseCase) VoucherGive(ech echo.Context, payload *models.Payloa
 		return nil, models.ErrVoucherExpired
 	}
 
-	voucherCode, err := vchr.voucherRepo.UpdatePromoCodeBought(ech, payload.VoucherID, payload.CIF)
+	voucherCode, err := vchr.voucherRepo.BookVoucherCode(ech, payload)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrUpdatePromoCodes)

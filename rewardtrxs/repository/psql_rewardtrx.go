@@ -33,6 +33,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 	now := time.Now()
 
 	for _, rwdResp := range *resp.Rewards {
+		var lastID int64
 		refID := rwdResp.RefTrx
 		expTime, _ := strconv.ParseInt(os.Getenv(`REWARD_TRX_TIMEOUT`), 10, 64)
 		timeoutDate := now.Add(time.Duration(expTime) * time.Minute)
@@ -49,7 +50,6 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 			return rewardTrx, err
 		}
 
-		var lastID int64
 		requestData, err := json.Marshal(payload)
 		responseData, err := json.Marshal(resp)
 
@@ -75,15 +75,17 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 			UsedPromoCode:   payload.PromoCode,
 			TransactionDate: &trxDate,
 			InquiredDate:    &now,
-			RequestData:     string(requestData),
 			ResponseData:    string(responseData),
 			CreatedAt:       &now,
 			TimeoutDate:     &timeoutDate,
 		}
 
+		reqData := string(requestData)
+
 		err = stmt.QueryRow(
-			&rwdTrx.Status, &rwdTrx.RefID, &rwdTrx.CIF, &rwdTrx.RewardID, &rwdTrx.UsedPromoCode, &rwdTrx.TransactionDate,
-			&rwdTrx.InquiredDate, &rwdTrx.RequestData, &rwdTrx.ResponseData, &rwdTrx.CreatedAt, &rwdTrx.TimeoutDate,
+			&rwdTrx.Status, &rwdTrx.RefID, &rwdTrx.CIF, &rwdTrx.RewardID, &rwdTrx.UsedPromoCode,
+			&rwdTrx.TransactionDate, &rwdTrx.InquiredDate, &reqData, &rwdTrx.ResponseData,
+			&rwdTrx.CreatedAt, &rwdTrx.TimeoutDate,
 		).Scan(&lastID)
 
 		if err != nil {
@@ -150,9 +152,14 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CheckTrx(c echo.Context, refID string
 
 func (rwdTrxRepo *psqlRewardTrxRepository) CheckRefID(c echo.Context, refID string) (*models.RewardTrx, error) {
 	var result models.RewardTrx
+	var rewardTrxReqData models.RewardTrxReqData
+	var reward models.Reward
+	var reqData json.RawMessage
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	query := `SELECT id, status, coalesce(ref_core, ''), ref_id, reward_id, cif, inquired_date, transaction_date from reward_transactions where ref_id = $1`
+	query := `SELECT rt.id, rt.status, coalesce(rt.ref_core, ''), rt.ref_id, rt.reward_id, rt.cif,
+		rt.inquired_date, rt.transaction_date, rt.request_data, r.type from reward_transactions rt
+		left join rewards r on rt.reward_id = r.id where ref_id = $1`
 	err := rwdTrxRepo.Conn.QueryRow(query, refID).Scan(
 		&result.ID,
 		&result.Status,
@@ -162,6 +169,8 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CheckRefID(c echo.Context, refID stri
 		&result.CIF,
 		&result.InquiredDate,
 		&result.TransactionDate,
+		&reqData,
+		&reward.Type,
 	)
 
 	if err != nil {
@@ -169,6 +178,17 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CheckRefID(c echo.Context, refID stri
 
 		return nil, err
 	}
+
+	err = json.Unmarshal([]byte(reqData), &rewardTrxReqData)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	result.Reward = &reward
+	result.RequestData = &rewardTrxReqData
 
 	return &result, nil
 }
@@ -412,15 +432,16 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetInquiredTrx() ([]models.RewardTrx,
 
 func (rwdTrxRepo *psqlRewardTrxRepository) updateLockedQuota(rewardID int64, refID string) {
 	now := time.Now()
-	zero := int64(0)
-	query := `UPDATE voucher_codes SET status = $1, user_id = $2, bought_date = NULL, updated_at = $3 where status = 1 and ref_id = $4`
+	query := `UPDATE voucher_codes SET status = $1, user_id = $2, bought_date = NULL,
+		updated_at = $3 where status = $4 and ref_id = $5`
 	stmt, err := rwdTrxRepo.Conn.Prepare(query)
 
 	if err != nil {
 		logrus.Debug(err)
 	}
 
-	rowVC, err := stmt.Query(&zero, "", &now, &refID)
+	rowVC, err := stmt.Query(&models.VoucherCodeStatusAvailable, "", &now,
+		models.VoucherCodeStatusBooked, &refID)
 
 	if err != nil {
 		logrus.Debug(err)

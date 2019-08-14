@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -53,6 +54,7 @@ type PayloadValidator struct {
 
 var skippedValidator = []string{"multiplier", "value", "formula", "maxValue", "unit"}
 var compareEqual = []string{"channel", "product", "transactionType", "source", "campaignCode"}
+var evalFunc = []string{"floor"}
 var tightenValidator = map[string]string{
 	"minTransactionAmount": "transactionAmount",
 	"minLoanAmount":        "loanAmount",
@@ -177,7 +179,7 @@ func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float6
 		return float64(0), nil
 	}
 
-	expression, err := govaluate.NewEvaluableExpression(v.Formula)
+	expression, err := govaluate.NewEvaluableExpressionWithFunctions(v.Formula, goValuateFunc())
 
 	if err != nil {
 		logrus.Debug(err)
@@ -205,6 +207,10 @@ func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float6
 	parameters["transactionAmount"] = *payloadValidator.TransactionAmount
 
 	for _, fVar := range formulaVar {
+		if contains(evalFunc, fVar) {
+			continue
+		}
+
 		parameters[fVar], err = v.getField(fVar)
 
 		if err != nil {
@@ -349,4 +355,12 @@ func remove(s []string, r string) []string {
 		}
 	}
 	return s
+}
+
+func goValuateFunc() map[string]govaluate.ExpressionFunction {
+	return map[string]govaluate.ExpressionFunction{
+		"floor": func(arguments ...interface{}) (interface{}, error) {
+			return math.Floor(arguments[0].(float64)), nil
+		},
+	}
 }

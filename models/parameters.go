@@ -62,6 +62,12 @@ var (
 
 	// LetterBytes a string to generate random ID
 	LetterBytes = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+	// VoucherSMSMessage is a message for voucher sms notification
+	VoucherSMSMessage = "Selamat, Anda mendapatkan Voucher %s dengan kode %s Info: %s, %s"
+
+	// ErrSMSNotSent to store error sms not sent
+	ErrSMSNotSent = "Ref Transaksi: %s, Gagal mengirim SMS"
 )
 
 // EchoGroup to store routes group

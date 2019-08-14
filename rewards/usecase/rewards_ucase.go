@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"gade/srv-gade-point/campaigns"
@@ -16,6 +15,7 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -380,8 +380,7 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 
 			// send sms notification only for voucher reward
 			if *rwdInquiry.Reward.Type == models.RewardTypeVoucher {
-				// ? TODO need to integration with PDS API
-				// go rwd.sendSmsVoucher(c, *rwdInquiry)
+				go rwd.sendSmsVoucher(c, *rwdInquiry)
 			}
 		} else {
 			responseData.StatusCode = rwdInquiry.Status
@@ -451,6 +450,7 @@ func (rwd *rewardUseCase) RefreshTrx() {
 }
 
 func (rwd *rewardUseCase) sendSmsVoucher(c echo.Context, rewardTrx models.RewardTrx) {
+	var respBody map[string]interface{}
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	client := &http.Client{}
@@ -461,24 +461,22 @@ func (rwd *rewardUseCase) sendSmsVoucher(c echo.Context, rewardTrx models.Reward
 		requestLogger.Info(models.DynamicErr(models.ErrSMSNotSent, rewardTrx.RefID))
 	}
 
-	message := map[string]interface{}{
-		"message": fmt.Sprintf(models.VoucherSMSMessage, voucherCode.Voucher.Name,
-			voucherCode.PromoCode, os.Getenv(`CS_NUMBER_1`), os.Getenv(`CS_NUMBER_2`)),
-		"noHp": rewardTrx.RequestData.Phone,
-	}
+	data := url.Values{}
+	data.Set("message", fmt.Sprintf(models.VoucherSMSMessage, voucherCode.Voucher.Name,
+		voucherCode.PromoCode, os.Getenv(`CS_NUMBER_1`), os.Getenv(`CS_NUMBER_2`)))
+	data.Set("noHp", rewardTrx.RequestData.Phone)
 
 	apiURL := os.Getenv(`PDS_API_HOST`) + os.Getenv(`SEND_SMS_PROMO_PATH`)
-	bytesRepresentation, err := json.Marshal(message)
 
 	if err != nil {
 		requestLogger.Info(err)
 		requestLogger.Info(models.DynamicErr(models.ErrSMSNotSent, rewardTrx.RefID))
 	}
 
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(bytesRepresentation))
-	req.Header.Add("Content-Type", "application/json")
+	req, err := http.NewRequest("POST", apiURL, strings.NewReader(data.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.SetBasicAuth(os.Getenv(`PDS_API_BASIC_USER`), os.Getenv(`PDS_API_BASIC_PASS`))
-	logger.DataLog(c, message).Info("Start sending sms request to PDS API")
+	logger.DataLog(c, data).Info("Start sending sms request to PDS API")
 	response, err := client.Do(req)
 
 	if err != nil {
@@ -487,8 +485,26 @@ func (rwd *rewardUseCase) sendSmsVoucher(c echo.Context, rewardTrx models.Reward
 	}
 
 	defer response.Body.Close()
-	body, _ := ioutil.ReadAll(response.Body)
-	logger.DataLog(c, string(body)).Info("End sending sms request to PDS API")
+	body, err := ioutil.ReadAll(response.Body)
+
+	if err != nil {
+		requestLogger.Info(err)
+		requestLogger.Info(models.DynamicErr(models.ErrSMSNotSent, rewardTrx.RefID))
+	}
+
+	err = json.Unmarshal(body, &respBody)
+
+	if err != nil {
+		requestLogger.Info(err)
+		requestLogger.Info(models.DynamicErr(models.ErrSMSNotSent, rewardTrx.RefID))
+	}
+
+	if respBody["status"] == "error" {
+		requestLogger.Info(respBody)
+		requestLogger.Info(models.DynamicErr(models.ErrSMSNotSent, rewardTrx.RefID))
+	}
+
+	logger.DataLog(c, respBody).Info("End sending sms request to PDS API")
 }
 
 func (rwd *rewardUseCase) putRewards(c echo.Context, campaigns []*models.Campaign) []models.Reward {

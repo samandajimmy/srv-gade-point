@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/labstack/echo"
+	"github.com/sirupsen/logrus"
 )
 
 var response = models.Response{} // Response represent the response
@@ -25,14 +26,14 @@ func NewVouchersHandler(echoGroup models.EchoGroup, us vouchers.UseCase) {
 		VoucherUseCase: us,
 	}
 
-	//End Point For CMS
+	// End Point For CMS
 	echoGroup.Admin.POST("/vouchers", handler.CreateVoucher)
 	echoGroup.Admin.GET("/vouchers", handler.GetVouchersAdmin)
 	echoGroup.Admin.GET("/vouchers/:id", handler.GetVoucherAdmin)
 	echoGroup.Admin.POST("/vouchers/upload", handler.UploadVoucherImages)
 	echoGroup.Admin.PUT("/vouchers/status/:id", handler.UpdateStatusVoucher)
 
-	//End Point For External
+	// End Point For External
 	echoGroup.API.GET("/vouchers", handler.GetVouchers)
 	echoGroup.API.GET("/vouchers/:id", handler.GetVoucher)
 	echoGroup.API.POST("/vouchers/badai-emas-gift", handler.BadaiEmasGift)
@@ -44,43 +45,43 @@ func NewVouchersHandler(echoGroup models.EchoGroup, us vouchers.UseCase) {
 
 // CreateVoucher Create new voucher and generate promo code by stock
 func (vchr *VouchersHandler) CreateVoucher(c echo.Context) error {
+	var voucher models.Voucher
+	respErrors := &models.ResponseErrors{}
+	response = models.Response{}
+	logger := models.RequestLogger{}
+
 	// metric monitoring
 	go services.AddMetric("create_vouchers")
 
-	var voucher models.Voucher
-	response = models.Response{}
-
-	if err := c.Bind(&voucher); err != nil {
-		// metric monitoring error
-		go services.AddMetric("create_vouchers_error")
-
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		return c.JSON(getStatusCode(err), response)
-	}
-
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, voucher)
-	requestLogger.Info("Start to create a voucher")
-
-	err := vchr.VoucherUseCase.CreateVoucher(c, &voucher)
+	err := c.Bind(&voucher)
+	logger.DataLog(c, voucher).Info("Start to create a voucher.")
 
 	if err != nil {
 		// metric monitoring error
 		go services.AddMetric("create_vouchers_error")
 
-		response.Status = models.StatusError
-		response.Message = err.Error()
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
+		logger.DataLog(c, response).Info("End of create a voucher")
+
+		return c.JSON(http.StatusUnprocessableEntity, response)
+	}
+
+	err = vchr.VoucherUseCase.CreateVoucher(c, &voucher)
+
+	if err != nil {
+		// metric monitoring error
+		go services.AddMetric("create_vouchers_error")
+
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+		logger.DataLog(c, response).Info("End of create a voucher")
+
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	if (models.Voucher{}) != voucher {
-		response.Data = voucher
-	}
-
-	response.Status = models.StatusSuccess
-	response.Message = models.MessageSaveSuccess
-	requestLogger.Info("End of create a voucher")
+	response.SetResponse(voucher, respErrors)
+	logger.DataLog(c, response).Info("End of create a voucher")
 
 	// metric monitoring success
 	go services.AddMetric("create_vouchers_success")
@@ -93,52 +94,55 @@ func (vchr *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 	// metric monitoring
 	go services.AddMetric("update_status_vouchers")
 
+	var updateVoucher *models.UpdateVoucher
+	respErrors := &models.ResponseErrors{}
 	response = models.Response{}
-	updateVoucher := new(models.UpdateVoucher)
-	logger := models.RequestLogger{
-		Payload: map[string]interface{}{
-			"voucherID": c.Param("id"),
-		},
-	}
-
-	if err := c.Bind(updateVoucher); err != nil {
-		// metric monitoring error
-		go services.AddMetric("update_status_vouchers_error")
-
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		return c.JSON(getStatusCode(err), response)
-	}
-
-	requestLogger := logger.GetRequestLogger(c, updateVoucher)
-	requestLogger.Info("Start to update a voucher.")
-	id, err := strconv.Atoi(c.Param("id"))
+	logger := models.RequestLogger{}
+	err := c.Bind(updateVoucher)
+	logger.DataLog(c, *updateVoucher).Info("Start to update voucher.")
 
 	if err != nil {
 		// metric monitoring error
 		go services.AddMetric("update_status_vouchers_error")
 
-		requestLogger.Debug(err)
-		response.Status = models.StatusError
-		response.Message = http.StatusText(http.StatusBadRequest)
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
+		logger.DataLog(c, response).Info("End of update a voucher.")
+
+		return c.JSON(http.StatusUnprocessableEntity, response)
+	}
+
+	updateVoucher.VoucherID, err = strconv.ParseInt(c.Param("id"), 10, 64)
+
+	if err != nil {
+		// metric monitoring error
+		go services.AddMetric("update_status_vouchers_error")
+
+		respErrors.SetTitle(http.StatusText(http.StatusBadRequest))
+		response.SetResponse("", respErrors)
+		logrus.Debug(err)
+		logger.DataLog(c, response).Info("End of update a voucher.")
 
 		return c.JSON(http.StatusBadRequest, response)
 	}
 
-	err = vchr.VoucherUseCase.UpdateVoucher(c, int64(id), updateVoucher)
+	err = vchr.VoucherUseCase.UpdateVoucher(c, updateVoucher.VoucherID, updateVoucher)
 
 	if err != nil {
 		// metric monitoring error
 		go services.AddMetric("update_status_vouchers_error")
 
-		response.Status = models.StatusError
-		response.Message = err.Error()
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+		logrus.Debug(err)
+		logger.DataLog(c, response).Info("End of update a voucher.")
+
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	response.Status = models.StatusSuccess
-	response.Message = models.MessageUpdateSuccess
-	requestLogger.Info("End of update a voucher.")
+
+	response.SetResponse("", respErrors)
+	logger.DataLog(c, response).Info("End of update a voucher.")
 
 	// metric monitoring success
 	go services.AddMetric("update_status_vouchers_success")

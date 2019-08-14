@@ -69,7 +69,8 @@ func init() {
 	loadEnv()
 	logrus.SetReportCaller(true)
 	formatter := &logrus.TextFormatter{
-		FullTimestamp: true,
+		FullTimestamp:   true,
+		TimestampFormat: models.DateTimeFormatMillisecond + "000",
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
 			tmp := strings.Split(f.File, "/")
 			filename := tmp[len(tmp)-1]

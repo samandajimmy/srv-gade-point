@@ -25,6 +25,7 @@ type VoucherCode struct {
 	PromoCode    string     `json:"promoCode,omitempty"`
 	Status       *int8      `json:"status,omitempty"`
 	UserID       string     `json:"userId,omitempty"`
+	RefID        string     `json:"refId,omitempty"`
 	Voucher      *Voucher   `json:"voucher,omitempty"`
 	RedeemedDate *time.Time `json:"redeemedDate,omitempty"`
 	BoughtDate   *time.Time `json:"boughtDate,omitempty"`

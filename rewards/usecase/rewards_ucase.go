@@ -277,6 +277,7 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
 	plValidator *models.PayloadValidator) (*models.RewardResponse, error) {
 	var rwdResp models.RewardResponse
 	var voucherCode *models.VoucherCode
+	var voucherName string
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	rewardLogger := logger.GetRequestLogger(c, reward.Validators)
@@ -307,16 +308,26 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
 			RefID:     reward.RefID,
 		}
 
-		voucherCode, err = rwd.voucherUC.VoucherGive(c, plVoucherBuy)
+		// check voucher code base on refId
+		voucherCodeValid, err := rwd.voucherCodeRepo.ValidateVoucherGive(c, plVoucherBuy)
 
-		if err != nil {
-			requestLogger.Debug(models.ErrVoucherUnavailable)
+		if voucherCodeValid != nil {
+			voucherName = voucherCodeValid.Voucher.Name
+		} else {
+			voucherCode, err = rwd.voucherUC.VoucherGive(c, plVoucherBuy)
 
-			return nil, err
+			if err != nil {
+				requestLogger.Debug(models.ErrVoucherUnavailable)
 
+				return nil, err
+
+			}
+
+			voucherName = voucherCode.Voucher.Name
 		}
 
-		rwdResp.VoucherName = voucherCode.Voucher.Name
+		rwdResp.VoucherName = voucherName
+
 		rwdValue = 0 // if voucher reward is exist then reward value should be nil
 	}
 

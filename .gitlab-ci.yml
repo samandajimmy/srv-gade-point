@@ -1,6 +1,7 @@
 stages:
   - dep
   - test
+  - build
   - release
 
 variables:

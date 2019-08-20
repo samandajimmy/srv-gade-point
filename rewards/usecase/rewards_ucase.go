@@ -375,7 +375,7 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 		} else if rwdPayment.RefCore != "" && (*rwdInquiry.Status == models.RewardTrxInquired || *rwdInquiry.Status == models.RewardTrxTimeOut) {
 			// succeeded
 			// update voucher code
-			rwd.voucherCodeRepo.UpdateVoucherCodeSucceeded(c, rwdPayment.RefTrx)
+			rwd.voucherCodeRepo.UpdateVoucherCodeSucceeded(c, rwdPayment)
 
 			if *rwdInquiry.Status == models.RewardTrxTimeOut {
 				// update reward trx timeout force to Succedeed
@@ -490,9 +490,12 @@ func (rwd *rewardUseCase) sendSmsVoucher(c echo.Context, rewardTrx models.Reward
 	logger.DataLog(c, data).Info("Start sending sms request to PDS API")
 	response, err := client.Do(req)
 
-	if err != nil {
+	if err != nil || response == nil {
 		requestLogger.Info(err)
 		requestLogger.Info(models.DynamicErr(models.ErrSMSNotSent, rewardTrx.RefID))
+		logger.DataLog(c, respBody).Info("End sending sms request to PDS API")
+
+		return
 	}
 
 	defer response.Body.Close()
@@ -501,6 +504,9 @@ func (rwd *rewardUseCase) sendSmsVoucher(c echo.Context, rewardTrx models.Reward
 	if err != nil {
 		requestLogger.Info(err)
 		requestLogger.Info(models.DynamicErr(models.ErrSMSNotSent, rewardTrx.RefID))
+		logger.DataLog(c, respBody).Info("End sending sms request to PDS API")
+
+		return
 	}
 
 	err = json.Unmarshal(body, &respBody)
@@ -508,11 +514,17 @@ func (rwd *rewardUseCase) sendSmsVoucher(c echo.Context, rewardTrx models.Reward
 	if err != nil {
 		requestLogger.Info(err)
 		requestLogger.Info(models.DynamicErr(models.ErrSMSNotSent, rewardTrx.RefID))
+		logger.DataLog(c, respBody).Info("End sending sms request to PDS API")
+
+		return
 	}
 
 	if respBody["status"] == "error" {
 		requestLogger.Info(respBody)
 		requestLogger.Info(models.DynamicErr(models.ErrSMSNotSent, rewardTrx.RefID))
+		logger.DataLog(c, respBody).Info("End sending sms request to PDS API")
+
+		return
 	}
 
 	logger.DataLog(c, respBody).Info("End sending sms request to PDS API")

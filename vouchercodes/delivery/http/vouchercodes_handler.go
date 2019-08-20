@@ -33,7 +33,7 @@ func NewVoucherCodesHandler(echoGroup models.EchoGroup, vcu vouchercodes.UseCase
 	echoGroup.Admin.POST("/voucher-codes/redeem", handler.VoucherCodeRedeem)
 
 	//End Point For External
-	echoGroup.API.GET("/voucher-codes/voucher/history", handler.GetVoucherCodeHistory)
+	echoGroup.API.GET("/hidden/voucher-codes/voucher/history", handler.GetVoucherCodeHistory)
 
 }
 

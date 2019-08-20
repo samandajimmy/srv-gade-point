@@ -29,5 +29,13 @@ FROM alpine:3.7
 COPY --from=build-env /go/bin/srv-gade-point /go/bin/srv-gade-point
 COPY --from=build-env /srv-gade-point/entrypoint.sh /srv-gade-point/entrypoint.sh
 COPY --from=build-env /srv-gade-point/migrations /migrations
+
+# set timezone
+RUN apk add tzdata
+RUN ls /usr/share/zoneinfo
+RUN cp /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
+RUN echo "Asia/Jakarta" > /etc/timezone
+RUN apk del tzdata
+
 EXPOSE 8080
 ENTRYPOINT ["sh", "/srv-gade-point/entrypoint.sh"]

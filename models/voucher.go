@@ -34,7 +34,8 @@ type Voucher struct {
 
 // UpdateVoucher to store payload for update status
 type UpdateVoucher struct {
-	Status int8 `json:"status,omitempty"`
+	Status    int64 `json:"status,omitempty"`
+	VoucherID int64 `jsn:"voucherId, omitempty"`
 }
 
 // PathVoucher to store payload for upload voucher

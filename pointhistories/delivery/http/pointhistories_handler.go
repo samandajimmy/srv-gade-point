@@ -28,8 +28,8 @@ func NewPointHistoriesHandler(echoGroup models.EchoGroup, pointHistUs pointhisto
 	echoGroup.Admin.POST("/point/histories", handler.GetUsers)
 
 	// End Point For External
-	echoGroup.API.POST("/point", handler.GetUserPoint)
-	echoGroup.API.POST("/point/history", handler.GetUserPointHistory)
+	echoGroup.API.POST("/hidden/point", handler.GetUserPoint)
+	echoGroup.API.POST("/hidden/point/history", handler.GetUserPointHistory)
 }
 
 // GetUsers a handler to create a pointHistory

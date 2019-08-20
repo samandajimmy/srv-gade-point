@@ -34,13 +34,13 @@ func NewVouchersHandler(echoGroup models.EchoGroup, us vouchers.UseCase) {
 	echoGroup.Admin.PUT("/vouchers/status/:id", handler.UpdateStatusVoucher)
 
 	// End Point For External
-	echoGroup.API.GET("/vouchers", handler.GetVouchers)
-	echoGroup.API.GET("/vouchers/:id", handler.GetVoucher)
-	echoGroup.API.POST("/vouchers/badai-emas-gift", handler.BadaiEmasGift)
-	echoGroup.API.POST("/vouchers/buy", handler.VoucherBuy)
-	echoGroup.API.POST("/vouchers/redeem", handler.VoucherRedeem)
-	echoGroup.API.GET("/vouchers/user", handler.GetVouchersUser)
-	echoGroup.API.POST("/vouchers/validate", handler.VoucherValidate)
+	echoGroup.API.GET("/hidden/vouchers", handler.GetVouchers)
+	echoGroup.API.GET("/hidden/vouchers/:id", handler.GetVoucher)
+	echoGroup.API.POST("/hidden/vouchers/badai-emas-gift", handler.BadaiEmasGift)
+	echoGroup.API.POST("/hidden/vouchers/buy", handler.VoucherBuy)
+	echoGroup.API.POST("/hidden/vouchers/redeem", handler.VoucherRedeem)
+	echoGroup.API.GET("/hidden/vouchers/user", handler.GetVouchersUser)
+	echoGroup.API.POST("/hidden/vouchers/validate", handler.VoucherValidate)
 }
 
 // CreateVoucher Create new voucher and generate promo code by stock
@@ -139,7 +139,6 @@ func (vchr *VouchersHandler) UpdateStatusVoucher(c echo.Context) error {
 
 		return c.JSON(getStatusCode(err), response)
 	}
-
 
 	response.SetResponse("", respErrors)
 	logger.DataLog(c, response).Info("End of update a voucher.")

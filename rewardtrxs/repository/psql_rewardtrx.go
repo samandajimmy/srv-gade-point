@@ -287,10 +287,11 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardByPayload(c echo.Context,
 
 	query := `SELECT rt.ref_id, r.id, r.campaign_id, r.journal_account, r.type, r.validators
 		FROM reward_transactions rt  join rewards r on rt.reward_id = r.id
-		WHERE rt.status = $1 and rt.cif= $2 and rt.used_promo_code= $3`
+		WHERE rt.status = $1 and rt.cif = $2 and rt.used_promo_code = $3
+		and rt.request_data->>'phone' = $4`
 
 	rows, err := rwdTrxRepo.Conn.Query(query, models.RewardTrxInquired, payload.CIF,
-		payload.PromoCode)
+		payload.PromoCode, payload.Phone)
 
 	if err != nil {
 		requestLogger.Debug(err)

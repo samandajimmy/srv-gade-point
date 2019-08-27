@@ -35,7 +35,6 @@ RUN apk update && apk upgrade
 
 # add apk ca certificate
 RUN apk add --no-cache ca-certificates
-ADD ca-certificates.crt /etc/ssl/certs/
 
 # set timezone
 RUN apk add tzdata

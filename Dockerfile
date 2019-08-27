@@ -30,9 +30,6 @@ COPY --from=build-env /go/bin/srv-gade-point /go/bin/srv-gade-point
 COPY --from=build-env /srv-gade-point/entrypoint.sh /srv-gade-point/entrypoint.sh
 COPY --from=build-env /srv-gade-point/migrations /migrations
 
-# apk update
-RUN apk update && apk upgrade
-
 # add apk ca certificate
 RUN apk add --no-cache ca-certificates
 

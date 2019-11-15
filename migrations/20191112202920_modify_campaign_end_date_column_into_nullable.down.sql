@@ -1,0 +1,1 @@
+ALTER TABLE campaigns ALTER COLUMN end_date SET NOT NULL;

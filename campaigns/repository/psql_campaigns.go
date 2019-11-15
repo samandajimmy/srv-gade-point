@@ -24,6 +24,7 @@ func NewPsqlCampaignRepository(Conn *sql.DB, rwdRepo rewards.Repository) campaig
 }
 
 func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models.Campaign) error {
+	var endDate *string
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
@@ -45,7 +46,11 @@ func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models
 		return err
 	}
 
-	err = stmt.QueryRow(campaign.Name, campaign.Description, campaign.StartDate, campaign.EndDate,
+	if campaign.EndDate != "" {
+		endDate = &campaign.EndDate
+	}
+
+	err = stmt.QueryRow(campaign.Name, campaign.Description, campaign.StartDate, endDate,
 		campaign.Status, &now).Scan(&lastID)
 
 	if err != nil {
@@ -196,15 +201,15 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 
 	for rows.Next() {
 		t := new(models.Campaign)
-		var createDate, updateDate pq.NullTime
-		var daysRemaining int64
+		var createDate, updateDate, endDate pq.NullTime
+		var daysRemaining *int64
 
 		err = rows.Scan(
 			&t.ID,
 			&t.Name,
 			&t.Description,
 			&t.StartDate,
-			&t.EndDate,
+			&endDate,
 			&t.Status,
 			&updateDate,
 			&createDate,
@@ -219,6 +224,7 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 
 		t.CreatedAt = &createDate.Time
 		t.UpdatedAt = &updateDate.Time
+		t.EndDate = endDate.Time.Format(models.DateTimeFormatZone)
 
 		// get rewards
 		rewards, err := m.rwdRepo.GetRewardByCampaign(c, t.ID)
@@ -244,7 +250,7 @@ func (m *psqlCampaignRepository) GetCampaignAvailable(c echo.Context, today stri
 	query := fmt.Sprintf(`SELECT id, name, description, start_date, end_date, status, updated_at,
 		created_at, DATE_PART('day', end_date::timestamp - now()::timestamp) as days_remaining
 		FROM campaigns WHERE status = 1 AND start_date::date <= '%s'
-		AND end_date::date >= '%s' ORDER BY start_date DESC`, today, today)
+		AND end_date::date >= '%s' OR end_date IS NULL ORDER BY start_date DESC`, today, today)
 
 	res, err := m.getCampaign(c, query)
 

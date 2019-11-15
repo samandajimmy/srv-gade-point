@@ -51,8 +51,6 @@ func NewVoucherUseCase(vchrRepo vouchers.Repository, campgnRepo campaigns.Reposi
 }
 
 func (vchr *voucherUseCase) CreateVoucher(c echo.Context, voucher *models.Voucher) error {
-	now := time.Now()
-	promoCode := make([]*models.VoucherCode, 0)
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
@@ -64,40 +62,11 @@ func (vchr *voucherUseCase) CreateVoucher(c echo.Context, voucher *models.Vouche
 		return models.ErrVoucherFailed
 	}
 
-	code, err := generatePromoCode(voucher.Stock)
+	// create voucher codes that needed
+	err = vchr.createVoucherCodes(c, voucher)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrVoucherGenearatePromoCodes)
-
-		return models.ErrVoucherGenearatePromoCodes
-	}
-
-	// populate promo codes data
-	if len(code) > 0 {
-		for i := 0; i < len(code); i++ {
-			pc := &models.VoucherCode{
-				PromoCode: voucher.PrefixPromoCode + code[i],
-				Voucher:   voucher,
-				CreatedAt: &now,
-			}
-			promoCode = append(promoCode, pc)
-		}
-	}
-
-	// store promo codes data
-	err = vchr.voucherRepo.CreatePromoCode(c, promoCode)
-
-	if err != nil {
-		requestLogger.Debug(models.ErrVoucherStorePomoCodes)
-
-		// Delete voucher when failed generate promo code
-		err = vchr.voucherRepo.DeleteVoucher(c, voucher.ID)
-
-		if err != nil {
-			requestLogger.Debug(models.ErrDeleteVoucher)
-		}
-
-		return models.ErrVoucherStorePomoCodes
+		return err
 	}
 
 	return nil
@@ -494,6 +463,7 @@ func (vchr *voucherUseCase) VoucherGive(ech echo.Context, payload *models.Payloa
 		return nil, models.ErrVoucherExpired
 	}
 
+	// book voucher code if available
 	voucherCode, err := vchr.voucherRepo.BookVoucherCode(ech, payload)
 
 	if err != nil {
@@ -631,6 +601,64 @@ func (vchr *voucherUseCase) BadaiEmasGift(c echo.Context, plValidator *models.Pa
 	return voucherCode, nil
 }
 
+func (vchr *voucherUseCase) UpdateStatusBasedOnStartDate() error {
+	err := vchr.voucherRepo.UpdateStatusBasedOnStartDate()
+
+	if err != nil {
+		log.Debug("Update Status Base on Start Date: ", err)
+		return err
+	}
+
+	return nil
+}
+
+func (vchr *voucherUseCase) createVoucherCodes(c echo.Context, voucher *models.Voucher) error {
+	var promoCode []*models.VoucherCode
+	now := time.Now()
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	// generate the voucher codes based on the stock
+	codes, err := generatePromoCode(voucher.Stock)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrVoucherGenearatePromoCodes)
+
+		return models.ErrVoucherGenearatePromoCodes
+	}
+
+	// populate promo codes data
+	if len(codes) > 0 {
+		for i := 0; i < len(codes); i++ {
+			pc := &models.VoucherCode{
+				PromoCode: voucher.PrefixPromoCode + codes[i],
+				Voucher:   voucher,
+				CreatedAt: &now,
+			}
+
+			promoCode = append(promoCode, pc)
+		}
+	}
+
+	// store promo codes data
+	err = vchr.voucherRepo.CreatePromoCode(c, promoCode)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrVoucherStorePomoCodes)
+
+		// Delete voucher when failed generate promo code
+		err = vchr.voucherRepo.DeleteVoucher(c, voucher.ID)
+
+		if err != nil {
+			requestLogger.Debug(models.ErrDeleteVoucher)
+		}
+
+		return models.ErrVoucherStorePomoCodes
+	}
+
+	return nil
+}
+
 func generatePromoCode(stock *int32) (code []string, err error) {
 	var arr = make([]string, *stock)
 	arrChecker := map[string]bool{}
@@ -695,15 +723,4 @@ func getFloat(unk interface{}) (float64, error) {
 
 	fv := v.Convert(floatType)
 	return fv.Float(), nil
-}
-
-func (vchr *voucherUseCase) UpdateStatusBasedOnStartDate() error {
-	err := vchr.voucherRepo.UpdateStatusBasedOnStartDate()
-
-	if err != nil {
-		log.Debug("Update Status Base on Start Date: ", err)
-		return err
-	}
-
-	return nil
 }

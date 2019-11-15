@@ -158,9 +158,9 @@ func (cmpgn *campaignUseCase) GetCampaignDetail(c echo.Context, id string) (*mod
 	campaignDetail, err := cmpgn.campaignRepo.GetCampaignDetail(c, int64(campaignID))
 
 	if err != nil {
-		requestLogger.Debug(models.ErrNoCampaign)
+		requestLogger.Debug(models.ErrGetCampaignCounter)
 
-		return nil, models.ErrNoCampaign
+		return nil, models.ErrGetCampaignCounter
 	}
 
 	return campaignDetail, nil

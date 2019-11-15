@@ -309,11 +309,13 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
 		}
 
 		// check voucher code base on refId
+		// if nil system will book a new voucher code
 		voucherCodeValid, err := rwd.voucherCodeRepo.ValidateVoucherGive(c, plVoucherBuy)
 
 		if voucherCodeValid != nil {
 			voucherName = voucherCodeValid.Voucher.Name
 		} else {
+			// book a new voucher code
 			voucherCode, err = rwd.voucherUC.VoucherGive(c, plVoucherBuy)
 
 			if err != nil {

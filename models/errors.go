@@ -31,7 +31,7 @@ var (
 	ErrGetCampaign = errors.New("Terjadi kesalahan dalam mengambil Promo")
 
 	// ErrGetCampaignCounter to get campaign counter error message
-	ErrGetCampaignCounter = errors.New("Terjadi kesalahan dalam mengambil counter promo")
+	ErrGetCampaignCounter = errors.New("Campaign tidak tersedia")
 
 	// ErrCalculateFormulaCampaign to get campaign counter error message
 	ErrCalculateFormulaCampaign = errors.New("Terjadi kesalahan dalam menghitung formula Promo")

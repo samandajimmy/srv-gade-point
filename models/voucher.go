@@ -4,6 +4,13 @@ import (
 	"time"
 )
 
+var (
+	// VoucherStockBased to store voucher generator type stock based
+	VoucherStockBased int8
+	// VoucherTrxBased to store voucher generator type trx based
+	VoucherTrxBased int8 = 1
+)
+
 // Voucher is represent a vouchers model
 type Voucher struct {
 	ID                 int64      `json:"id,omitempty"`
@@ -17,6 +24,7 @@ type Voucher struct {
 	Value              *float64   `json:"value,omitempty"`
 	ImageURL           string     `json:"imageUrl,omitempty"`
 	Status             *int8      `json:"status,omitempty"`
+	GeneratorType      *int8      `json:"generatorType,omitempty"`
 	Stock              *int32     `json:"stock,omitempty"`
 	PrefixPromoCode    string     `json:"prefixPromoCode,omitempty"`
 	Amount             *int32     `json:"amount,omitempty"`
@@ -45,9 +53,10 @@ type PathVoucher struct {
 
 // PayloadVoucherBuy to store payload to buy a voucher
 type PayloadVoucherBuy struct {
-	VoucherID string `json:"voucherId,omitempty"`
-	CIF       string `json:"CIF,omitempty"`
-	RefID     string `json:"refId,omitempty"`
+	VoucherID string   `json:"voucherId,omitempty"`
+	CIF       string   `json:"CIF,omitempty"`
+	RefID     string   `json:"refId,omitempty"`
+	Voucher   *Voucher `json:"voucher,omitempty"`
 }
 
 // ResponseValidateVoucher to store response to validate a voucher

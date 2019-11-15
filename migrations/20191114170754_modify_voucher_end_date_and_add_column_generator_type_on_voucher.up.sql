@@ -1,0 +1,4 @@
+ALTER TABLE vouchers ALTER COLUMN end_date DROP NOT NULL;
+
+ALTER TABLE vouchers
+ADD COLUMN generator_type SMALLINT DEFAULT 0;

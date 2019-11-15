@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/services"
 	"gade/srv-gade-point/vouchers"
@@ -60,9 +59,6 @@ func (vchr *VouchersHandler) CreateVoucher(c echo.Context) error {
 	if err != nil {
 		// metric monitoring error
 		go services.AddMetric("create_vouchers_error")
-		fmt.Println("cacing")
-		fmt.Println(err)
-		fmt.Println("cacing")
 
 		respErrors.SetTitle(models.MessageUnprocessableEntity)
 		response.SetResponse("", respErrors)

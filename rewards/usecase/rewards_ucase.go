@@ -133,7 +133,19 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	var respErrors models.ResponseErrors
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	trxDate, err := time.Parse(models.DateTimeFormatMillisecond, plValidator.TransactionDate)
+
+	// check if promoCode is a voucher code
+	// if yes then it should call validate voucher
+	voucherCode, _, _ := rwd.voucherUC.GetVoucherCode(c, plValidator.PromoCode, plValidator.CIF)
+
+	if voucherCode != nil {
+		rwd.voucherUC.VoucherValidate(c, plValidator)
+
+		// TODO implement the same response as rewards inquiry response
+	}
+
+	// validate trx date
+	_, err := time.Parse(models.DateTimeFormatMillisecond, plValidator.TransactionDate)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrTrxDateFormat)
@@ -157,6 +169,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	}
 
 	// check request payload base on cif and promo code
+	// get existing reward trx based on cif and phone number
 	rwrds, err := rwd.rwdTrxRepo.GetRewardByPayload(c, *plValidator)
 
 	if rwrds != nil {
@@ -189,8 +202,9 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		return rwdInquiry, nil
 	}
 
+	// fresh or new reward trx start from here
 	// check available campaign
-	campaigns, err := rwd.campaignRepo.GetCampaignAvailable(c, trxDate.Format(models.DateTimeFormat))
+	campaigns, err := rwd.campaignRepo.GetCampaignAvailable(c, *plValidator)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrNoCampaign)
@@ -206,7 +220,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		rewardLogger := logger.GetRequestLogger(c, reward.Validators)
 
 		// validate promo code
-		if err = rwd.validatePromoCode(*reward.Tags, reward.PromoCode, plValidator.PromoCode); err != nil {
+		if err = rwd.validatePromoCode(*reward.Tags, reward, plValidator.PromoCode); err != nil {
 			rewardLogger.Debug(err)
 
 			continue
@@ -546,7 +560,13 @@ func (rwd *rewardUseCase) putRewards(c echo.Context, campaigns []*models.Campaig
 	return rewards
 }
 
-func (rwd *rewardUseCase) validatePromoCode(tags []models.Tag, validPC, promoCode string) error {
+func (rwd *rewardUseCase) validatePromoCode(tags []models.Tag, reward models.Reward, promoCode string) error {
+	validPC := reward.PromoCode
+
+	if *reward.IsPromoCode == models.IsPromoCodeFalse {
+		return nil
+	}
+
 	if promoCode == validPC {
 		return nil
 	}

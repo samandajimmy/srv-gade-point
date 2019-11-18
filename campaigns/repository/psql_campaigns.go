@@ -6,6 +6,7 @@ import (
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewards"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo"
@@ -243,14 +244,31 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 	return result, nil
 }
 
-func (m *psqlCampaignRepository) GetCampaignAvailable(c echo.Context, today string) ([]*models.Campaign, error) {
+func (m *psqlCampaignRepository) GetCampaignAvailable(c echo.Context, pv models.PayloadValidator) ([]*models.Campaign, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
+	promoCode := strings.ToLower(pv.PromoCode)
 
-	query := fmt.Sprintf(`SELECT id, name, description, start_date, end_date, status, updated_at,
-		created_at, DATE_PART('day', end_date::timestamp - now()::timestamp) as days_remaining
-		FROM campaigns WHERE status = 1 AND start_date::date <= '%s'
-		AND end_date::date >= '%s' OR end_date IS NULL ORDER BY start_date DESC`, today, today)
+	query := fmt.Sprintf(`SELECT c.id, c.name, c.description, c.start_date,
+		c.end_date, c.status, c.updated_at, c.created_at,
+		DATE_PART('day', c.end_date::timestamp - now()::timestamp) as days_remaining
+		FROM campaigns c
+		LEFT JOIN rewards r ON c.id = r.campaign_id
+		LEFT JOIN reward_tags rt ON r.id = rt.reward_id
+		LEFT JOIN tags t ON rt.tag_id = t.id
+		WHERE c.status = 1 and r.is_promo_code = 1
+		AND (LOWER(r.promo_code) = '%s' OR lower(t.name) = '%s')
+		AND c.start_date::date <= '%s'
+		AND (c.end_date::date >= '%s' OR c.end_date IS null)
+		union
+		SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.status, c.updated_at,
+		c.created_at, DATE_PART('day', c.end_date::timestamp - now()::timestamp) as days_remaining
+		FROM campaigns c
+		LEFT JOIN rewards r ON c.id = r.campaign_id
+		WHERE c.status = 1 and r.is_promo_code = 0 AND c.start_date::date <= '%s'
+		AND (c.end_date::date >= '%s' OR c.end_date IS null)`,
+		promoCode, promoCode, pv.TransactionDate, pv.TransactionDate, pv.TransactionDate,
+		pv.TransactionDate)
 
 	res, err := m.getCampaign(c, query)
 

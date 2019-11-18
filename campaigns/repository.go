@@ -16,6 +16,6 @@ type Repository interface {
 	CountCampaign(echo.Context, map[string]interface{}) (int, error)
 	UpdateExpiryDate(echo.Context) error
 	UpdateStatusBasedOnStartDate() error
-	GetCampaignAvailable(echo.Context, string) ([]*models.Campaign, error)
+	GetCampaignAvailable(echo.Context, models.PayloadValidator) ([]*models.Campaign, error)
 	Delete(echo.Context, int64) error
 }

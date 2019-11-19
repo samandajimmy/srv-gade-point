@@ -480,6 +480,22 @@ func (vchr *voucherUseCase) VoucherGive(ech echo.Context, payload *models.Payloa
 	return voucherCode, nil
 }
 
+func (vchr *voucherUseCase) GetVoucherCode(c echo.Context, promoCode string, CIF string) (*models.VoucherCode, string, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	// check voucher codes
+	voucherCode, voucherID, err := vchr.voucherRepo.GetVoucherCode(c, promoCode, CIF)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrVoucherCodeUnavailable)
+
+		return nil, "", models.ErrVoucherCodeUnavailable
+	}
+
+	return voucherCode, voucherID, nil
+}
+
 func (vchr *voucherUseCase) VoucherValidate(c echo.Context, validateVoucher *models.PayloadValidator) (*models.ResponseValidateVoucher, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)

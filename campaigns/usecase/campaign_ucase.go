@@ -166,10 +166,10 @@ func (cmpgn *campaignUseCase) GetCampaignDetail(c echo.Context, id string) (*mod
 	return campaignDetail, nil
 }
 
-func (cmpgn *campaignUseCase) GetCampaignAvailable(c echo.Context, today string) ([]*models.Campaign, error) {
+func (cmpgn *campaignUseCase) GetCampaignAvailable(c echo.Context, pv models.PayloadValidator) ([]*models.Campaign, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	campaigns, err := cmpgn.campaignRepo.GetCampaignAvailable(c, today)
+	campaigns, err := cmpgn.campaignRepo.GetCampaignAvailable(c, pv)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrNoCampaign)

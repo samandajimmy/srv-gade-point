@@ -31,16 +31,22 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
+	respData := resp
+	respData.Rewards = nil
+	rootRefTrx := resp.RefTrx
 
 	for _, rwdResp := range *resp.Rewards {
 		var lastID int64
+		var rwdRespData []models.RewardResponse
 		refID := rwdResp.RefTrx
 		expTime, _ := strconv.ParseInt(os.Getenv(`REWARD_TRX_TIMEOUT`), 10, 64)
 		timeoutDate := now.Add(time.Duration(expTime) * time.Minute)
+		rwdRespData = append(rwdRespData, rwdResp)
+		respData.Rewards = &rwdRespData
 
 		query := `INSERT INTO reward_transactions (status, ref_id, cif, reward_id, used_promo_code,
-			transaction_date, inquired_date, request_data, response_data, created_at, timeout_date)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`
+			transaction_date, inquired_date, request_data, response_data, created_at, timeout_date,
+			root_ref_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`
 
 		stmt, err := rwdTrxRepo.Conn.Prepare(query)
 
@@ -51,7 +57,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 		}
 
 		requestData, err := json.Marshal(payload)
-		responseData, err := json.Marshal(resp)
+		responseData, err := json.Marshal(respData)
 
 		if err != nil {
 			requestLogger.Debug(err)
@@ -85,7 +91,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 		err = stmt.QueryRow(
 			&rwdTrx.Status, &rwdTrx.RefID, &rwdTrx.CIF, &rwdTrx.RewardID, &rwdTrx.UsedPromoCode,
 			&rwdTrx.TransactionDate, &rwdTrx.InquiredDate, &reqData, &rwdTrx.ResponseData,
-			&rwdTrx.CreatedAt, &rwdTrx.TimeoutDate,
+			&rwdTrx.CreatedAt, &rwdTrx.TimeoutDate, rootRefTrx,
 		).Scan(&lastID)
 
 		if err != nil {
@@ -102,11 +108,12 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 
 func (rwdTrxRepo *psqlRewardTrxRepository) GetByRefID(c echo.Context, refID string) (models.RewardsInquiry, error) {
 	var rewardInquiry models.RewardsInquiry
-	var rwdInquiry json.RawMessage
+	var rwdRespData []models.RewardResponse
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	query := `SELECT response_data from reward_transactions where status = $1 and ref_id = $2`
-	err := rwdTrxRepo.Conn.QueryRow(query, models.RewardTrxInquired, refID).Scan(&rwdInquiry)
+	query := `SELECT response_data from reward_transactions where status = $1 and
+		(ref_id = $2 or root_ref_id = $2)`
+	rows, err := rwdTrxRepo.Conn.Query(query, models.RewardTrxInquired, refID)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -114,12 +121,36 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetByRefID(c echo.Context, refID stri
 		return rewardInquiry, err
 	}
 
-	err = json.Unmarshal([]byte(rwdInquiry), &rewardInquiry)
+	defer rows.Close()
 
-	if err != nil {
-		requestLogger.Debug(err)
+	for rows.Next() {
+		var rwdInquiry json.RawMessage
+		var rwdResp []models.RewardResponse
 
-		return rewardInquiry, err
+		err = rows.Scan(
+			&rwdInquiry,
+		)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return rewardInquiry, err
+		}
+
+		err = json.Unmarshal([]byte(rwdInquiry), &rewardInquiry)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return rewardInquiry, err
+		}
+
+		rwdResp = *rewardInquiry.Rewards
+		rwdRespData = append(rwdRespData, rwdResp[0])
+	}
+
+	if (rewardInquiry != models.RewardsInquiry{}) {
+		rewardInquiry.Rewards = &rwdRespData
 	}
 
 	return rewardInquiry, nil
@@ -285,7 +316,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardByPayload(c echo.Context,
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
-	query := `SELECT rt.ref_id, r.id, r.campaign_id, r.journal_account, r.type, r.validators
+	query := `SELECT rt.ref_id, r.id, r.campaign_id, r.journal_account, r.type, r.validators, rt.root_ref_id
 		FROM reward_transactions rt  join rewards r on rt.reward_id = r.id
 		WHERE rt.status = $1 and rt.cif = $2 and rt.used_promo_code = $3
 		and rt.request_data->>'phone' = $4`
@@ -311,6 +342,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardByPayload(c echo.Context,
 			&r.JournalAccount,
 			&r.Type,
 			&validator,
+			&r.RootRefID,
 		)
 
 		if err != nil {

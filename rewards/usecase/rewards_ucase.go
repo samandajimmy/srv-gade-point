@@ -12,7 +12,6 @@ import (
 	"gade/srv-gade-point/vouchercodes"
 	"gade/srv-gade-point/vouchers"
 	"io/ioutil"
-	"math"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -158,7 +157,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	if plValidator.RefTrx != "" {
 		rwdInquiry, err = rwd.rwdTrxRepo.GetByRefID(c, plValidator.RefTrx)
 
-		if err != nil {
+		if (err != nil || rwdInquiry == models.RewardsInquiry{}) {
 			requestLogger.Debug(models.ErrRefTrxNotFound)
 			respErrors.SetTitle(models.ErrRefTrxNotFound.Error())
 
@@ -172,12 +171,22 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	// get existing reward trx based on cif and phone number
 	rwrds, err := rwd.rwdTrxRepo.GetRewardByPayload(c, *plValidator)
 
-	if rwrds != nil {
+	if len(rwrds) > 0 {
 		var rr []models.RewardResponse
 
 		requestLogger.Debug(models.ErrMessageRewardTrxAlreadyExists)
 
 		for _, reward := range rwrds {
+			// validate each reward
+			err = reward.Validators.Validate(plValidator)
+
+			if err != nil {
+				requestLogger.Debug(err)
+				respErrors.AddError(err.Error())
+
+				continue
+			}
+
 			// get response reward
 			respData, err := rwd.responseReward(c, *reward, plValidator)
 
@@ -192,6 +201,10 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		}
 
 		rwdInquiry.Rewards = &rr
+
+		if rwrds[0].RootRefID != "" {
+			rwdInquiry.RefTrx = rwrds[0].RootRefID
+		}
 
 		// if not multi
 		if plValidator.IsMulti == false {
@@ -236,6 +249,16 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 			continue
 		}
 
+		// validate each reward
+		err = reward.Validators.Validate(plValidator)
+
+		if err != nil {
+			rewardLogger.Debug(err)
+			respErrors.AddError(err.Error())
+
+			continue
+		}
+
 		// get response reward
 		rwdResp, err := rwd.responseReward(c, reward, plValidator)
 
@@ -259,6 +282,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		}
 	}
 
+	// if no reward found
 	if len(rwdResponse) == 0 {
 		requestLogger.Debug(models.ErrMessageNoRewards)
 		respErrors.SetTitle(models.ErrMessageNoRewards.Error())
@@ -267,6 +291,11 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	}
 
 	rwdInquiry.Rewards = &rwdResponse
+
+	// if reward greater then one
+	if len(*rwdInquiry.Rewards) > 1 {
+		rwdInquiry.RefTrx = randRefID(20)
+	}
 
 	// insert data to reward transaction
 	_, err = rwd.createRewardTrx(c, *plValidator, rwdInquiry)
@@ -294,16 +323,6 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
 	var voucherName string
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	rewardLogger := logger.GetRequestLogger(c, reward.Validators)
-
-	// validate each reward
-	err := reward.Validators.Validate(plValidator)
-
-	if err != nil {
-		rewardLogger.Debug(err)
-
-		return nil, err
-	}
 
 	// get the rewards value/benefit
 	rwdValue, _ := reward.Validators.GetRewardValue(plValidator)
@@ -348,11 +367,7 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
 	}
 
 	// populate reward response
-	rwdResp.Type = reward.GetRewardTypeText()
-	rwdResp.Value = roundDown(rwdValue, 0)
-	rwdResp.JournalAccount = reward.JournalAccount
-	rwdResp.RefTrx = reward.RefID
-	rwdResp.RewardID = reward.ID
+	rwdResp.Populate(reward, rwdValue, *plValidator)
 
 	return &rwdResp, nil
 }
@@ -632,15 +647,6 @@ func (rwd *rewardUseCase) GetRewards(c echo.Context, rewardPayload *models.Rewar
 	}
 
 	return data, strconv.FormatInt(counter, 10), err
-}
-
-func roundDown(input float64, places int) (newVal float64) {
-	var round float64
-	pow := math.Pow(10, float64(places))
-	digit := pow * input
-	round = math.Floor(digit)
-	newVal = round / pow
-	return
 }
 
 func randRefID(n int) string {

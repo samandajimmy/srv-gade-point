@@ -331,8 +331,11 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context, payload map[string]i
 		where += " AND d.end_date::timestamp::date <= '" + payload["endDate"].(string) + "'"
 	}
 
-	if payload["productCode"].(string) != "" && payload["transactionType"].(string) != "" {
+	if payload["productCode"].(string) != "" {
 		where += ` AND validators->>'product' = '` + payload["productCode"].(string) + "'"
+	}
+
+	if payload["transactionType"].(string) != "" {
 		where += ` AND validators->>'transactionType' = '` + payload["transactionType"].(string) + "'"
 	}
 
@@ -543,9 +546,12 @@ func (m *psqlVoucherRepository) CountVouchers(c echo.Context, payload map[string
 		where += " AND end_date::timestamp::date <= '" + payload["endDate"].(string) + "'"
 	}
 
-	if payload["productCode"].(string) != "" && payload["transactionType"].(string) != "" {
+	if payload["productCode"].(string) != "" {
 		where += " AND validators->>'product' = '" + payload["productCode"].(string) + "'"
-		where += " AND validators->>'transactionType' = '" + payload["transactionType"].(string) + "'"
+	}
+
+	if payload["transactionType"].(string) != "" {
+		where += ` AND validators->>'transactionType' = '` + payload["transactionType"].(string) + "'"
 	}
 
 	if expired {

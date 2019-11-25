@@ -220,11 +220,12 @@ func (vchr *voucherUseCase) GetVoucherAdmin(c echo.Context, voucherID string) (*
 	return voucherDetail, nil
 }
 
-func (vchr *voucherUseCase) GetVouchers(c echo.Context, payload map[string]interface{}) ([]*models.Voucher, string, error) {
+func (vchr *voucherUseCase) GetVouchers(c echo.Context, payload map[string]interface{}) ([]*models.Voucher, *models.ResponseErrors, string, error) {
 	var listVoucher []*models.Voucher
 	var err error
 	var totalCount int
 	logger := models.RequestLogger{}
+	var respErrors models.ResponseErrors
 	requestLogger := logger.GetRequestLogger(c, nil)
 
 	listVoucher, err = vchr.voucherRepo.GetVouchers(c, payload)
@@ -232,7 +233,8 @@ func (vchr *voucherUseCase) GetVouchers(c echo.Context, payload map[string]inter
 	if err != nil {
 		requestLogger.Debug(models.ErrGetVouchers)
 
-		return nil, "", err
+		respErrors.SetTitle(models.ErrGetVouchers.Error())
+		return nil, &respErrors, "", err
 	}
 
 	totalCount, err = vchr.voucherRepo.CountVouchers(c, payload, false)
@@ -240,16 +242,18 @@ func (vchr *voucherUseCase) GetVouchers(c echo.Context, payload map[string]inter
 	if err != nil {
 		requestLogger.Debug(models.ErrGetVoucherCounter)
 
-		return nil, "", models.ErrGetVoucherCounter
+		respErrors.SetTitle(models.ErrGetVoucherCounter.Error())
+		return nil, &respErrors, "", models.ErrGetVoucherCounter
 	}
 
 	if totalCount <= 0 {
-		requestLogger.Debug(models.ErrGetVoucherCounter)
+		requestLogger.Debug(models.ErrVoucherUnavailable)
 
-		return listVoucher, "", models.ErrGetVoucherCounter
+		respErrors.SetTitle(models.ErrVoucherUnavailable.Error())
+		return listVoucher, &respErrors, "", models.ErrVoucherUnavailable
 	}
 
-	return listVoucher, strconv.Itoa(totalCount), nil
+	return listVoucher, &respErrors, strconv.Itoa(totalCount), nil
 }
 
 func (vchr *voucherUseCase) GetVoucher(c echo.Context, voucherID string) (*models.Voucher, error) {

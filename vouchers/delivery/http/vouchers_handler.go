@@ -356,7 +356,11 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 	// metric monitoring
 	go services.AddMetric("get_all_vouchers")
 
+	var plValidator models.PayloadVoucherValidator
+	respErrors := &models.ResponseErrors{}
 	response = models.Response{}
+	logger := models.RequestLogger{}
+
 	name := c.QueryParam("name")
 	startDate := c.QueryParam("startDate")
 	endDate := c.QueryParam("endDate")
@@ -376,21 +380,34 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 
 	// prepare payload for logger
 	payload := map[string]interface{}{
-		"name":      name,
-		"page":      pageStr,
-		"limit":     limitStr,
-		"startDate": startDate,
-		"endDate":   endDate,
-		"productCode": productCodeStr,
+		"name":            name,
+		"page":            pageStr,
+		"limit":           limitStr,
+		"startDate":       startDate,
+		"endDate":         endDate,
+		"productCode":     productCodeStr,
 		"transactionType": transactionTypeStr,
 	}
 
-	logger := models.RequestLogger{
-		Payload: payload,
+	logger.DataLog(c, plValidator).Info("Start to get all voucher for client")
+
+	err := c.Bind(&plValidator)
+
+	if err != nil {
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
+		logger.DataLog(c, response).Info("End to get all voucher for client")
+
+		return c.JSON(http.StatusUnprocessableEntity, response)
 	}
 
-	requestLogger := logger.GetRequestLogger(c, payload)
-	requestLogger.Info("Start to get all voucher for client")
+	if err = c.Validate(plValidator); err != nil {
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+		logger.DataLog(c, response).Info("End to get all voucher for client")
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
 
 	// validate payload values
 	page, err := strconv.Atoi(payload["page"].(string))
@@ -399,9 +416,11 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 		// metric monitoring error
 		go services.AddMetric("get_all_vouchers_error")
 
-		requestLogger.Debug(err)
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
 		response.Status = models.StatusError
 		response.Message = http.StatusText(http.StatusBadRequest)
+		logger.DataLog(c, response).Info("End to get all voucher for client")
 
 		return c.JSON(http.StatusBadRequest, response)
 	}
@@ -412,11 +431,13 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 		// metric monitoring error
 		go services.AddMetric("get_all_vouchers_error")
 
-		requestLogger.Debug(err)
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
 		response.Status = models.StatusError
 		response.Message = http.StatusText(http.StatusBadRequest)
+		logger.DataLog(c, response).Info("End to get all voucher for client")
 
-		return c.JSON(http.StatusBadRequest, response)
+		return c.JSON(http.StatusUnprocessableEntity, response)
 	}
 
 	dateFmtRgx := regexp.MustCompile(models.DateFormatRegex)
@@ -425,9 +446,11 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 		// metric monitoring error
 		go services.AddMetric("get_all_vouchers_error")
 
-		requestLogger.Debug(models.ErrStartDateFormat)
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
 		response.Status = models.StatusError
-		response.Message = models.ErrStartDateFormat.Error()
+		response.Message = http.StatusText(http.StatusBadRequest)
+		logger.DataLog(c, response).Info("End to get all voucher for client")
 
 		return c.JSON(http.StatusBadRequest, response)
 	}
@@ -436,23 +459,29 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 		// metric monitoring error
 		go services.AddMetric("get_all_vouchers_error")
 
-		requestLogger.Debug(models.ErrEndDateFormat)
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
 		response.Status = models.StatusError
-		response.Message = models.ErrEndDateFormat.Error()
+		response.Message = http.StatusText(http.StatusBadRequest)
+		logger.DataLog(c, response).Info("End to get all voucher for client")
 
 		return c.JSON(http.StatusBadRequest, response)
 	}
 
 	payload["page"] = page
 	payload["limit"] = limit
-	responseData, totalCount, err := vchr.VoucherUseCase.GetVouchers(c, payload)
+	responseData, respErrors, totalCount, err := vchr.VoucherUseCase.GetVouchers(c, payload)
 
 	if err != nil {
 		// metric monitoring error
 		go services.AddMetric("get_all_vouchers_error")
 
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
 		response.Status = models.StatusError
 		response.Message = err.Error()
+
+		logger.DataLog(c, response).Info("End to get all voucher for client")
 		return c.JSON(getStatusCode(err), response)
 	}
 
@@ -463,7 +492,8 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
 	response.TotalCount = totalCount
-	requestLogger.Info("End of get all voucher for client")
+	response.SetResponse(responseData, respErrors)
+	logger.DataLog(c, response).Info("End to get all voucher for client")
 
 	// metric monitoring success
 	go services.AddMetric("get_all_vouchers_success")
@@ -503,6 +533,7 @@ func (vchr *VouchersHandler) GetVoucher(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
+
 	requestLogger.Info("End of get detail voucher for client")
 
 	// metric monitoring success

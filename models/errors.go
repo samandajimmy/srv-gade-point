@@ -63,6 +63,9 @@ var (
 	// ErrVoucherFailed to store create voucher failed error message
 	ErrVoucherFailed = errors.New("Gagal untuk membuat voucher")
 
+	// ErrVoucherNotFound to inquiry list voucher error message
+	ErrVoucherNotFound = errors.New("Voucher tidak ditemukan")
+
 	// ErrVoucherGenearatePromoCodes to store generate promo codes error message
 	ErrVoucherGenearatePromoCodes = errors.New("Terjadi kesalahan dalam membuat Kode Promo")
 

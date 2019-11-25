@@ -320,23 +320,23 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context, payload map[string]i
 	}
 
 	if payload["name"].(string) != "" {
-		where += " AND d.name LIKE '%" + payload["name"].(string) + "%'"
+		where += " AND c.name LIKE '%" + payload["name"].(string) + "%'"
 	}
 
 	if payload["startDate"].(string) != "" {
-		where += " AND d.start_date::timestamp::date >= '" + payload["startDate"].(string) + "'"
+		where += " AND c.start_date::timestamp::date >= '" + payload["startDate"].(string) + "'"
 	}
 
 	if payload["endDate"].(string) != "" {
-		where += " AND d.end_date::timestamp::date <= '" + payload["endDate"].(string) + "'"
+		where += " AND c.end_date::timestamp::date <= '" + payload["endDate"].(string) + "'"
 	}
 
 	if payload["productCode"].(string) != "" {
-		where += ` AND validators->>'product' = '` + payload["productCode"].(string) + "'"
+		where += ` AND c.validators->>'product' = '` + payload["productCode"].(string) + "'"
 	}
 
 	if payload["transactionType"].(string) != "" {
-		where += ` AND validators->>'transactionType' = '` + payload["transactionType"].(string) + "'"
+		where += ` AND c.validators->>'transactionType' = '` + payload["transactionType"].(string) + "'"
 	}
 
 	query += where + " ORDER BY c.created_at DESC " + paging

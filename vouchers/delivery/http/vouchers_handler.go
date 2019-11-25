@@ -362,6 +362,8 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 	endDate := c.QueryParam("endDate")
 	pageStr := c.QueryParam("page")
 	limitStr := c.QueryParam("limit")
+	productCodeStr := c.QueryParam("productCode")
+	transactionTypeStr := c.QueryParam("transactionType")
 
 	// validate page and limit string input
 	if pageStr == "" {
@@ -379,6 +381,8 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 		"limit":     limitStr,
 		"startDate": startDate,
 		"endDate":   endDate,
+		"productCode": productCodeStr,
+		"transactionType": transactionTypeStr,
 	}
 
 	logger := models.RequestLogger{

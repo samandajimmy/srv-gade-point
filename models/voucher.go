@@ -9,6 +9,16 @@ var (
 	VoucherStockBased int8
 	// VoucherTrxBased to store voucher generator type trx based
 	VoucherTrxBased int8 = 1
+	// VoucherTypePoint to store reward type point
+	VoucherTypePoint int64
+	// VoucherTypeDirectDiscount to store reward type direct discount
+	VoucherTypeDirectDiscount int64 = 1
+	// VoucherTypePercentageDiscount to store reward type percentage discount
+	VoucherTypePercentageDiscount int64 = 2
+	// VoucherTypeGoldback to store reward type goldback
+	VoucherTypeGoldback int64 = 3
+	// VoucherTypeVoucher to store reward type voucher
+	VoucherTypeVoucher int64 = 4
 )
 
 // Voucher is represent a vouchers model
@@ -20,7 +30,7 @@ type Voucher struct {
 	EndDate            string     `json:"endDate,omitempty"`
 	Point              *int64     `json:"point,omitempty"`
 	JournalAccount     string     `json:"journalAccount,omitempty"`
-	DayPurchaseLimit   *int64     `json:"dayPurchaseLimit,omitempty"`
+	Type               *int64     `json:"type,omitempty"`
 	Value              *float64   `json:"value,omitempty"`
 	ImageURL           string     `json:"imageUrl,omitempty"`
 	Status             *int8      `json:"status,omitempty"`
@@ -34,7 +44,6 @@ type Voucher struct {
 	Expired            *int32     `json:"expired,omitempty"`
 	TermsAndConditions string     `json:"termsAndConditions,omitempty"`
 	HowToUse           string     `json:"howToUse,omitempty"`
-	LimitPerUser       *int       `json:"limitPerUser,omitempty"`
 	Validators         *Validator `json:"validators,omitempty"`
 	UpdatedAt          *time.Time `json:"updatedAt,omitempty"`
 	CreatedAt          *time.Time `json:"createdAt,omitempty"`

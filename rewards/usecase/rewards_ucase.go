@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
@@ -135,12 +136,20 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 	// check if promoCode is a voucher code
 	// if yes then it should call validate voucher
-	voucherCode, _, _ := rwd.voucherUC.GetVoucherCode(c, plValidator.PromoCode, plValidator.CIF)
+	voucherCode, _, _ := rwd.voucherUC.GetVoucherCode(c, plValidator.PromoCode)
 
 	if voucherCode != nil {
 		rwd.voucherUC.VoucherValidate(c, plValidator)
+		err := errors.New("cacing")
 
-		// TODO implement the same response as rewards inquiry response
+		if err != nil {
+			requestLogger.Debug(models.ErrTrxDateFormat)
+			respErrors.SetTitle(models.ErrTrxDateFormat.Error())
+
+			return rwdInquiry, &respErrors
+		}
+
+		return rwdInquiry, &respErrors
 	}
 
 	// validate trx date

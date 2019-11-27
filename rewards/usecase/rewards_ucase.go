@@ -133,16 +133,6 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
-	// check if promoCode is a voucher code
-	// if yes then it should call validate voucher
-	voucherCode, _, _ := rwd.voucherUC.GetVoucherCode(c, plValidator.PromoCode, plValidator.CIF)
-
-	if voucherCode != nil {
-		rwd.voucherUC.VoucherValidate(c, plValidator)
-
-		// TODO implement the same response as rewards inquiry response
-	}
-
 	// validate trx date
 	_, err := time.Parse(models.DateTimeFormatMillisecond, plValidator.TransactionDate)
 
@@ -213,6 +203,32 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		}
 
 		return rwdInquiry, nil
+	}
+
+	// check if promoCode is a voucher code
+	// if yes then it should call validate voucher
+	voucherCode, _, _ := rwd.voucherUC.GetVoucherCode(c, plValidator)
+
+	if voucherCode != nil {
+		rewards, err := rwd.voucherUC.VoucherValidate(c, plValidator)
+
+		if err != nil {
+			requestLogger.Debug(err)
+			respErrors.SetTitle(models.ErrVoucherUnavailable.Error())
+
+			return rwdInquiry, &respErrors
+		}
+
+		// get response reward
+		rwdResp, _ := rwd.responseReward(c, rewards[0], plValidator)
+
+		if rwdResp != nil {
+			rwdResponse = append(rwdResponse, *rwdResp)
+		}
+
+		rwdInquiry.Rewards = &rwdResponse
+
+		return rwdInquiry, &respErrors
 	}
 
 	// fresh or new reward trx start from here

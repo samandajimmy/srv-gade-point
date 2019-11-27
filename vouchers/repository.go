@@ -22,9 +22,8 @@ type Repository interface {
 	DeleteVoucher(echo.Context, int64) error
 	CountPromoCode(echo.Context, map[string]interface{}) (int, error)
 	UpdatePromoCodeRedeemed(echo.Context, string, string, string) (*models.VoucherCode, error)
-	GetVoucherCode(echo.Context, string, string) (*models.VoucherCode, string, error)
+	GetVoucherCode(echo.Context, *models.PayloadValidator) (*models.VoucherCode, string, error)
 	UpdateExpiryDate(echo.Context) error
 	UpdateStatusBasedOnStartDate() error
 	CountBoughtVoucher(echo.Context, string, string) (int64, error)
-	GetBadaiEmasVoucher(echo.Context) ([]*models.Voucher, error)
 }

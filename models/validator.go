@@ -18,6 +18,9 @@ import (
 // CampaignCodeReferral is constant for a referral campaign code
 const CampaignCodeReferral = "referral"
 
+// CampaignCodeReferrer is constant for a referrer campaign code
+const CampaignCodeReferrer = "referrer"
+
 // Validator to store all validator data
 type Validator struct {
 	CampaignCode         string   `json:"campaignCode,omitempty"`

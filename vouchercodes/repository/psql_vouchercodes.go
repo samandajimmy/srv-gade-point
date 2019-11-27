@@ -417,6 +417,33 @@ func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeRejected(c echo.Cont
 	return nil
 }
 
+func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeInquired(c echo.Context, vc models.VoucherCode, pv models.PayloadValidator) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	now := time.Now()
+	query := `UPDATE voucher_codes SET status = $1, user_id = $2, ref_id = $3,
+		updated_at = $4 where id = $5`
+	stmt, err := psqlRepo.Conn.Prepare(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	rows, err := stmt.Query(models.VoucherCodeStatusInquired, pv.CIF, vc.RefID, now, vc.ID)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	defer rows.Close()
+
+	return nil
+}
+
 func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeSucceeded(c echo.Context, rwdPayment *models.RewardPayment) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)

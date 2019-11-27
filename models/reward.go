@@ -67,6 +67,7 @@ type RewardResponse struct {
 	RewardID       int64   `json:"-"`
 	CIF            string  `json:"cif,omitempty"`
 	Product        string  `json:"product,omitempty"`
+	Reference      string  `json:"reference,omitempty"`
 	RefTrx         string  `json:"refTrx,omitempty"`
 	Type           string  `json:"type,omitempty"`
 	JournalAccount string  `json:"journalAccount,omitempty"`
@@ -113,9 +114,14 @@ func (rwdResp *RewardResponse) Populate(reward Reward, rwdValue float64, pv Payl
 	tempJSON, _ := json.Marshal(pv)
 	json.Unmarshal(tempJSON, &pvMap)
 
+	if pv.Validators.CampaignCode == CampaignCodeReferral {
+		rwdResp.Reference = CampaignCodeReferral
+	}
+
 	// validate referral reward
 	if referrer := reward.Validators.ReferralTarget(pv); referrer != "" {
 		rwdResp.CIF = pvMap[referrer].(string)
+		rwdResp.Reference = CampaignCodeReferrer
 	}
 }
 

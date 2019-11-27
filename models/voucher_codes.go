@@ -17,6 +17,9 @@ var (
 
 	// VoucherCodeStatusBooked to store voucher code booked status
 	VoucherCodeStatusBooked int64 = 4
+
+	// VoucherCodeStatusInquired to store voucher code inquired status
+	VoucherCodeStatusInquired int64 = 5
 )
 
 // VoucherCode to store a voucher code data

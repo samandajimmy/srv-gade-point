@@ -701,15 +701,16 @@ func (m *psqlVoucherRepository) UpdatePromoCodeRedeemed(c echo.Context, voucherI
 	return result, nil
 }
 
-func (m *psqlVoucherRepository) GetVoucherCode(c echo.Context, voucherCode string) (*models.VoucherCode, string, error) {
+func (m *psqlVoucherRepository) GetVoucherCode(c echo.Context, pv *models.PayloadValidator) (*models.VoucherCode, string, error) {
 	var voucherID string
 	result := &models.VoucherCode{}
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	query := `SELECT pc.id, pc.promo_code, pc.status, pc.user_id, pc.redeemed_date, pc.bought_date, pc.voucher_id
-			  FROM voucher_codes pc WHERE pc.promo_code = $1 AND pc.user_id = $2;`
+			  FROM voucher_codes pc WHERE pc.promo_code = $1 AND (pc.status = $2 OR pc.status = $3);`
 
-	err := m.Conn.QueryRow(query, voucherCode).Scan(
+	err := m.Conn.QueryRow(query, pv.PromoCode, models.VoucherCodeStatusAvailable,
+		models.VoucherCodeStatusInquired).Scan(
 		&result.ID,
 		&result.PromoCode,
 		&result.Status,
@@ -784,54 +785,6 @@ func (m *psqlVoucherRepository) CountBoughtVoucher(c echo.Context, voucherID str
 	}
 
 	return voucherAmount, nil
-}
-
-func (m *psqlVoucherRepository) GetBadaiEmasVoucher(c echo.Context) ([]*models.Voucher, error) {
-	var vouchers []*models.Voucher
-	var validator json.RawMessage
-
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-
-	query := `SELECT id, validators FROM vouchers WHERE validators->>'campaignCode' = 'badai-emas' AND status = 1
-				AND now()::date >= start_date::timestamp::date AND now()::date <= end_date::timestamp::date
-				order by start_date desc`
-
-	rows, err := m.Conn.Query(query)
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		var voucher models.Voucher
-		err = rows.Scan(
-			&voucher.ID,
-			&validator,
-		)
-
-		if err != nil {
-			requestLogger.Debug(err)
-
-			return nil, err
-		}
-
-		err = json.Unmarshal([]byte(validator), &voucher.Validators)
-
-		if err != nil {
-			requestLogger.Debug(err)
-
-			return nil, err
-		}
-
-		vouchers = append(vouchers, &voucher)
-	}
-
-	return vouchers, nil
 }
 
 func arrSpliter(arrSource []*models.VoucherCode) [][]*models.VoucherCode {

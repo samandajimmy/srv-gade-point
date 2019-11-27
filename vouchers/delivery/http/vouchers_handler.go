@@ -36,7 +36,6 @@ func NewVouchersHandler(echoGroup models.EchoGroup, us vouchers.UseCase) {
 	// End Point For External
 	echoGroup.API.GET("/hidden/vouchers", handler.GetVouchers)
 	echoGroup.API.GET("/hidden/vouchers/:id", handler.GetVoucher)
-	echoGroup.API.POST("/hidden/vouchers/badai-emas-gift", handler.BadaiEmasGift)
 	echoGroup.API.POST("/hidden/vouchers/buy", handler.VoucherBuy)
 	echoGroup.API.POST("/hidden/vouchers/redeem", handler.VoucherRedeem)
 	echoGroup.API.GET("/hidden/vouchers/user", handler.GetVouchersUser)
@@ -639,51 +638,6 @@ func (vchr *VouchersHandler) VoucherBuy(c echo.Context) error {
 	return c.JSON(getStatusCode(err), response)
 }
 
-// BadaiEmasGift function to give client the right badai emas voucher
-func (vchr *VouchersHandler) BadaiEmasGift(c echo.Context) error {
-	// metric monitoring
-	go services.AddMetric("badai_emas_gift")
-
-	var plValidator models.PayloadValidator
-	response = models.Response{}
-
-	if err := c.Bind(&plValidator); err != nil {
-		// metric monitoring error
-		go services.AddMetric("badai_emas_gift_error")
-
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		return c.JSON(getStatusCode(err), response)
-	}
-
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, plValidator)
-	requestLogger.Info("Start to execute badai emas gift process")
-	responseData, err := vchr.VoucherUseCase.BadaiEmasGift(c, &plValidator)
-
-	if err != nil {
-		// metric monitoring error
-		go services.AddMetric("badai_emas_gift_error")
-
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		return c.JSON(getStatusCode(err), response)
-	}
-
-	if (&models.VoucherCode{}) != responseData {
-		response.Data = responseData
-	}
-
-	response.Status = models.StatusSuccess
-	response.Message = models.MessagePointSuccess
-	requestLogger.Info("End of execute badai emas gift process")
-
-	// metric monitoring success
-	go services.AddMetric("badai_emas_gift_success")
-
-	return c.JSON(getStatusCode(err), response)
-}
-
 // VoucherValidate is a handler to provide and endpoint to validate voucher before reedem
 func (vchr *VouchersHandler) VoucherValidate(c echo.Context) error {
 	// metric monitoring
@@ -715,7 +669,7 @@ func (vchr *VouchersHandler) VoucherValidate(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	if (&models.ResponseValidateVoucher{}) != responseData {
+	if len(responseData) > 0 {
 		response.Data = responseData
 	}
 

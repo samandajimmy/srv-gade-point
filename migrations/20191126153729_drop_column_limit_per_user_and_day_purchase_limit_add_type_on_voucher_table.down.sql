@@ -5,5 +5,5 @@ ALTER TABLE vouchers
 ADD COLUMN day_purchase_limit SMALLINT;
 
 ALTER TABLE vouchers
-DROP COLUMN type SMALLINT;
+DROP COLUMN type;
 

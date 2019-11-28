@@ -3,6 +3,7 @@ package middleware
 import (
 	"gade/srv-gade-point/models"
 	"os"
+	"reflect"
 
 	"gopkg.in/go-playground/validator.v9"
 
@@ -39,7 +40,15 @@ func InitMiddleware(ech *echo.Echo, echoGroup models.EchoGroup) {
 	cm.cors()
 	cm.basicAuth()
 	cm.jwtAuth()
-	ech.Validator = &customValidator{validator: validator.New()}
+	cm.customValidation()
+}
+
+func (cm *customMiddleware) customValidation() {
+	validator := validator.New()
+	customValidator := customValidator{}
+	validator.RegisterValidation("isRequiredWith", customValidator.isRequiredWith)
+	customValidator.validator = validator
+	cm.e.Validator = &customValidator
 }
 
 func (cm customMiddleware) cors() {
@@ -70,4 +79,17 @@ func (cm customMiddleware) jwtAuth() {
 		SigningKey:    []byte(os.Getenv(`JWT_SECRET`)),
 	}))
 
+}
+
+func (cv *customValidator) isRequiredWith(fl validator.FieldLevel) bool {
+	field := fl.Field()
+	otherField, _, _ := fl.GetStructFieldOK()
+
+	if otherField.IsValid() && otherField.Interface() != reflect.Zero(otherField.Type()).Interface() {
+		if field.IsValid() && field.Interface() == reflect.Zero(field.Type()).Interface() {
+			return false
+		}
+	}
+
+	return true
 }

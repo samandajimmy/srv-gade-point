@@ -47,7 +47,7 @@ type PayloadValidator struct {
 	IsMulti           bool       `json:"isMulti,omitempty"`
 	CampaignID        string     `json:"campaignId,omitempty"`
 	CIF               string     `json:"cif,omitempty"`
-	Referrer          string     `json:"referrer,omitempty"`
+	Referrer          string     `json:"referrer,omitempty" validate:"isRequiredWith=Validators.CampaignCode"`
 	CustomerName      string     `json:"customerName,omitempty"`
 	LoanAmount        *float64   `json:"loanAmount,omitempty"`
 	Phone             string     `json:"phone,omitempty"`

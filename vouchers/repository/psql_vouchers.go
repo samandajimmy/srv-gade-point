@@ -42,7 +42,7 @@ func (m *psqlVoucherRepository) CreateVoucher(c echo.Context, voucher *models.Vo
 	query := `INSERT INTO vouchers (name, description, start_date, end_date, point, journal_account,
 		image_url, status, generator_type, stock, prefix_promo_code, validators,
 		terms_and_conditions, how_to_use, type, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 		RETURNING id`
 	stmt, err := m.Conn.Prepare(query)
 
@@ -722,7 +722,7 @@ func (m *psqlVoucherRepository) GetVoucherCode(c echo.Context, pv *models.Payloa
 	result := &models.VoucherCode{}
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	query := `SELECT pc.id, pc.promo_code, pc.status, pc.user_id, pc.redeemed_date, pc.bought_date, pc.voucher_id
+	query := `SELECT pc.id, pc.promo_code, pc.status, pc.redeemed_date, pc.bought_date, pc.voucher_id
 			  FROM voucher_codes pc WHERE pc.promo_code = $1 AND (pc.status = $2 OR pc.status = $3);`
 
 	err := m.Conn.QueryRow(query, pv.PromoCode, models.VoucherCodeStatusAvailable,
@@ -730,7 +730,6 @@ func (m *psqlVoucherRepository) GetVoucherCode(c echo.Context, pv *models.Payloa
 		&result.ID,
 		&result.PromoCode,
 		&result.Status,
-		&result.UserID,
 		&result.RedeemedDate,
 		&result.BoughtDate,
 		&voucherID,

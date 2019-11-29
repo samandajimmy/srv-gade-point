@@ -4,6 +4,7 @@ import (
 	"gade/srv-gade-point/models"
 	"os"
 	"reflect"
+	"time"
 
 	"gopkg.in/go-playground/validator.v9"
 
@@ -47,6 +48,7 @@ func (cm *customMiddleware) customValidation() {
 	validator := validator.New()
 	customValidator := customValidator{}
 	validator.RegisterValidation("isRequiredWith", customValidator.isRequiredWith)
+	validator.RegisterValidation("dateString", customValidator.dateString)
 	customValidator.validator = validator
 	cm.e.Validator = &customValidator
 }
@@ -89,6 +91,22 @@ func (cv *customValidator) isRequiredWith(fl validator.FieldLevel) bool {
 		if field.IsValid() && field.Interface() == reflect.Zero(field.Type()).Interface() {
 			return false
 		}
+	}
+
+	return true
+}
+
+func (cv *customValidator) dateString(fl validator.FieldLevel) bool {
+	field := fl.Field()
+
+	if field.Interface() == reflect.Zero(field.Type()).Interface() {
+		return true
+	}
+
+	date, err := time.Parse(models.DateFormat, field.Interface().(string))
+
+	if err != nil || (date == time.Time{}) {
+		return false
 	}
 
 	return true

@@ -190,7 +190,7 @@ func (vchr *voucherUseCase) GetVouchersAdmin(c echo.Context, payload map[string]
 		return nil, "", models.ErrGetVouchers
 	}
 
-	totalCount, err = vchr.voucherRepo.CountVouchers(c, payload, false)
+	totalCount, err = vchr.voucherRepo.CountVouchers(c, false)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrGetVoucherCounter)
@@ -223,7 +223,7 @@ func (vchr *voucherUseCase) GetVoucherAdmin(c echo.Context, voucherID string) (*
 	return voucherDetail, nil
 }
 
-func (vchr *voucherUseCase) GetVouchers(c echo.Context, payload map[string]interface{}) ([]*models.Voucher, *models.ResponseErrors, string, error) {
+func (vchr *voucherUseCase) GetVouchers(c echo.Context) ([]*models.Voucher, *models.ResponseErrors, string, error) {
 	var listVoucher []*models.Voucher
 	var err error
 	var totalCount int
@@ -231,7 +231,7 @@ func (vchr *voucherUseCase) GetVouchers(c echo.Context, payload map[string]inter
 	var respErrors models.ResponseErrors
 	requestLogger := logger.GetRequestLogger(c, nil)
 
-	listVoucher, err = vchr.voucherRepo.GetVouchers(c, payload)
+	listVoucher, err = vchr.voucherRepo.GetVouchers(c)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrGetVouchers)
@@ -240,7 +240,7 @@ func (vchr *voucherUseCase) GetVouchers(c echo.Context, payload map[string]inter
 		return nil, &respErrors, "", err
 	}
 
-	totalCount, err = vchr.voucherRepo.CountVouchers(c, payload, false)
+	totalCount, err = vchr.voucherRepo.CountVouchers(c, false)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrGetVoucherCounter)

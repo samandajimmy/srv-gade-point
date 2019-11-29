@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/vouchers"
+	"strconv"
 	"strings"
 	"time"
 
@@ -299,40 +300,53 @@ func (m *psqlVoucherRepository) GetVoucherAdmin(c echo.Context, voucherID string
 	return result, err
 }
 
-func (m *psqlVoucherRepository) GetVouchers(c echo.Context, payload map[string]interface{}) ([]*models.Voucher, error) {
+func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
+	page, _ := strconv.Atoi(c.QueryParam("page"))
+	limit, _ := strconv.Atoi(c.QueryParam("limit"))
 	paging := ""
 	where := ""
-	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, c.image_url, c.stock, coalesce(d.available, 0), c.terms_and_conditions, c.how_to_use, c.type
-	FROM vouchers c LEFT JOIN(SELECT b.id, coalesce(count(a.id), 0) as available FROM voucher_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id WHERE a.status = 0 GROUP BY b.id) d
-	ON d.id = c.id WHERE c.status = 1 AND c.end_date::date >= now()`
+	query := `SELECT distinct v.id, v.name, v.description, v.start_date, v.end_date, v.point,
+		v.image_url, v.stock, v.terms_and_conditions, v.how_to_use,
+		v.type, v.created_at
+		FROM vouchers v
+		LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id
+		WHERE v.status = 1 AND v.end_date::date >= now()`
 
-	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
-		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
+	if c.QueryParam("page") != "" || c.QueryParam("limit") != "" {
+		paging = fmt.Sprintf("LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
 	}
 
-	if payload["name"].(string) != "" {
-		where += " AND c.name LIKE '%" + payload["name"].(string) + "%'"
+	if c.QueryParam("name") != "" {
+		where += " AND v.name LIKE '%" + c.QueryParam("name") + "%'"
 	}
 
-	if payload["startDate"].(string) != "" {
-		where += " AND c.start_date::timestamp::date >= '" + payload["startDate"].(string) + "'"
+	if c.QueryParam("cif") != "" {
+		where += " AND vc.user_id = '" + c.QueryParam("cif") + "'"
 	}
 
-	if payload["endDate"].(string) != "" {
-		where += " AND c.end_date::timestamp::date <= '" + payload["endDate"].(string) + "'"
+	if c.QueryParam("status") != "" {
+		where += " AND vc.status = " + c.QueryParam("status")
 	}
 
-	if payload["productCode"].(string) != "" {
-		where += ` AND c.validators->>'product' = '` + payload["productCode"].(string) + "'"
+	if c.QueryParam("startDate") != "" {
+		where += " AND v.start_date::timestamp::date >= '" + c.QueryParam("startDate") + "'"
 	}
 
-	if payload["transactionType"].(string) != "" {
-		where += ` AND c.validators->>'transactionType' = '` + payload["transactionType"].(string) + "'"
+	if c.QueryParam("endDate") != "" {
+		where += " AND v.end_date::timestamp::date <= '" + c.QueryParam("endDate") + "'"
 	}
 
-	query += where + " ORDER BY c.created_at DESC " + paging
+	if c.QueryParam("productCode") != "" {
+		where += ` AND v.validators->>'product' = '` + c.QueryParam("productCode") + "'"
+	}
+
+	if c.QueryParam("transactionType") != "" {
+		where += ` AND v.validators->>'transactionType' = '` + c.QueryParam("transactionType") + "'"
+	}
+
+	query += where + " ORDER BY v.created_at DESC " + paging
 	rows, err := m.Conn.Query(query)
 
 	if err != nil {
@@ -346,6 +360,8 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context, payload map[string]i
 
 	for rows.Next() {
 		t := new(models.Voucher)
+		var createDate pq.NullTime
+
 		err = rows.Scan(
 			&t.ID,
 			&t.Name,
@@ -355,10 +371,10 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context, payload map[string]i
 			&t.Point,
 			&t.ImageURL,
 			&t.Stock,
-			&t.Available,
 			&t.TermsAndConditions,
 			&t.HowToUse,
 			&t.Type,
+			&createDate,
 		)
 
 		if err != nil {
@@ -367,6 +383,7 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context, payload map[string]i
 			return nil, err
 		}
 
+		t.CreatedAt = &createDate.Time
 		result = append(result, t)
 	}
 
@@ -459,18 +476,21 @@ func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[stri
 	requestLogger := logger.GetRequestLogger(c, nil)
 	paging := ""
 	where := ""
-	query := `SELECT a.id, a.promo_code, a.bought_date, b.id, b.name, b.description, b.terms_and_conditions, b.how_to_use, b.type, b.start_date, b.end_date, b.image_url
-	FROM voucher_codes AS a LEFT JOIN vouchers AS b ON b.id = a.voucher_id WHERE a.promo_code IS NOT NULL AND a.status = 1`
+	query := `SELECT vc.id, vc.promo_code, vc.bought_date, vc.voucher_id, v.name, v.description,
+		v.terms_and_conditions, v.how_to_use, v.type, v.start_date, v.end_date, v.image_url
+		FROM voucher_codes AS vc
+		LEFT JOIN vouchers AS v ON b.id = vc.voucher_id
+		WHERE a.promo_code IS NOT NULL AND vc.status = 1`
 
 	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
 		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
 	}
 
 	if payload["userID"].(string) != "" {
-		where += " AND user_id='" + payload["userID"].(string) + "'"
+		where += " AND vc.user_id='" + payload["userID"].(string) + "'"
 	}
 
-	query += where + " ORDER BY a.bought_date DESC" + paging
+	query += where + " ORDER BY vc.bought_date DESC" + paging
 
 	rows, err := m.Conn.Query(query)
 
@@ -517,35 +537,45 @@ func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[stri
 	return result, nil
 }
 
-func (m *psqlVoucherRepository) CountVouchers(c echo.Context, payload map[string]interface{}, expired bool) (int, error) {
+func (m *psqlVoucherRepository) CountVouchers(c echo.Context, expired bool) (int, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	where := ""
 	var total int
-	query := `SELECT coalesce(COUNT(id), 0) FROM vouchers WHERE id IS NOT NULL AND status = 1`
+	query := `SELECT coalesce(COUNT(distinct v.id), 0) FROM vouchers v
+		LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id
+		WHERE v.id IS NOT NULL AND v.status = 1`
 
-	if payload["name"].(string) != "" {
-		where += " AND name LIKE '%" + payload["name"].(string) + "%'"
+	if c.QueryParam("name") != "" {
+		where += " AND v.name LIKE '%" + c.QueryParam("name") + "%'"
 	}
 
-	if payload["startDate"].(string) != "" {
-		where += " AND start_date::timestamp::date >= '" + payload["startDate"].(string) + "'"
+	if c.QueryParam("cif") != "" {
+		where += " AND vc.user_id = '" + c.QueryParam("cif") + "'"
 	}
 
-	if payload["endDate"].(string) != "" {
-		where += " AND end_date::timestamp::date <= '" + payload["endDate"].(string) + "'"
+	if c.QueryParam("status") != "" {
+		where += " AND vc.status = " + c.QueryParam("status")
 	}
 
-	if payload["productCode"].(string) != "" {
-		where += " AND validators->>'product' = '" + payload["productCode"].(string) + "'"
+	if c.QueryParam("startDate") != "" {
+		where += " AND v.start_date::timestamp::date >= '" + c.QueryParam("startDate") + "'"
 	}
 
-	if payload["transactionType"].(string) != "" {
-		where += ` AND validators->>'transactionType' = '` + payload["transactionType"].(string) + "'"
+	if c.QueryParam("endDate") != "" {
+		where += " AND v.end_date::timestamp::date <= '" + c.QueryParam("endDate") + "'"
+	}
+
+	if c.QueryParam("productCode") != "" {
+		where += " AND v.validators->>'product' = '" + c.QueryParam("productCode") + "'"
+	}
+
+	if c.QueryParam("transactionType") != "" {
+		where += ` AND v.validators->>'transactionType' = '` + c.QueryParam("transactionType") + "'"
 	}
 
 	if expired {
-		where += " AND end_date::date >= now()"
+		where += " AND v.end_date::date >= now()"
 	}
 
 	query += where

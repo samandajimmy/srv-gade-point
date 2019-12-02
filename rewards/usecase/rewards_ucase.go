@@ -6,6 +6,7 @@ import (
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/quotas"
+	"gade/srv-gade-point/referraltrxs"
 	"gade/srv-gade-point/rewards"
 	"gade/srv-gade-point/rewardtrxs"
 	"gade/srv-gade-point/tags"
@@ -32,6 +33,7 @@ type rewardUseCase struct {
 	voucherUC       vouchers.UseCase
 	voucherCodeRepo vouchercodes.Repository
 	rwdTrxRepo      rewardtrxs.Repository
+	referralTrxRepo referraltrxs.Repository
 }
 
 // NewRewardUseCase will create new an rewardUseCase object representation of rewards.UseCase interface
@@ -43,6 +45,7 @@ func NewRewardUseCase(
 	voucherUC vouchers.UseCase,
 	voucherCodeRepo vouchercodes.Repository,
 	rwdTrxRepo rewardtrxs.Repository,
+	referralTrxRepo referraltrxs.Repository,
 ) rewards.UseCase {
 	return &rewardUseCase{
 		rewardRepo:      rwdRepo,
@@ -52,6 +55,7 @@ func NewRewardUseCase(
 		voucherUC:       voucherUC,
 		voucherCodeRepo: voucherCodeRepo,
 		rwdTrxRepo:      rwdTrxRepo,
+		referralTrxRepo: referralTrxRepo,
 	}
 }
 
@@ -401,7 +405,7 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 		rwdPayment.RefTrx = refID
 
 		// check available reward transaction based in ref_id
-		rwdInquiry, err := rwd.rwdTrxRepo.CheckRefID(c, rwdPayment.RefTrx)
+		rwdTrx, err := rwd.rwdTrxRepo.CheckRefID(c, rwdPayment.RefTrx)
 
 		if err != nil {
 			requestLogger.Debug(models.ErrRefTrxNotFound)
@@ -409,7 +413,8 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 			return responseData, models.ErrRefTrxNotFound
 		}
 
-		if rwdPayment.RefCore == "" && *rwdInquiry.Status == models.RewardTrxInquired {
+		// no ref_core equals to trx rejected
+		if rwdPayment.RefCore == "" {
 			// rejected
 			// update voucher code
 			rwd.voucherCodeRepo.UpdateVoucherCodeRejected(c, rwdPayment.RefTrx)
@@ -418,35 +423,44 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 			rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxRejected)
 
 			// update add reward quota
-			rwd.quotaUC.UpdateAddQuota(c, *rwdInquiry.RewardID)
-
-			// update reward quota
-		} else if rwdPayment.RefCore != "" && (*rwdInquiry.Status == models.RewardTrxInquired || *rwdInquiry.Status == models.RewardTrxTimeOut) {
-			// succeeded
-			// update voucher code
-			rwd.voucherCodeRepo.UpdateVoucherCodeSucceeded(c, rwdPayment)
-
-			if *rwdInquiry.Status == models.RewardTrxTimeOut {
-				// update reward trx timeout force to Succedeed
-				rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxTimeOutForceToSucceeded)
-
-				// update reduce reward quota
-				rwd.quotaUC.UpdateReduceQuota(c, *rwdInquiry.RewardID)
-
-			} else if *rwdInquiry.Status == models.RewardTrxInquired {
-				// update reward trx to Succedeed
-				rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxSucceeded)
-			}
-
-			// send sms notification only for voucher reward
-			if *rwdInquiry.Reward.Type == models.RewardTypeVoucher {
-				go rwd.sendSmsVoucher(c, *rwdInquiry)
-			}
-		} else {
-			responseData.StatusCode = rwdInquiry.Status
-			responseData.Status = rwdInquiry.GetstatusRewardTrxText()
+			rwd.quotaUC.UpdateAddQuota(c, *rwdTrx.RewardID)
 
 			return responseData, nil
+		}
+
+		// trx status = succeeded or status = rejected or status = forceSucceeded then return error
+		if *rwdTrx.Status != models.RewardTrxInquired && *rwdTrx.Status != models.RewardTrxTimeOut {
+			responseData.StatusCode = rwdTrx.Status
+			responseData.Status = rwdTrx.GetstatusRewardTrxText()
+
+			return responseData, nil
+		}
+
+		// succeeded
+		// update voucher code
+		trxStatus := models.RewardTrxSucceeded
+		rwd.voucherCodeRepo.UpdateVoucherCodeSucceeded(c, rwdPayment)
+
+		if *rwdTrx.Status == models.RewardTrxTimeOut {
+			// update reward trx timeout force to Succedeed
+			trxStatus = models.RewardTrxTimeOutForceToSucceeded
+
+			// update reduce reward quota
+			rwd.quotaUC.UpdateReduceQuota(c, *rwdTrx.RewardID)
+		}
+
+		rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, trxStatus)
+
+		// check if a referral trx
+		if rwdTrx.RequestData.IsReferral() {
+			referralTrx := rwdTrx.GetReferralTrx()
+
+			_ = rwd.referralTrxRepo.Create(c, referralTrx)
+		}
+
+		// send sms notification only for voucher reward
+		if *rwdTrx.Reward.Type == models.RewardTypeVoucher {
+			go rwd.sendSmsVoucher(c, *rwdTrx)
 		}
 	}
 

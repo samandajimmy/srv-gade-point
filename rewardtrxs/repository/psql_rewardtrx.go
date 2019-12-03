@@ -81,16 +81,16 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 			UsedPromoCode:   payload.PromoCode,
 			TransactionDate: &trxDate,
 			InquiredDate:    &now,
-			ResponseData:    string(responseData),
 			CreatedAt:       &now,
 			TimeoutDate:     &timeoutDate,
 		}
 
 		reqData := string(requestData)
+		respData := string(responseData)
 
 		err = stmt.QueryRow(
 			&rwdTrx.Status, &rwdTrx.RefID, &rwdTrx.CIF, &rwdTrx.RewardID, &rwdTrx.UsedPromoCode,
-			&rwdTrx.TransactionDate, &rwdTrx.InquiredDate, &reqData, &rwdTrx.ResponseData,
+			&rwdTrx.TransactionDate, &rwdTrx.InquiredDate, &reqData, &respData,
 			&rwdTrx.CreatedAt, &rwdTrx.TimeoutDate, rootRefTrx,
 		).Scan(&lastID)
 
@@ -184,12 +184,15 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CheckTrx(c echo.Context, refID string
 func (rwdTrxRepo *psqlRewardTrxRepository) CheckRefID(c echo.Context, refID string) (*models.RewardTrx, error) {
 	var result models.RewardTrx
 	var rewardTrxReqData models.RewardTrxReqData
+	var rewardTrxRespData models.RewardsInquiry
 	var reward models.Reward
 	var reqData json.RawMessage
+	var respData json.RawMessage
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	query := `SELECT rt.id, rt.status, coalesce(rt.ref_core, ''), rt.ref_id, rt.reward_id, rt.cif,
-		rt.inquired_date, rt.transaction_date, rt.request_data, r.type from reward_transactions rt
+		rt.inquired_date, rt.transaction_date, rt.request_data, rt.response_data, r.type, rt.used_promo_code
+		from reward_transactions rt
 		left join rewards r on rt.reward_id = r.id where ref_id = $1`
 	err := rwdTrxRepo.Conn.QueryRow(query, refID).Scan(
 		&result.ID,
@@ -201,7 +204,9 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CheckRefID(c echo.Context, refID stri
 		&result.InquiredDate,
 		&result.TransactionDate,
 		&reqData,
+		&respData,
 		&reward.Type,
+		&result.UsedPromoCode,
 	)
 
 	if err != nil {
@@ -211,6 +216,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CheckRefID(c echo.Context, refID stri
 	}
 
 	err = json.Unmarshal([]byte(reqData), &rewardTrxReqData)
+	err = json.Unmarshal([]byte(respData), &rewardTrxRespData)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -220,6 +226,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CheckRefID(c echo.Context, refID stri
 
 	result.Reward = &reward
 	result.RequestData = &rewardTrxReqData
+	result.ResponseData = &rewardTrxRespData
 
 	return &result, nil
 }

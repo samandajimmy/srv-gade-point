@@ -28,6 +28,7 @@ import (
 	_pHistoryUseCase "gade/srv-gade-point/pointhistories/usecase"
 	_quotaRepository "gade/srv-gade-point/quotas/repository"
 	_quotaUseCase "gade/srv-gade-point/quotas/usecase"
+	_referralTrxRepository "gade/srv-gade-point/referraltrxs/repository"
 	_rewardHttpDelivery "gade/srv-gade-point/rewards/delivery/http"
 	_rewardRepository "gade/srv-gade-point/rewards/repository"
 	_rewardUseCase "gade/srv-gade-point/rewards/usecase"
@@ -128,6 +129,9 @@ func main() {
 	rewardTrxUseCase := _rewardTrxUC.NewRewardtrxUseCase(rewardTrxRepository)
 	_rewardTrxHttpDelivery.NewRewardTrxHandler(echoGroup, rewardTrxUseCase)
 
+	// REFERRALTRX
+	referralTrxRepository := _referralTrxRepository.NewPsqlReferralTrxRepository(dbConn)
+
 	// QUOTA
 	quotaRepository := _quotaRepository.NewPsqlQuotaRepository(dbConn)
 	quotaUseCase := _quotaUseCase.NewQuotaUseCase(quotaRepository, rewardTrxUseCase)
@@ -145,7 +149,7 @@ func main() {
 	campaignRepository := _campaignRepository.NewPsqlCampaignRepository(dbConn, rewardRepository)
 	voucherUseCase := _voucherUseCase.NewVoucherUseCase(voucherRepository, campaignRepository, pHistoryRepository, voucherCodeRepository)
 	_voucherHttpDelivery.NewVouchersHandler(echoGroup, voucherUseCase)
-	rewardUseCase := _rewardUseCase.NewRewardUseCase(rewardRepository, campaignRepository, tagUseCase, quotaUseCase, voucherUseCase, voucherCodeRepository, rewardTrxRepository)
+	rewardUseCase := _rewardUseCase.NewRewardUseCase(rewardRepository, campaignRepository, tagUseCase, quotaUseCase, voucherUseCase, voucherCodeRepository, rewardTrxRepository, referralTrxRepository)
 	_rewardHttpDelivery.NewRewardHandler(echoGroup, rewardUseCase)
 
 	// CAMPAIGN

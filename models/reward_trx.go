@@ -42,7 +42,7 @@ type RewardTrx struct {
 	RejectedDate    *time.Time        `json:"rejectedDate,omitempty"`
 	TimeoutDate     *time.Time        `json:"timeoutDate,omitempty"`
 	RequestData     *RewardTrxReqData `json:"requestData,omitempty"`
-	ResponseData    string            `json:"responseData,omitempty"`
+	ResponseData    *RewardsInquiry   `json:"responseData,omitempty"`
 	CreatedAt       *time.Time        `json:"createdAt,omitempty"`
 	UpdatedAt       *time.Time        `json:"updatedAt,omitempty"`
 	Reward          *Reward           `json:"reward,omitempty"`
@@ -50,8 +50,9 @@ type RewardTrx struct {
 
 // RewardTrxReqData is represent a reward_transactions request data model
 type RewardTrxReqData struct {
-	Phone        string `json:"phone,omitempty"`
-	CustomerName string `json:"customerName,omitempty"`
+	Phone        string     `json:"phone,omitempty"`
+	CustomerName string     `json:"customerName,omitempty"`
+	Validators   *Validator `json:"validators,omitempty"`
 }
 
 // RewardTrxResponse is represent a reward transaction response model
@@ -63,4 +64,32 @@ type RewardTrxResponse struct {
 // GetstatusRewardTrxText to get text of status reward transaction
 func (rwdTrx RewardTrx) GetstatusRewardTrxText() string {
 	return statusRewardTrx[*rwdTrx.Status]
+}
+
+// GetReferralTrx to get all referral transaction
+func (rwdTrx RewardTrx) GetReferralTrx() ReferralTrx {
+	refTrx := ReferralTrx{}
+	reward := *rwdTrx.ResponseData.Rewards
+
+	refTrx.CIF = reward[0].CIF
+	refTrx.RefID = reward[0].RefTrx
+	refTrx.UsedReferralCode = rwdTrx.UsedPromoCode
+	refTrx.RewardType = reward[0].Type
+	refTrx.Type = ReferralType[reward[0].Reference]
+	refTrx.RewardReferral = int64(reward[0].Value)
+
+	return refTrx
+}
+
+// IsReferral to get is referral or not from request data
+func (rtReq *RewardTrxReqData) IsReferral() bool {
+	if rtReq.Validators == nil {
+		return false
+	}
+
+	if rtReq.Validators.CampaignCode != CampaignCodeReferral {
+		return false
+	}
+
+	return true
 }

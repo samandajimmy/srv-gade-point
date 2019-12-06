@@ -34,11 +34,11 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 	respData := resp
 	respData.Rewards = nil
 	rootRefTrx := resp.RefTrx
+	refID := rootRefTrx
 
 	for _, rwdResp := range *resp.Rewards {
 		var lastID int64
 		var rwdRespData []models.RewardResponse
-		refID := rwdResp.RefTrx
 		expTime, _ := strconv.ParseInt(os.Getenv(`REWARD_TRX_TIMEOUT`), 10, 64)
 		timeoutDate := now.Add(time.Duration(expTime) * time.Minute)
 		rwdRespData = append(rwdRespData, rwdResp)
@@ -54,6 +54,10 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 			requestLogger.Debug(err)
 
 			return rewardTrx, err
+		}
+
+		if rwdResp.RefTrx != "" {
+			refID = rwdResp.RefTrx
 		}
 
 		requestData, err := json.Marshal(payload)
@@ -73,10 +77,16 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 			return rewardTrx, err
 		}
 
+		var rewardID int64
+
+		if rwdResp.RewardID != 0 {
+			rewardID = rwdResp.RewardID
+		}
+
 		rwdTrx := models.RewardTrx{
 			Status:          &models.RewardTrxInquired,
 			RefID:           refID,
-			RewardID:        &rwdResp.RewardID,
+			RewardID:        &rewardID,
 			CIF:             payload.CIF,
 			UsedPromoCode:   payload.PromoCode,
 			TransactionDate: &trxDate,

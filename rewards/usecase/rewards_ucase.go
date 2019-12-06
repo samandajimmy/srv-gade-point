@@ -186,9 +186,9 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 			if err != nil {
 				requestLogger.Debug(err)
-				respErrors.SetTitle(err.Error())
+				respErrors.AddError(err.Error())
 
-				return rwdInquiry, &respErrors
+				continue
 			}
 
 			rr = append(rr, *respData)
@@ -226,6 +226,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		// get response reward
 		rwdResp, _ := rwd.responseReward(c, rewards[0], plValidator)
 		rwdInquiry.RefTrx = rwdResp.RefTrx
+		rwdResp.RewardID = 0
 		rwdResp.RefTrx = ""
 
 		if rwdResp != nil {
@@ -233,6 +234,16 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		}
 
 		rwdInquiry.Rewards = &rwdResponse
+
+		// insert data to reward transaction
+		_, err = rwd.createRewardTrx(c, *plValidator, rwdInquiry)
+
+		if err != nil {
+			requestLogger.Debug(err)
+			respErrors.SetTitle(err.Error())
+
+			return rwdInquiry, &respErrors
+		}
 
 		return rwdInquiry, &respErrors
 	}
@@ -456,6 +467,10 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 			referralTrx := rwdTrx.GetReferralTrx()
 
 			_ = rwd.referralTrxRepo.Create(c, referralTrx)
+		}
+
+		if rwdTrx.Reward.Type == nil {
+			continue
 		}
 
 		// send sms notification only for voucher reward

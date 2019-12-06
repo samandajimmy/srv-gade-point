@@ -155,6 +155,11 @@ func (quot *quotaUseCase) UpdateAddQuota(c echo.Context, rewardID int64) error {
 func (quot *quotaUseCase) UpdateReduceQuota(c echo.Context, rewardID int64) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
+
+	if rewardID == 0 {
+		return nil
+	}
+
 	err := quot.quotaRepo.UpdateReduceQuota(c, rewardID)
 
 	if err != nil {

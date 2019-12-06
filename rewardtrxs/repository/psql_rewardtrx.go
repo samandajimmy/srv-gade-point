@@ -39,6 +39,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 	for _, rwdResp := range *resp.Rewards {
 		var lastID int64
 		var rwdRespData []models.RewardResponse
+		var rewardID sql.NullInt64
 		expTime, _ := strconv.ParseInt(os.Getenv(`REWARD_TRX_TIMEOUT`), 10, 64)
 		timeoutDate := now.Add(time.Duration(expTime) * time.Minute)
 		rwdRespData = append(rwdRespData, rwdResp)
@@ -77,16 +78,13 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 			return rewardTrx, err
 		}
 
-		var rewardID int64
-
 		if rwdResp.RewardID != 0 {
-			rewardID = rwdResp.RewardID
+			rewardID.Scan(rwdResp.RewardID)
 		}
 
 		rwdTrx := models.RewardTrx{
 			Status:          &models.RewardTrxInquired,
 			RefID:           refID,
-			RewardID:        &rewardID,
 			CIF:             payload.CIF,
 			UsedPromoCode:   payload.PromoCode,
 			TransactionDate: &trxDate,
@@ -99,7 +97,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 		respData := string(responseData)
 
 		err = stmt.QueryRow(
-			&rwdTrx.Status, &rwdTrx.RefID, &rwdTrx.CIF, &rwdTrx.RewardID, &rwdTrx.UsedPromoCode,
+			&rwdTrx.Status, &rwdTrx.RefID, &rwdTrx.CIF, rewardID, &rwdTrx.UsedPromoCode,
 			&rwdTrx.TransactionDate, &rwdTrx.InquiredDate, &reqData, &respData,
 			&rwdTrx.CreatedAt, &rwdTrx.TimeoutDate, rootRefTrx,
 		).Scan(&lastID)
@@ -398,6 +396,10 @@ func (rwdTrxRepo *psqlRewardTrxRepository) RewardTrxTimeout(rewardTrx models.Rew
 	}
 
 	defer rows.Close()
+
+	if rewardTrx.RewardID == nil {
+		return
+	}
 
 	rwdTrxRepo.updateLockedQuota(*rewardTrx.RewardID, rewardTrx.RefID)
 }

@@ -10,3 +10,6 @@ public.bak/
 .vscode
 srv-gade-point
 ./srv-gade-point
+
+//Idea
+.idea/*

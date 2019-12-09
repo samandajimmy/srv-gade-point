@@ -14,7 +14,7 @@ type UseCase interface {
 	UploadVoucherImages(echo.Context, *multipart.FileHeader) (string, error)
 	GetVouchersAdmin(echo.Context, map[string]interface{}) ([]*models.Voucher, string, error)
 	GetVoucherAdmin(echo.Context, string) (*models.Voucher, error)
-	GetVouchers(echo.Context, map[string]interface{}) ([]*models.Voucher, *models.ResponseErrors, string, error)
+	GetVouchers(echo.Context) ([]*models.Voucher, *models.ResponseErrors, string, error)
 	GetVoucher(echo.Context, string) (*models.Voucher, error)
 	VoucherBuy(echo.Context, *models.PayloadVoucherBuy) (*models.VoucherCode, error)
 	VoucherGive(echo.Context, *models.PayloadVoucherBuy) (*models.VoucherCode, error)

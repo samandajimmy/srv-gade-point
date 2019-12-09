@@ -313,14 +313,7 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 		FROM vouchers v
 		LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id
 		WHERE v.status = 1 AND v.end_date::date >= now()`
-	//querySampingan := `SELECT distinct v.id, v.name, v.description, v.start_date, v.end_date, v.point,
-	//	v.image_url, v.stock, v.terms_and_conditions, v.how_to_use, v.validators->>'product' as ProductCode,
-	//	v.validators->>'minLoanAmount' as MinLoanAmount, vc.promo_code,
-	//	v.type, v.created_at
-	//	FROM vouchers v
-	//	LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id`
-	//log.Info("Query Sampingan : "+querySampingan)
-	log.Info("Query : " + query)
+
 	if c.QueryParam("page") != "" || c.QueryParam("limit") != "" {
 		paging = fmt.Sprintf("LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
 	}

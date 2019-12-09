@@ -37,6 +37,9 @@ type Voucher struct {
 	GeneratorType      *int8      `json:"generatorType,omitempty"`
 	Stock              *int32     `json:"stock,omitempty"`
 	PrefixPromoCode    string     `json:"prefixPromoCode,omitempty"`
+	ProductCode        *string     `json:"productCode,omitempty"`
+	MinLoanAmount      *string     `json:"minLoanAmount,omitempty"`
+	PromoCode          *string     `json:"promoCode,omitempty"`
 	Amount             *int32     `json:"amount,omitempty"`
 	Available          *int32     `json:"available,omitempty"`
 	Bought             *int32     `json:"bought,omitempty"`

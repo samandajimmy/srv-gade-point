@@ -38,6 +38,7 @@ type Voucher struct {
 	Stock              *int32     `json:"stock,omitempty"`
 	PrefixPromoCode    string     `json:"prefixPromoCode,omitempty"`
 	ProductCode        *string    `json:"productCode,omitempty"`
+	TransactionType    *string    `json:"transactionType,omitempty"`
 	MinLoanAmount      *string    `json:"minLoanAmount,omitempty"`
 	PromoCode          *string    `json:"promoCode,omitempty"`
 	Amount             *int32     `json:"amount,omitempty"`

@@ -308,8 +308,8 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 	paging := ""
 	where := ""
 	query := `SELECT distinct v.id, v.name, v.description, v.start_date, v.end_date, v.point,
-		v.image_url, v.stock, v.validators->>'product', v.validators->>'minLoanAmount', vc.promo_code, 
-		v.terms_and_conditions, v.how_to_use, v.type, v.created_at
+		v.image_url, v.stock, v.validators->>'product', v.validators->>'transactionType', v.validators->>'minLoanAmount', 
+		vc.promo_code, v.terms_and_conditions, v.how_to_use, v.type, v.created_at
 		FROM vouchers v
 		LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id
 		WHERE v.status = 1 AND v.end_date::date >= now()`
@@ -372,6 +372,7 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 			&t.ImageURL,
 			&t.Stock,
 			&t.ProductCode,
+			&t.TransactionType,
 			&t.MinLoanAmount,
 			&t.PromoCode,
 			&t.TermsAndConditions,

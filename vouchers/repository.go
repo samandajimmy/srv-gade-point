@@ -8,6 +8,7 @@ import (
 
 // Repository represent the voucher's repository contract
 type Repository interface {
+	UpdateVoucherStock(c echo.Context, voucherId string) error
 	CreateVoucher(echo.Context, *models.Voucher) error
 	CreatePromoCode(echo.Context, []*models.VoucherCode) error
 	UpdateVoucher(echo.Context, int64, *models.UpdateVoucher) error

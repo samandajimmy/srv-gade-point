@@ -163,7 +163,6 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 	// check request payload base on cif and promo code
 	// get existing reward trx based on cif and phone number
-
 	rwrds, err := rwd.rwdTrxRepo.GetRewardByPayload(c, *plValidator)
 
 	if len(rwrds) > 0 {

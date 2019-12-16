@@ -38,11 +38,11 @@ func (rfr *referralTrxUseCase) GetMilestone(c echo.Context, CIF string) (*models
 		return nil, models.ErrMilestone
 	}
 
-	price := os.Getenv(`PRICE`)
-	totalLimit := os.Getenv(`TOTAL_LIMIT`)
-	milestone.Price, _ = strconv.ParseInt(price, 10, 64)
-	milestone.Total, _ = strconv.ParseInt(totalLimit, 10, 64)
-	milestone.TotalPrice = milestone.Price * milestone.Total
+	stage := os.Getenv(`STAGE`)
+	limitRewardCounter := os.Getenv(`LIMIT_REWARD_COUNTER`)
+	milestone.Stages, _ = strconv.ParseInt(stage, 10, 64)
+	milestone.LimitRewardCounter, _ = strconv.ParseInt(limitRewardCounter, 10, 64)
+	milestone.LimitReward = milestone.Stages * milestone.LimitRewardCounter
 
 	return milestone, nil
 }

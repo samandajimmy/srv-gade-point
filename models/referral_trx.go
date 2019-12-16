@@ -31,9 +31,9 @@ type ReferralTrx struct {
 
 // Milestone is represent a referral_transactions model
 type Milestone struct {
-	Price         int64 `json:"price,omitempty"`
-	Total         int64 `json:"total,omitempty"`
-	TotalPrice    int64 `json:"totalPrice,omitempty"`
-	TotalUse      int64 `json:"totalUse,omitempty"`
-	TotalUsePrice int64 `json:"totalUsePrice,omitempty"`
+	Stages             int64 `json:"stage,omitempty"`
+	LimitRewardCounter int64 `json:"limitRewardCounter,omitempty"`
+	LimitReward        int64 `json:"limitReward,omitempty"`
+	TotalRewardCounter int64 `json:"totalRewardCounter,omitempty"`
+	TotalReward        int64 `json:"totalReward,omitempty"`
 }

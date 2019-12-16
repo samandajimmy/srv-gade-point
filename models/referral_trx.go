@@ -28,3 +28,11 @@ type ReferralTrx struct {
 	CreatedAt        *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt        *time.Time `json:"updatedAt,omitempty"`
 }
+
+type Milestone struct {
+	Price         int64 `json:"price,omitempty"`
+	Total         int64 `json:"total,omitempty"`
+	TotalPrice    int64 `json:"totalPrice,omitempty"`
+	TotalUse      int64 `json:"totalUse,omitempty"`
+	TotalUsePrice int64 `json:"totalUsePrice,omitempty"`
+}

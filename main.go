@@ -28,7 +28,9 @@ import (
 	_pHistoryUseCase "gade/srv-gade-point/pointhistories/usecase"
 	_quotaRepository "gade/srv-gade-point/quotas/repository"
 	_quotaUseCase "gade/srv-gade-point/quotas/usecase"
+	_referralTrxHttpDelivery "gade/srv-gade-point/referraltrxs/delivery/http"
 	_referralTrxRepository "gade/srv-gade-point/referraltrxs/repository"
+	_referralTrxUseCase "gade/srv-gade-point/referraltrxs/usecase"
 	_rewardHttpDelivery "gade/srv-gade-point/rewards/delivery/http"
 	_rewardRepository "gade/srv-gade-point/rewards/repository"
 	_rewardUseCase "gade/srv-gade-point/rewards/usecase"
@@ -131,6 +133,8 @@ func main() {
 
 	// REFERRALTRX
 	referralTrxRepository := _referralTrxRepository.NewPsqlReferralTrxRepository(dbConn)
+	referralTrxUseCase := _referralTrxUseCase.NewReferralTrxUseCase(referralTrxRepository)
+	_referralTrxHttpDelivery.NewReferralTrxHandler(echoGroup, referralTrxUseCase)
 
 	// QUOTA
 	quotaRepository := _quotaRepository.NewPsqlQuotaRepository(dbConn)

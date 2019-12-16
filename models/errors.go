@@ -248,6 +248,8 @@ var (
 
 	// ErrRefIDStatus to not found ref_trx error message
 	ErrRefIDStatus = errors.New("Transaksi ID ")
+
+	ErrMilestone = errors.New("Terjadi kesalahan dalam mengambil data milestone")
 )
 
 // DynamicErr to return parameterize errors

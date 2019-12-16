@@ -22,6 +22,7 @@ variables:
       && cd ${PACKAGE_PATH}
       && export GO111MODULE=on
       && export PATH="$PATH:/go/bin"
+      && export GOPROXY="http://10.251.4.79:8081/repository/go-group-01/"
       && echo $PATH
 
 before_script:
@@ -37,23 +38,24 @@ test:
     - go test
 
 build:
-  image: docker:stable
+  image: 10.251.4.79:8083/docker:stable
   services:
-    - name: docker:dind
-      command: ["--insecure-registry=10.251.4.82:5000"]
+    - name: 10.251.4.79:8083/docker:dind
+      command: ["--insecure-registry=10.251.4.79:8083"]
   stage: build
   script:
     - docker build --pull -t $CONTAINER_TEST_IMAGE .
     - docker push $CONTAINER_TEST_IMAGE
 
 release:
-  image: docker:stable
+  image: 10.251.4.79:8083/docker:stable
   services:
-    - name: docker:dind
-      command: ["--insecure-registry=10.251.4.82:5000"]
+    - name: 10.251.4.79:8083/docker:dind
+      command: ["--insecure-registry=10.251.4.79:8083"]
   stage: release
   script:
-    - docker pull $CONTAINER_TEST_IMAGE
+    - docker login -u $NEXUS_DOCKER_USER -p $NEXUS_DOCKER_PASS 10.251.4.79:8083
+#    - docker pull $CONTAINER_TEST_IMAGE
     - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_RELEASE_IMAGE
     - docker push $CONTAINER_RELEASE_IMAGE
   only:

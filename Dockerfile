@@ -1,4 +1,5 @@
-FROM golang:1.11 as build-env
+
+FROM 10.251.4.79:8083/golang:1.11 as build-env
 RUN apt-get update && apt-get install git
 # All these steps will be cached
 

@@ -1,9 +1,15 @@
+image: 10.251.4.79:8083/docker:latest
+services:
+  - name: 10.251.4.79:8083/docker:dind
+    command: ["--insecure-registry=10.251.4.79:8083"]
+
 stages:
   - test
   - build
   - release
 
 variables:
+  DOCKER_AUTH_CONFIG:  '{"auths": {"10.251.4.79:8083": {"auth": "$DOCKER_AU_CONFIG"}}}'
   CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
   CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
   PACKAGE_PATH: /go/src/gade/srv-gade-point
@@ -23,7 +29,7 @@ before_script:
 
 test:
   stage: test
-  image: golang:1.11
+  image: 10.251.4.79:8083/golang:1.11
   before_script:
     - *inject-gopath
   script:

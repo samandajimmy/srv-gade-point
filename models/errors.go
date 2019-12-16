@@ -250,7 +250,7 @@ var (
 	ErrRefIDStatus = errors.New("Transaksi ID ")
 
 	// ErrMilestone to not found ref_trx error message
-	ErrMilestone = errors.New("Data tidak ditemukan")
+	ErrMilestone = errors.New("Data milestone tidak ditemukan")
 
 	// ErrCIF to not found data cif
 	ErrCIF = errors.New("CIF tidak ditemukan")

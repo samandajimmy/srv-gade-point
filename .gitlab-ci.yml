@@ -1,7 +1,7 @@
-image: 10.251.4.79:8083/docker:latest
-services:
-  - name: 10.251.4.79:8083/docker:dind
-    command: ["--insecure-registry=10.251.4.79:8083"]
+#image: 10.251.4.79:8083/docker:latest
+#services:
+#  - name: 10.251.4.79:8083/docker:dind
+#    command: ["--insecure-registry=10.251.4.79:8083"]
 
 stages:
   - test
@@ -25,9 +25,6 @@ variables:
       && export GOPROXY="http://10.251.4.79:8081/repository/go-group-01/"
       && echo $PATH
 
-before_script:
-  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN 10.251.4.82:5000
-
 test:
   stage: test
   image: 10.251.4.79:8083/golang:1.11
@@ -44,6 +41,7 @@ build:
       command: ["--insecure-registry=10.251.4.79:8083"]
   stage: build
   script:
+    - docker login -u $NEXUS_DOCKER_USER -p $NEXUS_DOCKER_PASS 10.251.4.79:8083
     - docker build --pull -t $CONTAINER_TEST_IMAGE .
     - docker push $CONTAINER_TEST_IMAGE
 

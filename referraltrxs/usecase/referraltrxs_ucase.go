@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"errors"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referraltrxs"
 	"github.com/labstack/echo"
@@ -27,23 +26,22 @@ func (rfr *referralTrxUseCase) GetMilestone(c echo.Context, CIF string) (*models
 	if err != nil {
 		requestLogger.Debug(err)
 
-		return nil, errors.New("Something went wrong with input CIF")
+		return nil, models.ErrCIF
 	}
 
 	milestone, err := rfr.referralTrxRepo.GetMilestone(c, int64(cif))
-
-	price := os.Getenv(`PRICE`)
-	totalLimit := os.Getenv(`TOTAL_LIMIT`)
-
-	milestone.Price, err = strconv.ParseInt(price, 10, 64)
-	milestone.Total, err = strconv.ParseInt(totalLimit, 10, 64)
-	milestone.TotalPrice = milestone.Price * milestone.Total
 
 	if err != nil {
 		requestLogger.Debug(models.ErrMilestone)
 
 		return nil, models.ErrMilestone
 	}
+
+	price := os.Getenv(`PRICE`)
+	totalLimit := os.Getenv(`TOTAL_LIMIT`)
+	milestone.Price, _ = strconv.ParseInt(price, 10, 64)
+	milestone.Total, _ = strconv.ParseInt(totalLimit, 10, 64)
+	milestone.TotalPrice = milestone.Price * milestone.Total
 
 	return milestone, nil
 }

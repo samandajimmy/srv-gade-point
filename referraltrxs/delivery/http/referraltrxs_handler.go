@@ -11,15 +11,18 @@ import (
 
 var response models.Response
 
+// ReferralTrxHandler represent the httphandler for referralTrx
 type ReferralTrxHandler struct {
 	ReferralTrxUseCase referraltrxs.UseCase
 }
 
+// NewReferralTrxHandler represent to register referralTrx endpoint
 func NewReferralTrxHandler(echoGroup models.EchoGroup, us referraltrxs.UseCase) {
 	handler := &ReferralTrxHandler{
 		ReferralTrxUseCase: us,
 	}
 
+	// End Point For External
 	echoGroup.API.GET("/milestone/:cif", handler.getMilestone)
 }
 

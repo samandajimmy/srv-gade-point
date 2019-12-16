@@ -4,6 +4,7 @@ stages:
   - release
 
 variables:
+  DOCKER_AUTH_CONFIG:  '{"auths": {"10.251.4.79:8083": {"auth": "$DOCKER_AU_CONFIG"}}}'
   CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
   CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
   PACKAGE_PATH: /go/src/gade/srv-gade-point
@@ -16,14 +17,12 @@ variables:
       && cd ${PACKAGE_PATH}
       && export GO111MODULE=on
       && export PATH="$PATH:/go/bin"
+      && export GOPROXY="http://10.251.4.79:8081/repository/go-group-01/"
       && echo $PATH
-
-before_script:
-  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN 10.251.4.82:5000
 
 test:
   stage: test
-  image: golang:1.11
+  image: 10.251.4.79:8083/golang:1.11
   before_script:
     - *inject-gopath
   script:
@@ -31,23 +30,24 @@ test:
     - go test
 
 build:
-  image: docker:stable
+  image: 10.251.4.79:8083/docker:latest
   services:
-    - name: docker:dind
+    - name: 10.251.4.79:8083/docker:dind
       command: ["--insecure-registry=10.251.4.82:5000"]
   stage: build
   script:
+    - docker login -u $NEXUS_DOCKER_USER -p $NEXUS_DOCKER_PASS 10.251.4.79:8083
     - docker build --pull -t $CONTAINER_TEST_IMAGE .
     - docker push $CONTAINER_TEST_IMAGE
 
 release:
-  image: docker:stable
+  image: 10.251.4.79:8083/docker:latest
   services:
-    - name: docker:dind
+    - name: 10.251.4.79:8083/docker:dind
       command: ["--insecure-registry=10.251.4.82:5000"]
   stage: release
   script:
-    - docker pull $CONTAINER_TEST_IMAGE
+    - docker login -u $NEXUS_DOCKER_USER -p $NEXUS_DOCKER_PASS 10.251.4.79:8083
     - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_RELEASE_IMAGE
     - docker push $CONTAINER_RELEASE_IMAGE
   only:

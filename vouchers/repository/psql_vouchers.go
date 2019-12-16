@@ -447,7 +447,7 @@ func (m *psqlVoucherRepository) GetVoucher(c echo.Context, voucherID string) (*m
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	result := new(models.Voucher)
-	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, c.image_url, c.stock, coalesce(d.available, 0), c.terms_and_conditions, c.how_to_use, c.type
+	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, c.image_url, c.stock, coalesce(d.available, 0), c.terms_and_conditions, c.how_to_use, c.type, c.generator_type
 	FROM vouchers c LEFT JOIN(SELECT b.id, coalesce(count(a.id), 0) as available FROM voucher_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id
 	WHERE a.status = 0 GROUP BY b.id) d ON d.id = c.id WHERE c.id = $1`
 
@@ -464,6 +464,7 @@ func (m *psqlVoucherRepository) GetVoucher(c echo.Context, voucherID string) (*m
 		&result.TermsAndConditions,
 		&result.HowToUse,
 		&result.Type,
+		&result.GeneratorType,
 	)
 
 	if err != nil {
@@ -473,6 +474,31 @@ func (m *psqlVoucherRepository) GetVoucher(c echo.Context, voucherID string) (*m
 	}
 
 	return result, nil
+}
+
+func (m *psqlVoucherRepository) UpdateVoucherStock(c echo.Context, voucherId string) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	result := new(models.Voucher)
+	now := time.Now()
+
+	queryUpdate := `UPDATE vouchers SET stock = stock + 1, updated_at = $1 WHERE id = $2 RETURNING id`
+	stmt, err := m.Conn.Prepare(queryUpdate)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
+	err = stmt.QueryRow(&now, voucherId).Scan(&result.ID)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+	return nil
 }
 
 func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[string]interface{}) ([]models.VoucherCode, error) {

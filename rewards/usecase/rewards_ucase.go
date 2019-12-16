@@ -386,9 +386,7 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
 
 			if err != nil {
 				requestLogger.Debug(models.ErrVoucherUnavailable)
-
 				return nil, err
-
 			}
 
 			voucherName = voucherCode.Voucher.Name

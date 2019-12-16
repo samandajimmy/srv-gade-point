@@ -414,6 +414,14 @@ func (vchr *voucherUseCase) VoucherGive(ech echo.Context, payload *models.Payloa
 		return nil, models.ErrVoucherUnavailable
 	}
 
+	err = vchr.updateStockVoucher(ech, voucherDetail)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrVoucherUnavailable)
+
+		return nil, models.ErrVoucherUnavailable
+	}
+
 	// check date expiry
 	vStartDate, _ := time.Parse(time.RFC3339, voucherDetail.StartDate)
 	vEndDate, _ := time.Parse(time.RFC3339, voucherDetail.EndDate)
@@ -537,6 +545,34 @@ func (vchr *voucherUseCase) VoucherRedeem(c echo.Context, voucherRedeem *models.
 	}
 
 	return promoCode, nil
+}
+
+func (vchr *voucherUseCase) updateStockVoucher(c echo.Context, voucherDetail *models.Voucher) error {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	oneStock := int32(1)
+	if *voucherDetail.GeneratorType == models.VoucherTrxBased {
+		voucherDetail.Stock = &oneStock
+		/*
+			CreateVoucherCode for [CGC]
+		*/
+		err := vchr.createVoucherCodes(c, voucherDetail)
+		if err != nil {
+			requestLogger.Debug(models.ErrVoucherGenearatePromoCodes)
+			return err
+		}
+		/*
+			Update Stock Voucher
+		*/
+		err = vchr.voucherRepo.UpdateVoucherStock(c, strconv.Itoa(int(voucherDetail.ID)))
+
+		if err != nil {
+			requestLogger.Debug(models.ErrVoucherGenearatePromoCodes)
+			return err
+		}
+
+	}
+	return nil
 }
 
 func (vchr *voucherUseCase) UpdateStatusBasedOnStartDate() error {

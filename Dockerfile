@@ -26,7 +26,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o /go/bin/srv-gade-point
 
 # Second step to build minimal image
-FROM alpine:3.7
+FROM 10.251.4.79:8083/alpine:3.7
 COPY --from=build-env /go/bin/srv-gade-point /go/bin/srv-gade-point
 COPY --from=build-env /srv-gade-point/entrypoint.sh /srv-gade-point/entrypoint.sh
 COPY --from=build-env /srv-gade-point/migrations /migrations

@@ -33,7 +33,7 @@ build:
   image: 10.251.4.79:8083/docker:latest
   services:
     - name: 10.251.4.79:8083/docker:dind
-      command: ["--insecure-registry=10.251.4.79:8083"]
+      command: ["--insecure-registry=10.251.4.82:5000"]
   stage: build
   script:
     - docker login -u $NEXUS_DOCKER_USER -p $NEXUS_DOCKER_PASS 10.251.4.79:8083
@@ -44,7 +44,7 @@ release:
   image: 10.251.4.79:8083/docker:latest
   services:
     - name: 10.251.4.79:8083/docker:dind
-      command: ["--insecure-registry=10.251.4.79:8083"]
+      command: ["--insecure-registry=10.251.4.82:5000"]
   stage: release
   script:
     - docker login -u $NEXUS_DOCKER_USER -p $NEXUS_DOCKER_PASS 10.251.4.79:8083

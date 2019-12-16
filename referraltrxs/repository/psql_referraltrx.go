@@ -55,7 +55,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetMilestone(c echo.Context, CIF in
 
 	query := `SELECT count(r.id) as totalUse, sum(r.reward_referral) AS totalPrice
 			  FROM referral_transactions r
-			  WHERE cif = $1`
+			  WHERE cif = $1 and type = 1`
 
 	err := refTrxRepo.Conn.QueryRow(query, CIF).Scan(
 		&result.TotalUse,

@@ -29,6 +29,7 @@ type ReferralTrx struct {
 	UpdatedAt        *time.Time `json:"updatedAt,omitempty"`
 }
 
+// Milestone is represent a referral_transactions model
 type Milestone struct {
 	Price         int64 `json:"price,omitempty"`
 	Total         int64 `json:"total,omitempty"`

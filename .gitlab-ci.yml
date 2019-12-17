@@ -33,6 +33,8 @@ build:
   image: 10.251.4.79:8083/docker:latest
   services:
     - name: 10.251.4.79:8083/docker:dind
+      entrypoint: ["env", "-u", "DOCKER_HOST"]
+      command: ["entrypoint.sh"]
       command: ["--insecure-registry=10.251.4.79:8083"]
   variables:
     DOCKER_HOST: tcp://docker:2375/

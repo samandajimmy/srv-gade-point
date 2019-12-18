@@ -20,6 +20,7 @@ var ReferralType = map[string]int64{
 type ReferralTrx struct {
 	ID               int64      `json:"id,omitempty"`
 	CIF              string     `json:"cif,omitempty"`
+	TotalGoldback    float64    `json:"totalGoldback,omitempty"`
 	RefID            string     `json:"refId,omitempty"`
 	UsedReferralCode string     `json:"usedReferralCode,omitempty"`
 	RewardType       string     `json:"rewardType,omitempty"`
@@ -27,6 +28,7 @@ type ReferralTrx struct {
 	RewardReferral   int64      `json:"rewardReferral,omitempty"`
 	CreatedAt        *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt        *time.Time `json:"updatedAt,omitempty"`
+	CifReferrer      string     `json:"cifReferrer,omitempty"`
 }
 
 // Milestone is represent a referral_transactions model

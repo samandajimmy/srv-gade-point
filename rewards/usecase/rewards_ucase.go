@@ -259,6 +259,23 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		return rwdInquiry, &respErrors
 	}
 
+	// Logic referral
+	// check for referral validate
+	isValidate, err := rwd.validateReferralInq(c, plValidator, &respErrors)
+
+	if err != nil {
+		requestLogger.Debug(err)
+		respErrors.AddError(err.Error())
+
+		return rwdInquiry, &respErrors
+	}
+
+	if !isValidate {
+		requestLogger.Debug(err)
+
+		return rwdInquiry, &respErrors
+	}
+
 	// create array rewards
 	rewards := rwd.putRewards(c, campaigns)
 
@@ -703,4 +720,62 @@ func randRefID(n int) string {
 	}
 
 	return string(b)
+}
+
+func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.PayloadValidator, respErrors *models.ResponseErrors) (bool, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	modelsRefTrx := models.ReferralTrx{
+		CIF:              payload.CIF,
+		CifReferrer:      payload.Referrer,
+		RefID:            payload.RefTrx,
+		UsedReferralCode: payload.PromoCode,
+		Type:             models.ReferralTrxTypeReferral,
+	}
+
+	// Value Reward CGC From GETENV
+	rewardValue, err := strconv.Atoi(os.Getenv(`STAGE`))
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return false, err
+	}
+	// Limit Reward Counter Milestone From GETENV
+	limitRewardCounter, err := strconv.Atoi(os.Getenv(`LIMIT_REWARD_COUNTER`))
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return false, err
+	}
+
+	countReftrx, err := rwd.referralTrxRepo.CheckReferralTrxByExistingReferrer(c, modelsRefTrx)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return false, err
+	}
+
+	if countReftrx > 0 {
+		requestLogger.Debug(models.ErrValidateGetReferral)
+		respErrors.SetTitle("CIF Referrer "+ payload.Referrer+" pernah digunakan!")
+		return false, err
+	}
+
+	refTrx, err := rwd.referralTrxRepo.CheckReferralTrxByValueRewards(c, modelsRefTrx)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return false, err
+	}
+
+	if int(refTrx.TotalGoldback) > (rewardValue*limitRewardCounter) {
+		requestLogger.Debug(models.ErrValidateGetReferralMaxReward)
+		respErrors.SetTitle("CIF " + payload.CIF + " telah melampui batas milestone rewards!")
+		return false, err
+	}
+
+	return true, nil
+
 }

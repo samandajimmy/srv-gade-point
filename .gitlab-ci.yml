@@ -30,17 +30,11 @@ test:
     - go test
 
 build:
+  stage: build
   image: 10.251.4.79:8083/docker:latest
   services:
     - name: 10.251.4.79:8083/docker:dind
-      entrypoint: ["env", "-u", "DOCKER_HOST"]
-      command: ["entrypoint.sh"]
       command: ["--insecure-registry=10.251.4.79:8083"]
-  variables:
-    DOCKER_HOST: tcp://docker:2375/
-    DOCKER_DRIVER: overlay2
-    DOCKER_TLS_CERTDIR: ""
-  stage: build
   script:
     - docker login -u $NEXUS_DOCKER_USER -p $NEXUS_DOCKER_PASS 10.251.4.79:8083
     - docker build --pull -t $CONTAINER_TEST_IMAGE .

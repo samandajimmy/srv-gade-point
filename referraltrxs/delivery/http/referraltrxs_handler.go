@@ -3,6 +3,7 @@ package http
 import (
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referraltrxs"
+	"gade/srv-gade-point/services"
 	"net/http"
 	"strings"
 
@@ -27,28 +28,34 @@ func NewReferralTrxHandler(echoGroup models.EchoGroup, us referraltrxs.UseCase) 
 }
 
 func (rfr *ReferralTrxHandler) getMilestone(c echo.Context) error {
-	response = models.Response{}
-	logger := models.RequestLogger{}
+	respErrors := &models.ResponseErrors{}
+	response    = models.Response{}
+	logger     := models.RequestLogger{}
+
+	// metric monitoring
+	go services.AddMetric("get_milestone")
+
 	requestLogger := logger.GetRequestLogger(c, nil)
 	requestLogger.Info("Start to get milestone.")
 
 	responseData, err := rfr.ReferralTrxUseCase.GetMilestone(c, c.Param("cif"))
 
 	if err != nil {
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		return c.JSON(getStatusCode(err), response)
+		respErrors.SetTitle(models.MessageDataNotFound)
+		response.SetResponse("", respErrors)
+		logger.DataLog(c, response).Info("End to get milestone for client")
+		// metric monitoring
+		go services.AddMetric("get_milestone_error")
+
+		return c.JSON(http.StatusUnprocessableEntity, response)
 	}
 
-	if (&models.Milestone{}) != responseData {
-		response.Data = responseData
-	}
-
-	response.Status = models.StatusSuccess
-	response.Message = models.MessagePointSuccess
+	response.SetResponse(responseData, respErrors)
 	requestLogger.Info("End of get milestone.")
+	// metric monitoring
+	go services.AddMetric("get_milestone_success")
 
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(getStatusCode(err), response)
 }
 
 func getStatusCode(err error) int {

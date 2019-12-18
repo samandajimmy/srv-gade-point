@@ -168,8 +168,10 @@ var (
 	// ErrGetRewardCounter to get reward counter error message
 	ErrGetRewardCounter = errors.New("Terjadi kesalahan dalam mengambil total reward")
 
+	// ErrValidateGetReferral to get reward referral error message
 	ErrValidateGetReferral = errors.New("Gagal untuk mendapatkan referral")
 
+	// ErrValidateGetReferralMaxReward to get max reward referral error message
 	ErrValidateGetReferralMaxReward = errors.New("Reward Milestone telah abis")
 
 	// ErrRewardFailed to store create reward failed error message

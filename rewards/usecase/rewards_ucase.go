@@ -13,7 +13,6 @@ import (
 	"gade/srv-gade-point/vouchercodes"
 	"gade/srv-gade-point/vouchers"
 	"io/ioutil"
-	"math"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -735,7 +734,7 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 	}
 
 	// Value Reward CGC From GETENV
-	rewardValue, err := strconv.Atoi(os.Getenv(`CGC_REWARD_VALUE`))
+	rewardValue, err := strconv.Atoi(os.Getenv(`STAGE`))
 	if err != nil {
 		requestLogger.Debug(err)
 
@@ -771,7 +770,7 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 		return false, err
 	}
 
-	if int(math.Sqrt(refTrx.TotalGoldback)) > (rewardValue*limitRewardCounter) {
+	if int(refTrx.TotalGoldback) > (rewardValue*limitRewardCounter) {
 		requestLogger.Debug(models.ErrValidateGetReferralMaxReward)
 		respErrors.SetTitle("CIF " + payload.CIF + " telah melampui batas milestone rewards!")
 		return false, err

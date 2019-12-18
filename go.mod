@@ -9,7 +9,6 @@ require (
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/golang-migrate/migrate/v4 v4.2.5
 	github.com/iancoleman/strcase v0.0.0-20180726023541-3605ed457bf7
-	github.com/jinzhu/copier v0.0.0-20180308034124-7e38e58719c3
 	github.com/joho/godotenv v1.3.0
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.2.8
@@ -24,5 +23,6 @@ require (
 	github.com/valyala/fasttemplate v1.1.0 // indirect
 	golang.org/x/crypto v0.0.0-20190313024323-a1f597ede03a
 	gopkg.in/Knetic/govaluate.v2 v2.3.0
+	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v9 v9.29.0
 )

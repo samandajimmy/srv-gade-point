@@ -281,6 +281,43 @@ func (m *psqlCampaignRepository) GetCampaignAvailable(c echo.Context, pv models.
 	return res, err
 }
 
+func (m *psqlCampaignRepository) GetCampaignAvailablePromo(c echo.Context, pv models.PayloadValidator) ([]*models.Campaign, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	promoCode := strings.ToLower(pv.PromoCode)
+
+	query := fmt.Sprintf(`SELECT c.id, c.name, c.description, c.start_date,
+		c.end_date, c.status, c.updated_at, c.created_at,
+		DATE_PART('day', c.end_date::timestamp - now()::timestamp) as days_remaining
+		FROM campaigns c
+		LEFT JOIN rewards r ON c.id = r.campaign_id
+		LEFT JOIN reward_tags rt ON r.id = rt.reward_id
+		LEFT JOIN tags t ON rt.tag_id = t.id
+		WHERE c.status = 1 and r.is_promo_code = 1
+		AND (LOWER(r.promo_code) = '%s' OR lower(t.name) = '%s')
+		AND c.start_date::date <= '%s'
+		AND (c.end_date::date >= '%s' OR c.end_date IS null)
+		union
+		SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.status, c.updated_at,
+		c.created_at, DATE_PART('day', c.end_date::timestamp - now()::timestamp) as days_remaining
+		FROM campaigns c
+		LEFT JOIN rewards r ON c.id = r.campaign_id
+		WHERE c.status = 1 and r.is_promo_code = 0 AND c.start_date::date <= '%s'
+		AND (c.end_date::date >= '%s' OR c.end_date IS null)`,
+		promoCode, promoCode, pv.TransactionDate, pv.TransactionDate, pv.TransactionDate,
+		pv.TransactionDate)
+
+	res, err := m.getCampaign(c, query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	return res, err
+}
+
 func (m *psqlCampaignRepository) SavePoint(c echo.Context, cmpgnTrx *models.CampaignTrx) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)

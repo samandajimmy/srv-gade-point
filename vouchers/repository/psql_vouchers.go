@@ -347,6 +347,8 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 	}
 
 	query += where + " ORDER BY v.created_at DESC " + paging
+
+	requestLogger.Info("Query : " + query)
 	rows, err := m.Conn.Query(query)
 
 	if err != nil {
@@ -609,6 +611,7 @@ func (m *psqlVoucherRepository) CountVouchers(c echo.Context, expired bool) (int
 	}
 
 	query += where
+	requestLogger.Info("QUERY COUNT : " + query)
 	err := m.Conn.QueryRow(query).Scan(&total)
 
 	if err != nil {

@@ -168,6 +168,9 @@ var (
 	// ErrGetRewardCounter to get reward counter error message
 	ErrGetRewardCounter = errors.New("Terjadi kesalahan dalam mengambil total reward")
 
+	// ErrSameCifReferrerAndReferral to get reward referral error message
+	ErrSameCifReferrerAndReferral = errors.New("Terjadi kesalahan cif referral dan referrer sama")
+
 	// ErrValidateGetReferral to get reward referral error message
 	ErrValidateGetReferral = errors.New("Gagal untuk mendapatkan referral")
 

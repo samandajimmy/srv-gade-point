@@ -786,10 +786,10 @@ func (m *psqlVoucherRepository) GetVoucherCode(c echo.Context, pv *models.Payloa
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	query := `SELECT pc.id, pc.promo_code, pc.status, pc.redeemed_date, pc.bought_date, pc.voucher_id
-			  FROM voucher_codes pc WHERE pc.promo_code = $1 AND (pc.status = $2 OR pc.status = $3);`
+			  FROM voucher_codes pc WHERE pc.promo_code = $1 AND (pc.status = $2 OR pc.status = $3 OR pc.status = $4);`
 
-	err := m.Conn.QueryRow(query, pv.PromoCode, models.VoucherCodeStatusAvailable,
-		models.VoucherCodeStatusInquired).Scan(
+	err := m.Conn.QueryRow(query, pv.PromoCode, models.VoucherCodeStatusBought,
+		models.VoucherCodeStatusInquired, models.VoucherCodeStatusAvailable).Scan(
 		&result.ID,
 		&result.PromoCode,
 		&result.Status,

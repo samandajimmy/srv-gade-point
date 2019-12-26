@@ -296,16 +296,9 @@ func (m *psqlCampaignRepository) GetCampaignAvailablePromo(c echo.Context, pv mo
 		WHERE c.status = 1 and r.is_promo_code = 1
 		AND (LOWER(r.promo_code) = '%s' OR lower(t.name) = '%s')
 		AND c.start_date::date <= '%s'
-		AND (c.end_date::date >= '%s' OR c.end_date IS null)
-		union
-		SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.status, c.updated_at,
-		c.created_at, DATE_PART('day', c.end_date::timestamp - now()::timestamp) as days_remaining
-		FROM campaigns c
-		LEFT JOIN rewards r ON c.id = r.campaign_id
-		WHERE c.status = 1 and r.is_promo_code = 0 AND c.start_date::date <= '%s'
 		AND (c.end_date::date >= '%s' OR c.end_date IS null)`,
-		promoCode, promoCode, pv.TransactionDate, pv.TransactionDate, pv.TransactionDate,
-		pv.TransactionDate)
+		promoCode, promoCode, pv.TransactionDate, pv.TransactionDate,
+	)
 
 	res, err := m.getCampaign(c, query)
 

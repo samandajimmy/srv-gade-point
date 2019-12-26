@@ -161,6 +161,15 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		return rwdInquiry, nil
 	}
 
+	// check referral cant use referrer myself
+	if plValidator.CIF == plValidator.Referrer {
+		requestLogger.Debug(models.ErrSameCifReferrerAndReferral)
+		requestLogger.Debug(err)
+		respErrors.SetTitle(models.ErrSameCifReferrerAndReferral.Error())
+
+		return rwdInquiry, &respErrors
+	}
+
 	// check request payload base on cif and promo code
 	// get existing reward trx based on cif and phone number
 	rwrds, err := rwd.rwdTrxRepo.GetRewardByPayload(c, *plValidator)
@@ -758,7 +767,7 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 
 	if countReftrx > 0 {
 		requestLogger.Debug(models.ErrValidateGetReferral)
-		respErrors.SetTitle("CIF Referrer "+ payload.Referrer+" pernah digunakan!")
+		respErrors.SetTitle("CIF Referrer " + payload.Referrer + " pernah digunakan!")
 		return false, err
 	}
 
@@ -770,7 +779,7 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 		return false, err
 	}
 
-	if int(refTrx.TotalGoldback) > (rewardValue*limitRewardCounter) {
+	if int(refTrx.TotalGoldback) > (rewardValue * limitRewardCounter) {
 		requestLogger.Debug(models.ErrValidateGetReferralMaxReward)
 		respErrors.SetTitle("CIF " + payload.CIF + " telah melampui batas milestone rewards!")
 		return false, err

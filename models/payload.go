@@ -2,7 +2,7 @@ package models
 
 // PayloadList a struct to store all payload for a list response
 type PayloadList struct {
-	CIF             string `json:"cif,omitempty"`
+	CIF             string `json:"cif,omitempty" validate:"required"`
 	Status          string `json:"status,omitempty"`
 	StartDate       string `json:"startDate,omitempty" validate:"dateString"`
 	EndDate         string `json:"endDate,omitempty"`

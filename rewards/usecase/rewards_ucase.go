@@ -786,5 +786,31 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 	}
 
 	return true, nil
+}
 
+func (rwd *rewardUseCase) GetPromotions(c echo.Context, plValidator models.PayloadValidator) ([]models.RewardPromotions, error) {
+	promotions, err := rwd.campaignRepo.GetCampaignAvailablePromo(c, plValidator)
+	var rewardData models.RewardPromotions
+	var rewardsData []models.RewardPromotions
+
+	if err != nil {
+		return nil, models.ErrGetRewardCounter
+	}
+
+	for _, promo := range promotions {
+		for _, reward := range *promo.Rewards {
+			data := rewardData
+			data.ID 				= reward.ID
+			data.Name 				= reward.Name
+			data.Description 		= reward.Description
+			data.TermsAndConditions = reward.TermsAndConditions
+			data.HowToUse 			= reward.HowToUse
+			data.PromoCode 			= reward.PromoCode
+			data.CustomPeriod 		= reward.CustomPeriod
+			data.JournalAccount 	= reward.JournalAccount
+			rewardsData = append(rewardsData, data)
+		}
+	}
+
+	return rewardsData, err
 }

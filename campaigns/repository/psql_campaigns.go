@@ -281,6 +281,65 @@ func (m *psqlCampaignRepository) GetCampaignAvailable(c echo.Context, pv models.
 	return res, err
 }
 
+func (m *psqlCampaignRepository) getCampaignPromo(c echo.Context, query string) ([]*models.Campaign, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	result := make([]*models.Campaign, 0)
+
+	rows, err := m.Conn.Query(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		t := new(models.Campaign)
+		var createDate, updateDate, endDate pq.NullTime
+		var daysRemaining *int64
+
+		err = rows.Scan(
+			&t.ID,
+			&t.Name,
+			&t.Description,
+			&t.StartDate,
+			&endDate,
+			&t.Status,
+			&updateDate,
+			&createDate,
+			&daysRemaining,
+		)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		t.CreatedAt = &createDate.Time
+		t.UpdatedAt = &updateDate.Time
+		t.EndDate = endDate.Time.Format(models.DateTimeFormatZone)
+
+		// get rewards
+		rewards, err := m.rwdRepo.GetRewardByCampaign(c, t.ID)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		t.Rewards = &rewards
+
+		result = append(result, t)
+	}
+
+	return result, nil
+}
+
 func (m *psqlCampaignRepository) GetCampaignAvailablePromo(c echo.Context, pv models.PayloadValidator) ([]*models.Campaign, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
@@ -300,7 +359,7 @@ func (m *psqlCampaignRepository) GetCampaignAvailablePromo(c echo.Context, pv mo
 		promoCode, promoCode, pv.TransactionDate, pv.TransactionDate,
 	)
 
-	res, err := m.getCampaign(c, query)
+	res, err := m.getCampaignPromo(c, query)
 
 	if err != nil {
 		requestLogger.Debug(err)

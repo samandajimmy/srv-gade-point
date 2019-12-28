@@ -94,6 +94,21 @@ type RewardsPayload struct {
 	EndSuccededDate      string `json:"endSuccededDate,omitempty"`
 }
 
+type RewardPromotions struct {
+	ID                 int64  `json:"id,omitempty"`
+	Name               string `json:"name,omitempty"`
+	Description        string `json:"description,omitempty"`
+	TermsAndConditions string `json:"termsAndConditions,omitempty"`
+	HowToUse           string `json:"howToUse,omitempty"`
+	PromoCode          string `json:"promoCode,omitempty"`
+	CustomPeriod       string `json:"customPeriod,omitempty"`
+	JournalAccount     string `json:"journalAccount,omitempty"`
+	Type               *int64 `json:"type,omitempty"`
+	CampaignID         *int64 `json:"campaign_id,omitempty"`
+	TransactionType    string `json:"transactionType"`
+	RootRefID          string `json:"-"`
+}
+
 // GetRewardTypeText to get text of reward type
 func (rwd Reward) GetRewardTypeText() string {
 	return rewardType[*rwd.Type]

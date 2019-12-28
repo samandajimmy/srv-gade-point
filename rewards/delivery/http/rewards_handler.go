@@ -31,6 +31,7 @@ func NewRewardHandler(echoGroup models.EchoGroup, us rewards.UseCase) {
 	echoGroup.API.POST("/rewards/succeeded", handler.rewardPayment)
 	echoGroup.API.POST("/rewards/rejected", handler.rewardPayment)
 	echoGroup.API.POST("/rewards/check-transaction", handler.checkTransaction)
+	echoGroup.API.POST("/reward/promotions", handler.getPromotions)
 }
 
 func (rwd *RewardHandler) multiRewardInquiry(echTx echo.Context) error {
@@ -230,6 +231,36 @@ func (rwd *RewardHandler) getRewards(echTx echo.Context) error {
 
 	response.SetResponse(responseData, respErrors)
 	logger.DataLog(echTx, response).Info("End of check rewards.")
+
+	return echTx.JSON(getStatusCode(err), response)
+}
+
+// GetCampaigns to get list of campaigns data
+func (rwd *RewardHandler) getPromotions(echTx echo.Context) error {
+	var plValidator models.PayloadValidator
+	response    = models.Response{}
+	err 	   := echTx.Bind(&plValidator)
+	respErrors := &models.ResponseErrors{}
+	logger     := models.RequestLogger{}
+	logger.DataLog(echTx, plValidator).Info("Start to get promotions.")
+
+	if err != nil {
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
+		logger.DataLog(echTx, response).Info("End get promotions.")
+
+		return echTx.JSON(http.StatusUnprocessableEntity, response)
+	}
+
+	if err = echTx.Validate(plValidator); err != nil {
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+		logger.DataLog(echTx, response).Info("End of get promotions.")
+		return echTx.JSON(http.StatusBadRequest, response)
+	}
+
+	responseData, err := rwd.RewardUseCase.GetPromotions(echTx, plValidator)
+	response.SetResponse(responseData, respErrors)
 
 	return echTx.JSON(getStatusCode(err), response)
 }

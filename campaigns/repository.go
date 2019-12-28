@@ -18,4 +18,5 @@ type Repository interface {
 	UpdateStatusBasedOnStartDate() error
 	GetCampaignAvailable(echo.Context, models.PayloadValidator) ([]*models.Campaign, error)
 	Delete(echo.Context, int64) error
+	GetCampaignAvailablePromo(echo.Context, models.PayloadValidator) ([]*models.Campaign, error)
 }

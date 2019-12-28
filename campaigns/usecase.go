@@ -13,5 +13,4 @@ type UseCase interface {
 	GetCampaignDetail(echo.Context, string) (*models.Campaign, error)
 	GetCampaign(echo.Context, map[string]interface{}) (string, []*models.Campaign, error)
 	UpdateStatusBasedOnStartDate() error
-	GetCampaignAvailable(echo.Context, models.PayloadValidator) ([]*models.Campaign, error)
 }

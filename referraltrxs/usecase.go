@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo"
 )
 
+// UseCase represent the referraltrxs usecases
 type UseCase interface {
 	GetMilestone(echo.Context, string) (*models.Milestone, error)
 }

@@ -788,29 +788,38 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 	return true, nil
 }
 
-func (rwd *rewardUseCase) GetPromotions(c echo.Context, plValidator models.PayloadValidator) ([]models.RewardPromotions, error) {
-	promotions, err := rwd.campaignRepo.GetCampaignAvailablePromo(c, plValidator)
-	var rewardData models.RewardPromotions
-	var rewardsData []models.RewardPromotions
+func (rwd *rewardUseCase) GetRewardPromotions(c echo.Context,  plValidator models.PayloadValidator) ([]*models.RewardPromotions, *models.ResponseErrors, string, error) {
+	var listPromotions []*models.RewardPromotions
+	var err error
+	var totalCount int64
+	logger := models.RequestLogger{}
+	var respErrors models.ResponseErrors
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	listPromotions, err = rwd.rewardRepo.GetRewardPromotions(c, plValidator)
 
 	if err != nil {
-		return nil, models.ErrGetRewardCounter
+		requestLogger.Debug(models.ErrGetRewardPromotions)
+
+		respErrors.SetTitle(models.ErrGetRewardPromotions.Error())
+		return nil, &respErrors, "", err
 	}
 
-	for _, promo := range promotions {
-		for _, reward := range *promo.Rewards {
-			data := rewardData
-			data.ID 				= reward.ID
-			data.Name 				= reward.Name
-			data.Description 		= reward.Description
-			data.TermsAndConditions = reward.TermsAndConditions
-			data.HowToUse 			= reward.HowToUse
-			data.PromoCode 			= reward.PromoCode
-			data.CustomPeriod 		= reward.CustomPeriod
-			data.JournalAccount 	= reward.JournalAccount
-			rewardsData = append(rewardsData, data)
-		}
+	totalCount, err = rwd.rewardRepo.CountRewardPromotions(c, plValidator)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrGetRewardPromotionsCounter)
+
+		respErrors.SetTitle(models.ErrGetRewardPromotionsCounter.Error())
+		return nil, &respErrors, "", models.ErrGetRewardPromotionsCounter
 	}
 
-	return rewardsData, err
+	if totalCount <= 0 {
+		requestLogger.Debug(models.ErrRewardPromotionsUnavailable)
+
+		respErrors.SetTitle(models.ErrRewardPromotionsUnavailable.Error())
+		return listPromotions, &respErrors, "", models.ErrRewardPromotionsUnavailable
+	}
+
+	return listPromotions, &respErrors, strconv.FormatInt(totalCount, 10), nil
 }

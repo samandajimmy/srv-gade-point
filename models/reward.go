@@ -95,18 +95,16 @@ type RewardsPayload struct {
 }
 
 type RewardPromotions struct {
-	ID                 int64  `json:"id,omitempty"`
-	Name               string `json:"name,omitempty"`
-	Description        string `json:"description,omitempty"`
-	TermsAndConditions string `json:"termsAndConditions,omitempty"`
-	HowToUse           string `json:"howToUse,omitempty"`
-	PromoCode          string `json:"promoCode,omitempty"`
-	CustomPeriod       string `json:"customPeriod,omitempty"`
-	JournalAccount     string `json:"journalAccount,omitempty"`
-	Type               *int64 `json:"type,omitempty"`
-	CampaignID         *int64 `json:"campaign_id,omitempty"`
-	TransactionType    string `json:"transactionType"`
-	RootRefID          string `json:"-"`
+	ID                   int64  `json:"id,omitempty"`
+	Name                 string `json:"name,omitempty"`
+	Description          string `json:"description,omitempty"`
+	TermsAndConditions   string `json:"termsAndConditions,omitempty"`
+	HowToUse             string `json:"howToUse,omitempty"`
+	PromoCode            string `json:"promoCode,omitempty"`
+	JournalAccount       string `json:"journalAccount,omitempty"`
+	Product              *int64 `json:"product,omitempty"`
+	TransactionType      string `json:"transactionType, omitempty"`
+	MinTransactionAmount *int64 `json:"minTransactionAmount, omitempty"`
 }
 
 // GetRewardTypeText to get text of reward type

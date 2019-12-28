@@ -15,5 +15,5 @@ type UseCase interface {
 	CheckTransaction(echo.Context, *models.RewardPayment) (models.RewardTrxResponse, error)
 	RefreshTrx()
 	GetRewards(echo.Context, *models.RewardsPayload) ([]models.Reward, string, error)
-	GetPromotions(echo.Context, models.PayloadValidator) ([]models.RewardPromotions, error)
+	GetRewardPromotions(echo.Context, models.PayloadValidator) ([]*models.RewardPromotions, *models.ResponseErrors, string, error)
 }

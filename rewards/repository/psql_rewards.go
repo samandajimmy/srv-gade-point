@@ -8,6 +8,7 @@ import (
 	"gade/srv-gade-point/quotas"
 	"gade/srv-gade-point/rewards"
 	"gade/srv-gade-point/tags"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo"
@@ -314,4 +315,125 @@ func (rwdRepo *psqlRewardRepository) GetRewards(c echo.Context, rewardPayload *m
 	}
 
 	return data, nil
+}
+
+func (rwdRepo *psqlRewardRepository) getRewardPromotions(c echo.Context, query string) ([]*models.RewardPromotions, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	result := make([]*models.RewardPromotions, 0)
+
+	rows, err := rwdRepo.Conn.Query(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		t := new(models.RewardPromotions)
+		err = rows.Scan(
+			&t.ID,
+			&t.Name,
+			&t.Description,
+			&t.TermsAndConditions,
+			&t.HowToUse,
+			&t.PromoCode,
+			&t.JournalAccount,
+			&t.Product,
+			&t.TransactionType,
+			&t.MinTransactionAmount,
+		)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		result = append(result, t)
+	}
+
+	return result, nil
+}
+
+func (rwdRepo *psqlRewardRepository) GetRewardPromotions(c echo.Context, pv models.PayloadValidator) ([]*models.RewardPromotions, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	promoCode := strings.ToLower(pv.PromoCode)
+	where := ""
+
+	query := fmt.Sprintf(`SELECT r.id, r.name, r.description, r.terms_and_conditions, r.how_to_use, 
+		r.promo_code, r.journal_account, r.validators->>'product', r.validators->>'transactionType', 
+		r.validators->>'minTransactionAmount'
+		FROM rewards r
+		LEFT JOIN campaigns c on r.campaign_id = c.id
+		LEFT JOIN reward_tags rt ON r.id = rt.reward_id
+		LEFT JOIN tags t ON rt.tag_id = t.id
+		WHERE c.status = 1 and r.is_promo_code = 1
+		AND (LOWER(r.promo_code) = '%s' OR lower(t.name) = '%s')
+		AND c.start_date::date <= '%s'
+		AND (c.end_date::date >= '%s' OR c.end_date IS null)`,
+		promoCode, promoCode, pv.TransactionDate, pv.TransactionDate,
+	)
+
+	if pv.ProductCode != "" {
+		where += " AND r.validators->>'product' = '" + pv.ProductCode + "'"
+	}
+
+	if pv.TransactionType != "" {
+		where += " AND r.validators->>'transactionType' = '" + pv.TransactionType + "'"
+	}
+
+	query += where
+	res, err := rwdRepo.getRewardPromotions(c, query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (rwdRepo *psqlRewardRepository) CountRewardPromotions(c echo.Context, pv models.PayloadValidator) (int64, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	promoCode := strings.ToLower(pv.PromoCode)
+	var count int64
+	where := ""
+
+	query := fmt.Sprintf(`SELECT COALESCE (count(r.id), 0)
+		FROM rewards r
+		LEFT JOIN campaigns c on r.campaign_id = c.id
+		LEFT JOIN reward_tags rt ON r.id = rt.reward_id
+		LEFT JOIN tags t ON rt.tag_id = t.id
+		WHERE c.status = 1 and r.is_promo_code = 1
+		AND (LOWER(r.promo_code) = '%s' OR lower(t.name) = '%s')
+		AND c.start_date::date <= '%s'
+		AND (c.end_date::date >= '%s' OR c.end_date IS null)`,
+		promoCode, promoCode, pv.TransactionDate, pv.TransactionDate,
+	)
+
+	if pv.ProductCode != "" {
+		where += " AND r.validators->>'product' = '" + pv.ProductCode + "'"
+	}
+
+	if pv.TransactionType != "" {
+		where += " AND r.validators->>'transactionType' = '" + pv.TransactionType + "'"
+	}
+
+	query += where
+	err := rwdRepo.Conn.QueryRow(query).Scan(&count)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return 0, err
+	}
+
+	return count, nil
 }

@@ -788,10 +788,9 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 	return true, nil
 }
 
-func (rwd *rewardUseCase) GetRewardPromotions(c echo.Context,  plValidator models.PayloadValidator) ([]*models.RewardPromotions, *models.ResponseErrors, string, error) {
+func (rwd *rewardUseCase) GetRewardPromotions(c echo.Context,  plValidator models.PayloadValidator) ([]*models.RewardPromotions, *models.ResponseErrors, error) {
 	var listPromotions []*models.RewardPromotions
 	var err error
-	var totalCount int64
 	logger := models.RequestLogger{}
 	var respErrors models.ResponseErrors
 	requestLogger := logger.GetRequestLogger(c, nil)
@@ -802,24 +801,8 @@ func (rwd *rewardUseCase) GetRewardPromotions(c echo.Context,  plValidator model
 		requestLogger.Debug(models.ErrGetRewardPromotions)
 
 		respErrors.SetTitle(models.ErrGetRewardPromotions.Error())
-		return nil, &respErrors, "", err
+		return nil, &respErrors, err
 	}
 
-	totalCount, err = rwd.rewardRepo.CountRewardPromotions(c, plValidator)
-
-	if err != nil {
-		requestLogger.Debug(models.ErrGetRewardPromotionsCounter)
-
-		respErrors.SetTitle(models.ErrGetRewardPromotionsCounter.Error())
-		return nil, &respErrors, "", models.ErrGetRewardPromotionsCounter
-	}
-
-	if totalCount <= 0 {
-		requestLogger.Debug(models.ErrRewardPromotionsUnavailable)
-
-		respErrors.SetTitle(models.ErrRewardPromotionsUnavailable.Error())
-		return listPromotions, &respErrors, "", models.ErrRewardPromotionsUnavailable
-	}
-
-	return listPromotions, &respErrors, strconv.FormatInt(totalCount, 10), nil
+	return listPromotions, &respErrors, nil
 }

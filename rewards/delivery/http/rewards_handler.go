@@ -264,7 +264,7 @@ func (rwd *RewardHandler) getRewardPromotions(echTx echo.Context) error {
 		return echTx.JSON(http.StatusBadRequest, response)
 	}
 
-	responseData, respErrors, totalCount, err := rwd.RewardUseCase.GetRewardPromotions(echTx, plValidator)
+	responseData, respErrors, err := rwd.RewardUseCase.GetRewardPromotions(echTx, plValidator)
 
 	if err != nil {
 		// metric monitoring error
@@ -285,7 +285,6 @@ func (rwd *RewardHandler) getRewardPromotions(echTx echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
-	response.TotalCount = totalCount
 	response.SetResponse(responseData, respErrors)
 	logger.DataLog(echTx, response).Info("End to get reward promotions for client")
 

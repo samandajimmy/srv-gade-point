@@ -579,6 +579,12 @@ func (m *psqlVoucherRepository) CountVouchers(c echo.Context, expired bool) (int
 	query := `SELECT coalesce(COUNT(distinct v.id), 0) FROM vouchers v
 		LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id
 		WHERE v.id IS NOT NULL AND v.status = 1`
+	defaultStatus := strconv.Itoa(int(models.VoucherCodeStatusBought))
+
+	if c.QueryParam("status") != "" {
+		defaultStatus = c.QueryParam("status")
+	}
+	where += " AND vc.status = " + defaultStatus
 
 	if c.QueryParam("name") != "" {
 		where += " AND v.name LIKE '%" + c.QueryParam("name") + "%'"
@@ -586,10 +592,6 @@ func (m *psqlVoucherRepository) CountVouchers(c echo.Context, expired bool) (int
 
 	if c.QueryParam("cif") != "" {
 		where += " AND vc.user_id = '" + c.QueryParam("cif") + "'"
-	}
-
-	if c.QueryParam("status") != "" {
-		where += " AND vc.status = " + c.QueryParam("status")
 	}
 
 	if c.QueryParam("startDate") != "" {

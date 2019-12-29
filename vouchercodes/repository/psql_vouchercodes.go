@@ -242,7 +242,8 @@ func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeRedeemed(c echo.Cont
 		where += "where user_id = '" + userID + "' and promo_code = '" + promoCode + "' AND"
 	}
 
-	queryUpdate += where + " status = 1 RETURNING promo_code, redeemed_date;"
+	queryUpdate += where + " (status = 1 OR status = 5) RETURNING promo_code, redeemed_date;"
+
 	stmt, err := psqlRepo.Conn.Prepare(queryUpdate)
 
 	if err != nil {

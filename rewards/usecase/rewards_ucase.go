@@ -486,6 +486,16 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 
 		rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, trxStatus)
 
+		// check if promoCode is a voucher code
+		// if yes then it should redeem the voucher code itself
+		pv := &models.PayloadValidator{PromoCode: rwdTrx.UsedPromoCode}
+		voucherCode, _, _ := rwd.voucherUC.GetVoucherCode(c, pv)
+
+		if voucherCode != nil {
+			nowStr := time.Now().Format(models.DateTimeFormat)
+			rwd.voucherCodeRepo.UpdateVoucherCodeRedeemed(c, nowStr, rwdPayment.CIF, rwdTrx.UsedPromoCode)
+		}
+
 		// check if a referral trx
 		if rwdTrx.RequestData.IsReferral() {
 			referralTrx := rwdTrx.GetReferralTrx()
@@ -788,7 +798,7 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 	return true, nil
 }
 
-func (rwd *rewardUseCase) GetRewardPromotions(c echo.Context,  rplValidator models.RewardPromotionLists) ([]*models.RewardPromotions, *models.ResponseErrors, error) {
+func (rwd *rewardUseCase) GetRewardPromotions(c echo.Context, rplValidator models.RewardPromotionLists) ([]*models.RewardPromotions, *models.ResponseErrors, error) {
 	var listPromotions []*models.RewardPromotions
 	var err error
 	logger := models.RequestLogger{}

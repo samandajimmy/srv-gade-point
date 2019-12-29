@@ -99,9 +99,6 @@ var (
 	// ErrGetVoucherCounter to get voucher counter error message
 	ErrGetVoucherCounter = errors.New("Terjadi kesalahan dalam mengambil kode perhitungan kode voucher")
 
-	// ErrGetVoucherCounter to get voucher counter error message
-	ErrGetRewardPromotionsCounter = errors.New("Terjadi kesalahan dalam mengambil kode perhitungan kode reward promotions")
-
 	// ErrRedeemVoucher to store redeem voucher error message
 	ErrRedeemVoucher = errors.New("Kode voucher tidak tersedia untuk di redeem")
 
@@ -113,9 +110,6 @@ var (
 
 	// ErrVoucherUnavailable to store voucher unavailable error message
 	ErrVoucherUnavailable = errors.New("Voucher tidak tersedia")
-
-	// ErrVoucherUnavailable to store voucher unavailable error message
-	ErrRewardPromotionsUnavailable = errors.New("Reward Promotions tidak tersedia")
 
 	// ErrBuyingVoucherExceeded to store exceeded error message
 	ErrBuyingVoucherExceeded = errors.New("Voucher tidak dapat dibeli lagi untuk hari ini")

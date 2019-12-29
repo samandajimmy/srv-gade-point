@@ -58,8 +58,6 @@ type PayloadValidator struct {
 	TransactionAmount *float64   `json:"transactionAmount,omitempty" validate:"required"`
 	VoucherID         string     `json:"voucherId,omitempty"`
 	Validators        *Validator `json:"validators,omitempty"`
-	ProductCode       string     `json:"productCode,omitempty"`
-	TransactionType   string     `json:"transactionType,omitempty"`
 }
 
 var skippedValidator = []string{"multiplier", "value", "formula", "maxValue", "unit"}

@@ -413,7 +413,8 @@ func (vchr *voucherUseCase) VoucherGive(ech echo.Context, payload *models.Payloa
 
 		return nil, models.ErrVoucherUnavailable
 	}
-
+	// create voucher codes after inquiry referral
+	// target for referrer
 	err = vchr.updateStockVoucher(ech, voucherDetail)
 
 	if err != nil {

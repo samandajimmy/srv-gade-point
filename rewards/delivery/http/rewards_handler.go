@@ -241,12 +241,12 @@ func (rwd *RewardHandler) getRewardPromotions(echTx echo.Context) error {
 	// metric monitoring
 	go services.AddMetric("get_all_vouchers")
 
-	var plValidator models.PayloadValidator
+	var rplValidator models.RewardPromotionLists
 	respErrors := &models.ResponseErrors{}
 	response = models.Response{}
 	logger := models.RequestLogger{}
-	logger.DataLog(echTx, plValidator).Info("Start to get all reward promotions for client")
-	err := echTx.Bind(&plValidator)
+	logger.DataLog(echTx, rplValidator).Info("Start to get all reward promotions for client")
+	err := echTx.Bind(&rplValidator)
 
 	if err != nil {
 		respErrors.SetTitle(models.MessageUnprocessableEntity)
@@ -256,7 +256,7 @@ func (rwd *RewardHandler) getRewardPromotions(echTx echo.Context) error {
 		return echTx.JSON(http.StatusUnprocessableEntity, response)
 	}
 
-	if err = echTx.Validate(plValidator); err != nil {
+	if err = echTx.Validate(rplValidator); err != nil {
 		respErrors.SetTitle(err.Error())
 		response.SetResponse("", respErrors)
 		logger.DataLog(echTx, response).Info("End to get reward promotions for client")
@@ -264,7 +264,7 @@ func (rwd *RewardHandler) getRewardPromotions(echTx echo.Context) error {
 		return echTx.JSON(http.StatusBadRequest, response)
 	}
 
-	responseData, respErrors, err := rwd.RewardUseCase.GetRewardPromotions(echTx, plValidator)
+	responseData, respErrors, err := rwd.RewardUseCase.GetRewardPromotions(echTx, rplValidator)
 
 	if err != nil {
 		// metric monitoring error
@@ -272,19 +272,11 @@ func (rwd *RewardHandler) getRewardPromotions(echTx echo.Context) error {
 
 		respErrors.SetTitle(err.Error())
 		response.SetResponse("", respErrors)
-		response.Status = models.StatusError
-		response.Message = err.Error()
 
 		logger.DataLog(echTx, response).Info("End to get reward promotions for client")
 		return echTx.JSON(getStatusCode(err), response)
 	}
 
-	if len(responseData) > 0 {
-		response.Data = responseData
-	}
-
-	response.Status = models.StatusSuccess
-	response.Message = models.MessagePointSuccess
 	response.SetResponse(responseData, respErrors)
 	logger.DataLog(echTx, response).Info("End to get reward promotions for client")
 

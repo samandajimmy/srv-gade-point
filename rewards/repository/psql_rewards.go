@@ -8,7 +8,6 @@ import (
 	"gade/srv-gade-point/quotas"
 	"gade/srv-gade-point/rewards"
 	"gade/srv-gade-point/tags"
-	"strings"
 	"time"
 
 	"github.com/labstack/echo"
@@ -341,7 +340,6 @@ func (rwdRepo *psqlRewardRepository) getRewardPromotions(c echo.Context, query s
 			&t.TermsAndConditions,
 			&t.HowToUse,
 			&t.PromoCode,
-			&t.JournalAccount,
 			&t.Product,
 			&t.TransactionType,
 			&t.MinTransactionAmount,
@@ -359,32 +357,27 @@ func (rwdRepo *psqlRewardRepository) getRewardPromotions(c echo.Context, query s
 	return result, nil
 }
 
-func (rwdRepo *psqlRewardRepository) GetRewardPromotions(c echo.Context, pv models.PayloadValidator) ([]*models.RewardPromotions, error) {
+func (rwdRepo *psqlRewardRepository) GetRewardPromotions(c echo.Context, pv models.RewardPromotionLists) ([]*models.RewardPromotions, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	promoCode := strings.ToLower(pv.PromoCode)
 	where := ""
 
-	query := fmt.Sprintf(`SELECT r.id, r.name, r.description, r.terms_and_conditions, r.how_to_use, 
-		r.promo_code, r.journal_account, r.validators->>'product', r.validators->>'transactionType', 
+	query := `SELECT r.id, r.name, r.description, r.terms_and_conditions, r.how_to_use, 
+		r.promo_code, r.validators->>'product', r.validators->>'transactionType', 
 		r.validators->>'minTransactionAmount'
 		FROM rewards r
 		LEFT JOIN campaigns c on r.campaign_id = c.id
-		LEFT JOIN reward_tags rt ON r.id = rt.reward_id
-		LEFT JOIN tags t ON rt.tag_id = t.id
-		WHERE c.status = 1 and r.is_promo_code = 1
-		AND (LOWER(r.promo_code) = '%s' OR lower(t.name) = '%s')
-		AND c.start_date::date <= '%s'
-		AND (c.end_date::date >= '%s' OR c.end_date IS null)`,
-		promoCode, promoCode, pv.TransactionDate, pv.TransactionDate,
-	)
+		WHERE c.status = 1
+  		AND r.is_promo_code = 1
+  		AND c.start_date::date <= now()::date
+		AND (c.end_date::date >= now()::date OR c.end_date IS null)`
 
-	if pv.ProductCode != "" {
-		where += " AND r.validators->>'product' = '" + pv.ProductCode + "'"
+	if pv.Product != "" {
+		where += " AND r.validators->>'product' LIKE '%" + pv.Product + "%'"
 	}
 
 	if pv.TransactionType != "" {
-		where += " AND r.validators->>'transactionType' = '" + pv.TransactionType + "'"
+		where += " AND r.validators->>'transactionType' LIKE '%" + pv.TransactionType + "%'"
 	}
 
 	query += where

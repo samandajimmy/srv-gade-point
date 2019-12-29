@@ -16,5 +16,5 @@ type Repository interface {
 	GetRewardTags(echo.Context, *models.Reward) (*models.Reward, error)
 	GetRewards(echo.Context, *models.RewardsPayload) ([]models.Reward, error)
 	CountRewards(echo.Context, *models.RewardsPayload) (int64, error)
-	GetRewardPromotions(echo.Context, models.PayloadValidator) ([]*models.RewardPromotions, error)
+	GetRewardPromotions(echo.Context, models.RewardPromotionLists) ([]*models.RewardPromotions, error)
 }

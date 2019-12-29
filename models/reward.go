@@ -102,10 +102,9 @@ type RewardPromotions struct {
 	TermsAndConditions   string `json:"termsAndConditions,omitempty"`
 	HowToUse             string `json:"howToUse,omitempty"`
 	PromoCode            string `json:"promoCode,omitempty"`
-	JournalAccount       string `json:"journalAccount,omitempty"`
-	Product              *int64 `json:"product,omitempty"`
-	TransactionType      string `json:"transactionType,omitempty"`
-	MinTransactionAmount *int64 `json:"minTransactionAmount,omitempty"`
+	Product              *string `json:"product,omitempty"`
+	TransactionType      *string `json:"transactionType,omitempty"`
+	MinTransactionAmount *string `json:"minTransactionAmount,omitempty"`
 }
 
 // GetRewardTypeText to get text of reward type

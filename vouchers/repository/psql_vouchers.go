@@ -313,6 +313,12 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 		FROM vouchers v
 		LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id
 		WHERE v.status = 1 AND v.end_date::date >= now()`
+	defaultStatus := strconv.Itoa(int(models.VoucherCodeStatusBought))
+	if c.QueryParam("status") != "" {
+		defaultStatus = c.QueryParam("status")
+	}
+
+	where += " AND vc.status = " + defaultStatus
 
 	if c.QueryParam("page") != "" || c.QueryParam("limit") != "" {
 		paging = fmt.Sprintf("LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
@@ -324,10 +330,6 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 
 	if c.QueryParam("cif") != "" {
 		where += " AND vc.user_id = '" + c.QueryParam("cif") + "'"
-	}
-
-	if c.QueryParam("status") != "" {
-		where += " AND vc.status = " + c.QueryParam("status")
 	}
 
 	if c.QueryParam("startDate") != "" {
@@ -347,7 +349,6 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 	}
 
 	query += where + " ORDER BY v.created_at DESC " + paging
-
 	rows, err := m.Conn.Query(query)
 
 	if err != nil {
@@ -448,7 +449,8 @@ func (m *psqlVoucherRepository) GetVoucher(c echo.Context, voucherID string) (*m
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	result := new(models.Voucher)
-	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, c.image_url, c.stock, coalesce(d.available, 0), c.terms_and_conditions, c.how_to_use, c.type, c.generator_type
+	query := `SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.point, c.image_url, c.stock, coalesce(d.available, 0), 
+	c.terms_and_conditions, c.how_to_use, c.type, c.generator_type, c.prefix_promo_code
 	FROM vouchers c LEFT JOIN(SELECT b.id, coalesce(count(a.id), 0) as available FROM voucher_codes a LEFT JOIN vouchers b ON b.id=a.voucher_id
 	WHERE a.status = 0 GROUP BY b.id) d ON d.id = c.id WHERE c.id = $1`
 
@@ -466,6 +468,7 @@ func (m *psqlVoucherRepository) GetVoucher(c echo.Context, voucherID string) (*m
 		&result.HowToUse,
 		&result.Type,
 		&result.GeneratorType,
+		&result.PrefixPromoCode,
 	)
 
 	if err != nil {

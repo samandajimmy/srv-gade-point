@@ -786,5 +786,23 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 	}
 
 	return true, nil
+}
 
+func (rwd *rewardUseCase) GetRewardPromotions(c echo.Context,  rplValidator models.RewardPromotionLists) ([]*models.RewardPromotions, *models.ResponseErrors, error) {
+	var listPromotions []*models.RewardPromotions
+	var err error
+	logger := models.RequestLogger{}
+	var respErrors models.ResponseErrors
+	requestLogger := logger.GetRequestLogger(c, nil)
+
+	listPromotions, err = rwd.rewardRepo.GetRewardPromotions(c, rplValidator)
+
+	if err != nil {
+		requestLogger.Debug(models.ErrGetRewardPromotions)
+
+		respErrors.SetTitle(models.ErrGetRewardPromotions.Error())
+		return nil, &respErrors, err
+	}
+
+	return listPromotions, &respErrors, nil
 }

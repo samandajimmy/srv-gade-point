@@ -315,3 +315,79 @@ func (rwdRepo *psqlRewardRepository) GetRewards(c echo.Context, rewardPayload *m
 
 	return data, nil
 }
+
+func (rwdRepo *psqlRewardRepository) getRewardPromotions(c echo.Context, query string) ([]*models.RewardPromotions, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	result := make([]*models.RewardPromotions, 0)
+
+	rows, err := rwdRepo.Conn.Query(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		t := new(models.RewardPromotions)
+		err = rows.Scan(
+			&t.ID,
+			&t.Name,
+			&t.Description,
+			&t.TermsAndConditions,
+			&t.HowToUse,
+			&t.PromoCode,
+			&t.Product,
+			&t.TransactionType,
+			&t.MinTransactionAmount,
+		)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		result = append(result, t)
+	}
+
+	return result, nil
+}
+
+func (rwdRepo *psqlRewardRepository) GetRewardPromotions(c echo.Context, pv models.RewardPromotionLists) ([]*models.RewardPromotions, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	where := ""
+
+	query := `SELECT r.id, r.name, r.description, r.terms_and_conditions, r.how_to_use, 
+		r.promo_code, r.validators->>'product', r.validators->>'transactionType', 
+		r.validators->>'minTransactionAmount'
+		FROM rewards r
+		LEFT JOIN campaigns c on r.campaign_id = c.id
+		WHERE c.status = 1
+  		AND r.is_promo_code = 1
+  		AND c.start_date::date <= now()::date
+		AND (c.end_date::date >= now()::date OR c.end_date IS null)`
+
+	if pv.Product != "" {
+		where += " AND r.validators->>'product' LIKE '%" + pv.Product + "%'"
+	}
+
+	if pv.TransactionType != "" {
+		where += " AND r.validators->>'transactionType' LIKE '%" + pv.TransactionType + "%'"
+	}
+
+	query += where
+	res, err := rwdRepo.getRewardPromotions(c, query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	return res, err
+}

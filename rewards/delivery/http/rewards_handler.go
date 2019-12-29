@@ -3,6 +3,7 @@ package http
 import (
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewards"
+	"gade/srv-gade-point/services"
 	"net/http"
 	"strings"
 
@@ -31,6 +32,7 @@ func NewRewardHandler(echoGroup models.EchoGroup, us rewards.UseCase) {
 	echoGroup.API.POST("/rewards/succeeded", handler.rewardPayment)
 	echoGroup.API.POST("/rewards/rejected", handler.rewardPayment)
 	echoGroup.API.POST("/rewards/check-transaction", handler.checkTransaction)
+	echoGroup.API.GET("/reward/promotions", handler.getRewardPromotions)
 }
 
 func (rwd *RewardHandler) multiRewardInquiry(echTx echo.Context) error {
@@ -230,6 +232,56 @@ func (rwd *RewardHandler) getRewards(echTx echo.Context) error {
 
 	response.SetResponse(responseData, respErrors)
 	logger.DataLog(echTx, response).Info("End of check rewards.")
+
+	return echTx.JSON(getStatusCode(err), response)
+}
+
+// getRewardPromotions Get reward promotions by param promoCode, transactionDate and transactionAmount
+func (rwd *RewardHandler) getRewardPromotions(echTx echo.Context) error {
+	// metric monitoring
+	go services.AddMetric("get_all_vouchers")
+
+	var rplValidator models.RewardPromotionLists
+	respErrors := &models.ResponseErrors{}
+	response = models.Response{}
+	logger := models.RequestLogger{}
+	logger.DataLog(echTx, rplValidator).Info("Start to get all reward promotions for client")
+	err := echTx.Bind(&rplValidator)
+
+	if err != nil {
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
+		logger.DataLog(echTx, response).Info("End to get reward promotions for client")
+
+		return echTx.JSON(http.StatusUnprocessableEntity, response)
+	}
+
+	if err = echTx.Validate(rplValidator); err != nil {
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+		logger.DataLog(echTx, response).Info("End to get reward promotions for client")
+
+		return echTx.JSON(http.StatusBadRequest, response)
+	}
+
+	responseData, respErrors, err := rwd.RewardUseCase.GetRewardPromotions(echTx, rplValidator)
+
+	if err != nil {
+		// metric monitoring error
+		go services.AddMetric("get_all_reward_promotions_error")
+
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+
+		logger.DataLog(echTx, response).Info("End to get reward promotions for client")
+		return echTx.JSON(getStatusCode(err), response)
+	}
+
+	response.SetResponse(responseData, respErrors)
+	logger.DataLog(echTx, response).Info("End to get reward promotions for client")
+
+	// metric monitoring success
+	go services.AddMetric("get_reward_promotions_success")
 
 	return echTx.JSON(getStatusCode(err), response)
 }

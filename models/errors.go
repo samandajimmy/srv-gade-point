@@ -90,6 +90,9 @@ var (
 	// ErrGetVouchers to get vouchers error message
 	ErrGetVouchers = errors.New("Terjadi kesalahan dalam mengambil voucher")
 
+	// ErrGetVouchers to get vouchers error message
+	ErrGetRewardPromotions = errors.New("Terjadi kesalahan dalam mengambil reward promotions")
+
 	// ErrGetVoucherCodes to get vouchers error message
 	ErrGetVoucherCodes = errors.New("Terjadi kesalahan dalam mengambil kode voucher")
 

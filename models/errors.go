@@ -264,6 +264,9 @@ var (
 	// ErrMilestone to not found ref_trx error message
 	ErrMilestone = errors.New("Data milestone tidak ditemukan")
 
+	// ErrRanking to not found ref_trx error message
+	ErrRanking = errors.New("Data ranking tidak ditemukan")
+
 	// ErrCIF to not found data cif
 	ErrCIF = errors.New("CIF tidak ditemukan")
 )

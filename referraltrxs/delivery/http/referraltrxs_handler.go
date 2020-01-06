@@ -25,6 +25,7 @@ func NewReferralTrxHandler(echoGroup models.EchoGroup, us referraltrxs.UseCase) 
 
 	// End Point For External
 	echoGroup.API.GET("/milestone/:cif", handler.getMilestone)
+	echoGroup.API.GET("/ranking", handler.getRanking)
 }
 
 func (rfr *ReferralTrxHandler) getMilestone(c echo.Context) error {
@@ -54,6 +55,59 @@ func (rfr *ReferralTrxHandler) getMilestone(c echo.Context) error {
 	requestLogger.Info("End of get milestone.")
 	// metric monitoring
 	go services.AddMetric("get_milestone_success")
+
+	return c.JSON(getStatusCode(err), response)
+}
+
+func (rfr *ReferralTrxHandler) getRanking(c echo.Context) error {
+	// metric monitoring
+	go services.AddMetric("get_all_vouchers")
+
+	var pl models.RankingPayload
+	respErrors := &models.ResponseErrors{}
+	response = models.Response{}
+	logger := models.RequestLogger{}
+	logger.DataLog(c, pl).Info("Start to get all ranking for client")
+	err := c.Bind(&pl)
+
+	if err != nil {
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
+		logger.DataLog(c, response).Info("End to get all ranking for client")
+
+		return c.JSON(http.StatusUnprocessableEntity, response)
+	}
+
+	if err = c.Validate(pl); err != nil {
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+		logger.DataLog(c, response).Info("End to get all ranking for client")
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	responseData, err := rfr.ReferralTrxUseCase.GetRanking(c, pl)
+
+	if err != nil {
+		// metric monitoring error
+		go services.AddMetric("get_all_ranking_error")
+
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+		response.Status = models.StatusError
+		response.Message = err.Error()
+
+		logger.DataLog(c, response).Info("End to get all ranking for client")
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MessagePointSuccess
+	response.SetResponse(responseData, respErrors)
+	logger.DataLog(c, response).Info("End to get all ranking for client")
+
+	// metric monitoring success
+	go services.AddMetric("get_all_ranking_success")
 
 	return c.JSON(getStatusCode(err), response)
 }

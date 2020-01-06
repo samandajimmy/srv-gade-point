@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referraltrxs"
 	"time"
@@ -93,6 +94,97 @@ func (refTrxRepo *psqlReferralTrxRepository) GetMilestone(c echo.Context, CIF in
 	err := refTrxRepo.Conn.QueryRow(query, CIF).Scan(
 		&result.TotalRewardCounter,
 		&result.TotalReward,
+	)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, referralCode string) ([]models.Ranking, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	isInRanking := false
+	query := fmt.Sprint(`select topTen.*
+			from (select used_referral_code as referral_code,
+            count(used_referral_code) as total,
+            row_number() over (order by count(used_referral_code) desc) as rank
+			from referral_transactions
+			where type = '1'
+			group by used_referral_code
+			order by total desc
+			limit 10
+			offset
+			0) as topTen`)
+
+	rows, err := refTrxRepo.Conn.Query(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	defer rows.Close()
+	var result []models.Ranking
+	for rows.Next() {
+		var ranking models.Ranking
+		err = rows.Scan(
+			&ranking.ReferralCode,
+			&ranking.TotalUsed,
+			&ranking.NoRanking,
+		)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		if referralCode == ranking.ReferralCode {
+			isInRanking = true
+		}
+
+		result = append(result, ranking)
+	}
+
+	if !isInRanking {
+		ranking, err := refTrxRepo.GetRankingByCif(c, referralCode)
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+		result = append(result, *ranking)
+	}
+
+	return result, nil
+}
+
+func (refTrxRepo *psqlReferralTrxRepository) GetRankingByCif(c echo.Context, referralCode string) (*models.Ranking, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	result := new(models.Ranking)
+	query := `select topTen.*
+			from (select used_referral_code,
+			count(used_referral_code) as total,
+			row_number() over (order by count(used_referral_code) desc) as URUT
+      		from referral_transactions
+      		where type = '1'
+      		group by used_referral_code
+      		order by total desc
+      		limit 10
+      		offset 0) as topTen
+			where topTen.used_referral_code = $1`
+
+	err := refTrxRepo.Conn.QueryRow(query, referralCode).Scan(
+		&result.ReferralCode,
+		&result.TotalUsed,
+		&result.NoRanking,
 	)
 
 	if err != nil {

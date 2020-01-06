@@ -312,7 +312,7 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 		vc.promo_code, v.terms_and_conditions, v.how_to_use, v.type, v.created_at
 		FROM vouchers v
 		LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id
-		WHERE v.status = 1 AND v.end_date::date >= now()`)
+		WHERE v.status = 1 AND v.end_date::date >= now()`
 
 	defaultStatus := strconv.Itoa(int(models.VoucherCodeStatusBought))
 	if c.QueryParam("status") != "" {

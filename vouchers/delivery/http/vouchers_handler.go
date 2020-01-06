@@ -35,6 +35,7 @@ func NewVouchersHandler(echoGroup models.EchoGroup, us vouchers.UseCase) {
 
 	// End Point For External
 	echoGroup.API.GET("/vouchers", handler.GetVouchers)
+	echoGroup.API.GET("/vouchers/history", handler.GetHistoryVouchers)
 	echoGroup.API.GET("/hidden/vouchers/:id", handler.GetVoucher)
 	echoGroup.API.POST("/hidden/vouchers/buy", handler.VoucherBuy)
 	echoGroup.API.POST("/hidden/vouchers/redeem", handler.VoucherRedeem)
@@ -378,7 +379,7 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, response)
 	}
 
-	responseData, respErrors, totalCount, err := vchr.VoucherUseCase.GetVouchers(c)
+	responseData, respErrors, err := vchr.VoucherUseCase.GetVouchers(c)
 
 	if err != nil {
 		// metric monitoring error
@@ -393,18 +394,60 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	if len(responseData) > 0 {
-		response.Data = responseData
-	}
-
-	response.Status = models.StatusSuccess
-	response.Message = models.MessagePointSuccess
-	response.TotalCount = totalCount
 	response.SetResponse(responseData, respErrors)
 	logger.DataLog(c, response).Info("End to get all voucher for client")
 
 	// metric monitoring success
 	go services.AddMetric("get_all_vouchers_success")
+
+	return c.JSON(getStatusCode(err), response)
+}
+// GetVouchers Get all history vouchers by param name, start date and end date
+func (vchr *VouchersHandler) GetHistoryVouchers(c echo.Context) error {
+	// metric monitoring
+	go services.AddMetric("get_all_history_vouchers")
+
+	var pl models.PayloadList
+	respErrors := &models.ResponseErrors{}
+	response = models.Response{}
+	logger := models.RequestLogger{}
+	logger.DataLog(c, pl).Info("Start to get all history voucher for client")
+	err := c.Bind(&pl)
+
+	if err != nil {
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
+		logger.DataLog(c, response).Info("End to get all history voucher for client")
+
+		return c.JSON(http.StatusUnprocessableEntity, response)
+	}
+
+	if err = c.Validate(pl); err != nil {
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+		logger.DataLog(c, response).Info("End to get all history voucher for client")
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	// Get Voucher History with CIF
+	responseData, respErrors, err := vchr.VoucherUseCase.GetHistoryVouchers(c)
+
+	if err != nil {
+		// metric monitoring error
+		go services.AddMetric("get_all_history_vouchers_error")
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+		logger.DataLog(c, response).Info("End to get all history voucher for client")
+
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	response.SetResponse(responseData, respErrors)
+	logger.DataLog(c, response).Info("End to get all history voucher for client")
+
+	// metric monitoring success
+	go services.AddMetric("get_all_history_vouchers_success")
 
 	return c.JSON(getStatusCode(err), response)
 }

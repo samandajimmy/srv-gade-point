@@ -402,7 +402,7 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 
 	return c.JSON(getStatusCode(err), response)
 }
-
+// GetVouchers Get all history vouchers by param name, start date and end date
 func (vchr *VouchersHandler) GetHistoryVouchers(c echo.Context) error {
 	// metric monitoring
 	go services.AddMetric("get_all_history_vouchers")

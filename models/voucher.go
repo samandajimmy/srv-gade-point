@@ -21,6 +21,7 @@ var (
 	VoucherTypeVoucher int64 = 4
 )
 
+// ListVoucher is parent represent a vouchers model
 type ListVoucher struct {
 	Vouchers   []*Voucher `json:"listVoucher,omitempty"`
 	TotalCount string     `json:"totalCount,omitempty"`

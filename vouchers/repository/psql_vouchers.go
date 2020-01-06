@@ -307,18 +307,19 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 	limit, _ := strconv.Atoi(c.QueryParam("limit"))
 	paging := ""
 	where := ""
-	query := `SELECT distinct v.id, v.name, v.description, v.start_date, v.end_date, v.point,
+	query := fmt.Sprint(`SELECT distinct v.id, v.name, v.description, v.start_date, v.end_date, v.point,
 		v.image_url, v.stock, v.validators->>'product', v.validators->>'transactionType', v.validators->>'minLoanAmount', 
 		vc.promo_code, v.terms_and_conditions, v.how_to_use, v.type, v.created_at
 		FROM vouchers v
 		LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id
-		WHERE v.status = 1 AND v.end_date::date >= now()`
+		WHERE v.status = 1 AND v.end_date::date >= now()`)
+
 	defaultStatus := strconv.Itoa(int(models.VoucherCodeStatusBought))
 	if c.QueryParam("status") != "" {
 		defaultStatus = c.QueryParam("status")
 	}
 
-	where += " AND vc.status = " + defaultStatus
+	where += " AND vc.status IN (" + defaultStatus + ", 5)"
 
 	if c.QueryParam("page") != "" || c.QueryParam("limit") != "" {
 		paging = fmt.Sprintf("LIMIT %d OFFSET %d", limit, ((page - 1) * limit))

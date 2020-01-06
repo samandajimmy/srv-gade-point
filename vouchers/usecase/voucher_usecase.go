@@ -231,7 +231,7 @@ func (vchr *voucherUseCase) GetVouchers(c echo.Context) ([]*models.Voucher, *mod
 	var respErrors models.ResponseErrors
 	requestLogger := logger.GetRequestLogger(c, nil)
 
-	listVoucher, err = vchr.voucherRepo.GetVouchers(c)
+	listVoucher, err = vchr.voucherRepo.GetHistoryVouchers(c)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrGetVouchers)
@@ -240,7 +240,7 @@ func (vchr *voucherUseCase) GetVouchers(c echo.Context) ([]*models.Voucher, *mod
 		return nil, &respErrors, "", err
 	}
 
-	totalCount, err = vchr.voucherRepo.CountVouchers(c, true)
+	totalCount, err = vchr.voucherRepo.CountHistoryVouchers(c, true)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrGetVoucherCounter)

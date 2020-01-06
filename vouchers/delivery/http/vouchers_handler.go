@@ -430,18 +430,16 @@ func (vchr *VouchersHandler) GetHistoryVouchers(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, response)
 	}
 
+	// Get Voucher History with CIF
 	responseData, respErrors, err := vchr.VoucherUseCase.GetHistoryVouchers(c)
 
 	if err != nil {
 		// metric monitoring error
 		go services.AddMetric("get_all_history_vouchers_error")
-
 		respErrors.SetTitle(err.Error())
 		response.SetResponse("", respErrors)
-		response.Status = models.StatusError
-		response.Message = err.Error()
-
 		logger.DataLog(c, response).Info("End to get all history voucher for client")
+
 		return c.JSON(getStatusCode(err), response)
 	}
 

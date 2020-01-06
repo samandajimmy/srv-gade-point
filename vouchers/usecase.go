@@ -14,7 +14,7 @@ type UseCase interface {
 	UploadVoucherImages(echo.Context, *multipart.FileHeader) (string, error)
 	GetVouchersAdmin(echo.Context, map[string]interface{}) ([]*models.Voucher, string, error)
 	GetVoucherAdmin(echo.Context, string) (*models.Voucher, error)
-	GetVouchers(echo.Context) ([]*models.Voucher, *models.ResponseErrors, string, error)
+	GetVouchers(echo.Context) (models.ListVoucher, *models.ResponseErrors, error)
 	GetVoucher(echo.Context, string) (*models.Voucher, error)
 	VoucherBuy(echo.Context, *models.PayloadVoucherBuy) (*models.VoucherCode, error)
 	VoucherGive(echo.Context, *models.PayloadVoucherBuy) (*models.VoucherCode, error)
@@ -23,4 +23,5 @@ type UseCase interface {
 	VoucherRedeem(echo.Context, *models.PayloadValidator) (*models.VoucherCode, error)
 	GetVoucherCode(echo.Context, *models.PayloadValidator) (*models.VoucherCode, string, error)
 	UpdateStatusBasedOnStartDate() error
+	GetHistoryVouchers(c echo.Context) (models.ListVoucher, *models.ResponseErrors, error)
 }

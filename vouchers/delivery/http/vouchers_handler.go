@@ -379,7 +379,7 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, response)
 	}
 
-	responseData, respErrors, totalCount, err := vchr.VoucherUseCase.GetVouchers(c)
+	responseData, respErrors, err := vchr.VoucherUseCase.GetVouchers(c)
 
 	if err != nil {
 		// metric monitoring error
@@ -394,13 +394,6 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	if len(responseData) > 0 {
-		response.Data = responseData
-	}
-
-	response.Status = models.StatusSuccess
-	response.Message = models.MessagePointSuccess
-	response.TotalCount = totalCount
 	response.SetResponse(responseData, respErrors)
 	logger.DataLog(c, response).Info("End to get all voucher for client")
 
@@ -437,7 +430,7 @@ func (vchr *VouchersHandler) GetHistoryVouchers(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, response)
 	}
 
-	responseData, respErrors, totalCount, err := vchr.VoucherUseCase.GetVouchers(c)
+	responseData, respErrors, err := vchr.VoucherUseCase.GetHistoryVouchers(c)
 
 	if err != nil {
 		// metric monitoring error
@@ -452,13 +445,6 @@ func (vchr *VouchersHandler) GetHistoryVouchers(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	if len(responseData) > 0 {
-		response.Data = responseData
-	}
-
-	response.Status = models.StatusSuccess
-	response.Message = models.MessagePointSuccess
-	response.TotalCount = totalCount
 	response.SetResponse(responseData, respErrors)
 	logger.DataLog(c, response).Info("End to get all history voucher for client")
 

@@ -21,6 +21,11 @@ var (
 	VoucherTypeVoucher int64 = 4
 )
 
+type ListVoucher struct {
+	Vouchers   []*Voucher `json:"listVoucher,omitempty"`
+	TotalCount string     `json:"totalCount,omitempty"`
+}
+
 // Voucher is represent a vouchers model
 type Voucher struct {
 	ID                 int64      `json:"id,omitempty"`

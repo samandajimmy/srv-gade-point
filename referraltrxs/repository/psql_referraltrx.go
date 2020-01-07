@@ -110,15 +110,14 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, referral
 	isInRanking := false
 	query := `select topTen.*
 		from (select used_referral_code as referral_code,
-        count(used_referral_code) as total,
-        row_number() over (order by count(used_referral_code) desc) as rank
+		count(used_referral_code) as total,
+		row_number() over (order by count(used_referral_code) desc) as rank
 		from referral_transactions
 		where type = '1' AND created_at >= date_trunc('month', CURRENT_DATE)
 		group by used_referral_code
 		order by total desc
 		limit 10
-		offset
-		0) as topTen`
+		offset 0) as topTen`
 
 	rows, err := refTrxRepo.Conn.Query(query)
 

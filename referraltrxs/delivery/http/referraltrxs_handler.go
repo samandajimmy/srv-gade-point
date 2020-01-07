@@ -30,9 +30,6 @@ func NewReferralTrxHandler(echoGroup models.EchoGroup, us referraltrxs.UseCase) 
 
 // GetMilestone a handler to get milestone
 func (rfr *ReferralTrxHandler) getMilestone(c echo.Context) error {
-	// metric monitoring
-	go services.AddMetric("get_milestone")
-
 	var pl models.MilestonePayload
 
 	respErrors := &models.ResponseErrors{}
@@ -62,9 +59,6 @@ func (rfr *ReferralTrxHandler) getMilestone(c echo.Context) error {
 	responseData, err := rfr.ReferralTrxUseCase.GetMilestone(c, pl)
 
 	if err != nil {
-		// metric monitoring error
-		go services.AddMetric("get_all_ranking_error")
-
 		respErrors.SetTitle(err.Error())
 		response.SetResponse("", respErrors)
 
@@ -74,9 +68,6 @@ func (rfr *ReferralTrxHandler) getMilestone(c echo.Context) error {
 
 	response.SetResponse(responseData, respErrors)
 	requestLogger.Info("End of get milestone.")
-
-	// metric monitoring
-	go services.AddMetric("get_milestone_success")
 
 	return c.JSON(getStatusCode(err), response)
 }

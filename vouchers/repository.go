@@ -27,4 +27,6 @@ type Repository interface {
 	UpdateExpiryDate(echo.Context) error
 	UpdateStatusBasedOnStartDate() error
 	CountBoughtVoucher(echo.Context, string, string) (int64, error)
+	CountHistoryVouchers(c echo.Context, expired bool) (int, error)
+	GetHistoryVouchers(c echo.Context) ([]*models.Voucher, error)
 }

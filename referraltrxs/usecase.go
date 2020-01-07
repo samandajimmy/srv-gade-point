@@ -9,4 +9,5 @@ import (
 // UseCase represent the referraltrxs usecases
 type UseCase interface {
 	GetMilestone(echo.Context, string) (*models.Milestone, error)
+	GetRanking(echo.Context, models.RankingPayload) ([]models.Ranking, error)
 }

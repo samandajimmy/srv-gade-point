@@ -39,3 +39,15 @@ type Milestone struct {
 	TotalRewardCounter int64 `json:"totalRewardCounter,omitempty"`
 	TotalReward        int64 `json:"totalReward,omitempty"`
 }
+
+// Ranking is represent a referral_transactions model
+type Ranking struct {
+	NoRanking string `json:"noRanking,omitempty"`
+	ReferralCode  string `json:"referralCode,omitempty"`
+	TotalUsed string `json:"totalUsed,omitempty"`
+}
+
+// RankingPayload is represent a referral_transactions model
+type RankingPayload struct {
+	ReferralCode  string `json:"referralCode,omitempty"`
+}

@@ -94,15 +94,11 @@ func (rfr *ReferralTrxHandler) getRanking(c echo.Context) error {
 
 		respErrors.SetTitle(err.Error())
 		response.SetResponse("", respErrors)
-		response.Status = models.StatusError
-		response.Message = err.Error()
 
 		logger.DataLog(c, response).Info("End to get all ranking for client")
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	response.Status = models.StatusSuccess
-	response.Message = models.MessagePointSuccess
 	response.SetResponse(responseData, respErrors)
 	logger.DataLog(c, response).Info("End to get all ranking for client")
 

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referraltrxs"
 	"time"
@@ -109,17 +108,17 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, referral
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	isInRanking := false
-	query := fmt.Sprint(`select topTen.*
-			from (select used_referral_code as referral_code,
-            count(used_referral_code) as total,
-            row_number() over (order by count(used_referral_code) desc) as rank
-			from referral_transactions
-			where type = '1'
-			group by used_referral_code
-			order by total desc
-			limit 10
-			offset
-			0) as topTen`)
+	query := `select topTen.*
+		from (select used_referral_code as referral_code,
+        count(used_referral_code) as total,
+        row_number() over (order by count(used_referral_code) desc) as rank
+		from referral_transactions
+		where type = '1' AND created_at >= date_trunc('month', CURRENT_DATE)
+		group by used_referral_code
+		order by total desc
+		limit 10
+		offset
+		0) as topTen`
 
 	rows, err := refTrxRepo.Conn.Query(query)
 
@@ -169,17 +168,17 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRankingByCif(c echo.Context, ref
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	result := new(models.Ranking)
-	query := `select topTen.*
-			from (select used_referral_code,
-			count(used_referral_code) as total,
-			row_number() over (order by count(used_referral_code) desc) as URUT
-      		from referral_transactions
-      		where type = '1'
-      		group by used_referral_code
-      		order by total desc
-      		limit 10
-      		offset 0) as topTen
-			where topTen.used_referral_code = $1`
+	query := `select topTen.* 
+		from (select used_referral_code,
+		count(used_referral_code) as total,
+		row_number() over (order by count(used_referral_code) desc) as URUT
+		from referral_transactions
+		where type = '1' AND AND created_at >= date_trunc('month', CURRENT_DATE)
+		group by used_referral_code
+		order by total desc
+		limit 10
+		offset 0) as topTen
+		where topTen.used_referral_code = $1`
 
 	err := refTrxRepo.Conn.QueryRow(query, referralCode).Scan(
 		&result.ReferralCode,

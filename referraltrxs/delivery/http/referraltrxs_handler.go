@@ -28,6 +28,7 @@ func NewReferralTrxHandler(echoGroup models.EchoGroup, us referraltrxs.UseCase) 
 	echoGroup.API.GET("/ranking", handler.getRanking)
 }
 
+// GetMilestone a handler to get milestone
 func (rfr *ReferralTrxHandler) getMilestone(c echo.Context) error {
 	respErrors := &models.ResponseErrors{}
 	response    = models.Response{}
@@ -59,6 +60,7 @@ func (rfr *ReferralTrxHandler) getMilestone(c echo.Context) error {
 	return c.JSON(getStatusCode(err), response)
 }
 
+// GetRanking a handler to get ranking
 func (rfr *ReferralTrxHandler) getRanking(c echo.Context) error {
 	// metric monitoring
 	go services.AddMetric("get_all_vouchers")

@@ -19,18 +19,18 @@ func NewReferralTrxUseCase(referralTrxRepo referraltrxs.Repository) referraltrxs
 	}
 }
 
-func (rfr *referralTrxUseCase) GetMilestone(c echo.Context, CIF string) (*models.Milestone, error) {
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-	cif, err := strconv.Atoi(CIF)
+func (rfr *referralTrxUseCase) GetMilestone(c echo.Context, pl models.MilestonePayload) (*models.Milestone, error) {
+	logger 		   := models.RequestLogger{}
+	requestLogger  := logger.GetRequestLogger(c, nil)
+	milestone, err := rfr.referralTrxRepo.GetMilestone(c, pl.CIF)
 
 	if err != nil {
-		requestLogger.Debug(err)
+		requestLogger.Debug(models.ErrMilestone)
 
-		return nil, models.ErrCIF
+		return nil, models.ErrMilestone
 	}
 
-	milestone, err := rfr.referralTrxRepo.GetMilestone(c, int64(cif))
+	ranking, err := rfr.referralTrxRepo.GetRankingByReferralCode(c, pl.ReferralCode)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrMilestone)
@@ -43,6 +43,7 @@ func (rfr *referralTrxUseCase) GetMilestone(c echo.Context, CIF string) (*models
 	milestone.Stages, _ = strconv.ParseInt(stage, 10, 64)
 	milestone.LimitRewardCounter, _ = strconv.ParseInt(limitRewardCounter, 10, 64)
 	milestone.LimitReward = milestone.Stages * milestone.LimitRewardCounter
+	milestone.Ranking = *ranking
 
 	return milestone, nil
 }

@@ -81,7 +81,7 @@ func (refTrxRepo *psqlReferralTrxRepository) Create(c echo.Context, refTrx model
 	return nil
 }
 
-func (refTrxRepo *psqlReferralTrxRepository) GetMilestone(c echo.Context, CIF int64) (*models.Milestone, error) {
+func (refTrxRepo *psqlReferralTrxRepository) GetMilestone(c echo.Context, CIF *int64) (*models.Milestone, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	result := new(models.Milestone)
@@ -151,7 +151,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, referral
 	}
 
 	if !isInRanking {
-		ranking, err := refTrxRepo.GetRankingByCif(c, referralCode)
+		ranking, err := refTrxRepo.GetRankingByReferralCode(c, referralCode)
 		if err != nil {
 			requestLogger.Debug(err)
 
@@ -163,7 +163,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, referral
 	return result, nil
 }
 
-func (refTrxRepo *psqlReferralTrxRepository) GetRankingByCif(c echo.Context, referralCode string) (*models.Ranking, error) {
+func (refTrxRepo *psqlReferralTrxRepository) GetRankingByReferralCode(c echo.Context, referralCode string) (*models.Ranking, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	result := new(models.Ranking)
@@ -172,7 +172,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRankingByCif(c echo.Context, ref
 		count(used_referral_code) as total,
 		row_number() over (order by count(used_referral_code) desc) as URUT
 		from referral_transactions
-		where type = '1' AND AND created_at >= date_trunc('month', CURRENT_DATE)
+		where type = '1' AND created_at >= date_trunc('month', CURRENT_DATE)
 		group by used_referral_code
 		order by total desc
 		limit 10
@@ -185,7 +185,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRankingByCif(c echo.Context, ref
 		&result.NoRanking,
 	)
 
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		requestLogger.Debug(err)
 
 		return nil, err

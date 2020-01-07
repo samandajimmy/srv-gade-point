@@ -63,7 +63,7 @@ func (rfr *ReferralTrxHandler) getMilestone(c echo.Context) error {
 // GetRanking a handler to get ranking
 func (rfr *ReferralTrxHandler) getRanking(c echo.Context) error {
 	// metric monitoring
-	go services.AddMetric("get_all_vouchers")
+	go services.AddMetric("get_all_ranking")
 
 	var pl models.RankingPayload
 	respErrors := &models.ResponseErrors{}

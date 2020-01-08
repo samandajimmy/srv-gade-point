@@ -33,21 +33,28 @@ type ReferralTrx struct {
 
 // Milestone is represent a referral_transactions model
 type Milestone struct {
-	Stages             int64 `json:"stage,omitempty"`
-	LimitRewardCounter int64 `json:"limitRewardCounter,omitempty"`
-	LimitReward        int64 `json:"limitReward,omitempty"`
-	TotalRewardCounter int64 `json:"totalRewardCounter,omitempty"`
-	TotalReward        int64 `json:"totalReward,omitempty"`
+	Stages             int64   `json:"stage,omitempty"`
+	LimitRewardCounter int64   `json:"limitRewardCounter,omitempty"`
+	LimitReward        int64   `json:"limitReward,omitempty"`
+	TotalRewardCounter int64   `json:"totalRewardCounter,omitempty"`
+	TotalReward        int64   `json:"totalReward,omitempty"`
+	Ranking            Ranking `json:"ranking,omitempty"`
+}
+
+// MilestonePayload is represent a referral_transactions model
+type MilestonePayload struct {
+	CIF          *int64 `json:"cif,omitempty"`
+	ReferralCode string `json:"referralCode,omitempty"`
 }
 
 // Ranking is represent a referral_transactions model
 type Ranking struct {
-	NoRanking string `json:"noRanking,omitempty"`
-	ReferralCode  string `json:"referralCode,omitempty"`
-	TotalUsed string `json:"totalUsed,omitempty"`
+	NoRanking    string `json:"noRanking,omitempty"`
+	ReferralCode string `json:"referralCode,omitempty"`
+	TotalUsed    string `json:"totalUsed,omitempty"`
 }
 
 // RankingPayload is represent a referral_transactions model
 type RankingPayload struct {
-	ReferralCode  string `json:"referralCode,omitempty"`
+	ReferralCode string `json:"referralCode,omitempty"`
 }

@@ -22,7 +22,7 @@ func NewReferralTrxUseCase(referralTrxRepo referraltrxs.Repository) referraltrxs
 func (rfr *referralTrxUseCase) GetMilestone(c echo.Context, pl models.MilestonePayload) (*models.Milestone, error) {
 	logger 		   := models.RequestLogger{}
 	requestLogger  := logger.GetRequestLogger(c, nil)
-	milestone, err := rfr.referralTrxRepo.GetMilestone(c, pl.CIF)
+	milestone, err := rfr.referralTrxRepo.GetMilestone(c, pl)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrMilestone)

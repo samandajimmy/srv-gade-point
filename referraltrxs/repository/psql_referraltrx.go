@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referraltrxs"
 	"time"
@@ -81,16 +82,16 @@ func (refTrxRepo *psqlReferralTrxRepository) Create(c echo.Context, refTrx model
 	return nil
 }
 
-func (refTrxRepo *psqlReferralTrxRepository) GetMilestone(c echo.Context, CIF *int64) (*models.Milestone, error) {
+func (refTrxRepo *psqlReferralTrxRepository) GetMilestone(c echo.Context, payload models.MilestonePayload) (*models.Milestone, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	result := new(models.Milestone)
 
-	query := `SELECT count(r.id) as totalRewardCounter, sum(r.reward_referral) AS totalReward
+	query := fmt.Sprintf(`SELECT count(r.id) as totalRewardCounter, sum(r.reward_referral) AS totalReward
 			  FROM referral_transactions r
-			  WHERE cif = $1 and type = 1`
+			  WHERE used_referral_code = '%s' and cif != '%s' and type = 1 `, payload.ReferralCode, payload.CIF)
 
-	err := refTrxRepo.Conn.QueryRow(query, CIF).Scan(
+	err := refTrxRepo.Conn.QueryRow(query).Scan(
 		&result.TotalRewardCounter,
 		&result.TotalReward,
 	)

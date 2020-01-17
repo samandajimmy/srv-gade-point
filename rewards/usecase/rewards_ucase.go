@@ -499,6 +499,7 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 		// check if a referral trx
 		if rwdTrx.RequestData.IsReferral() {
 			referralTrx := rwdTrx.GetReferralTrx()
+			referralTrx.CIF = rwdPayment.CIF
 
 			_ = rwd.referralTrxRepo.Create(c, referralTrx)
 		}

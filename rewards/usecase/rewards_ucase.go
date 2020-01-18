@@ -784,10 +784,6 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 
 	totalGoldback, err := rwd.referralTrxRepo.GetTotalGoldbackReferrer(c, modelsRefTrx)
 
-	fmt.Println("cacing")
-	fmt.Println(int(totalGoldback))
-	fmt.Println("cacing")
-
 	if err != nil {
 		requestLogger.Debug(err)
 

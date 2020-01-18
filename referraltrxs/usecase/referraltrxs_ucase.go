@@ -45,6 +45,11 @@ func (rfr *referralTrxUseCase) GetMilestone(c echo.Context, pl models.MilestoneP
 	milestone.LimitReward = milestone.Stages * milestone.LimitRewardCounter
 	milestone.Ranking = *ranking
 
+	if milestone.TotalRewardCounter > milestone.LimitRewardCounter {
+		milestone.TotalRewardCounter = milestone.LimitRewardCounter
+		milestone.TotalReward = milestone.LimitRewardCounter * milestone.LimitReward
+	}
+
 	return milestone, nil
 }
 

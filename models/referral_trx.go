@@ -43,7 +43,6 @@ type Milestone struct {
 
 // MilestonePayload is represent a referral_transactions model
 type MilestonePayload struct {
-	CIF          string `json:"cif,omitempty" validate:"required"`
 	ReferralCode string `json:"referralCode,omitempty" validate:"required"`
 }
 

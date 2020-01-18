@@ -10,8 +10,8 @@ import (
 type Repository interface {
 	Create(echo.Context, models.ReferralTrx) error
 	GetMilestone(echo.Context, models.MilestonePayload) (*models.Milestone, error)
-	CheckReferralTrxByExistingReferrer(c echo.Context, refTrx models.ReferralTrx) (int64, error)
-	CheckReferralTrxByValueRewards(c echo.Context, refTrx models.ReferralTrx) (*models.ReferralTrx, error)
+	IsReferralTrxExist(c echo.Context, refTrx models.ReferralTrx) (int64, error)
+	GetTotalGoldbackReferrer(c echo.Context, refTrx models.ReferralTrx) (float64, error)
 	GetRanking(echo.Context, string) ([]models.Ranking, error)
 	GetRankingByReferralCode(echo.Context, string) (*models.Ranking, error)
 }

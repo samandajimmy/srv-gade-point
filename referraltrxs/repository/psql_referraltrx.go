@@ -89,7 +89,8 @@ func (refTrxRepo *psqlReferralTrxRepository) GetMilestone(c echo.Context, payloa
 
 	query := fmt.Sprintf(`SELECT count(r.id) as totalRewardCounter, sum(r.reward_referral) AS totalReward
 			  FROM referral_transactions r
-			  WHERE used_referral_code = '%s' and type = 1 `, payload.ReferralCode)
+			  WHERE used_referral_code = '%s' and type = '%d'`,
+			  payload.ReferralCode, models.ReferralType[models.CampaignCodeReferrer])
 
 	err := refTrxRepo.Conn.QueryRow(query).Scan(
 		&result.TotalRewardCounter,

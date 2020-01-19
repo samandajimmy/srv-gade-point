@@ -273,8 +273,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	isValidate, err := rwd.validateReferralInq(c, plValidator, &respErrors)
 
 	if err != nil {
-		requestLogger.Debug(err)
-		respErrors.AddError(err.Error())
+		respErrors.SetTitle(err.Error())
 
 		return rwdInquiry, &respErrors
 	}
@@ -755,20 +754,23 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 
 	// Value Reward CGC From GETENV
 	rewardValue, err := strconv.Atoi(os.Getenv(`STAGE`))
+
 	if err != nil {
 		requestLogger.Debug(err)
 
 		return false, err
 	}
+
 	// Limit Reward Counter Milestone From GETENV
 	limitRewardCounter, err := strconv.Atoi(os.Getenv(`LIMIT_REWARD_COUNTER`))
+
 	if err != nil {
 		requestLogger.Debug(err)
 
 		return false, err
 	}
 
-	countReftrx, err := rwd.referralTrxRepo.CheckReferralTrxByExistingReferrer(c, modelsRefTrx)
+	countReftrx, err := rwd.referralTrxRepo.IsReferralTrxExist(c, modelsRefTrx)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -777,12 +779,10 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 	}
 
 	if countReftrx > 0 {
-		requestLogger.Debug(models.ErrValidateGetReferral)
-		respErrors.SetTitle("CIF Referrer " + payload.Referrer + " pernah digunakan!")
-		return false, err
+		return false, models.ErrValidateGetReferral
 	}
 
-	refTrx, err := rwd.referralTrxRepo.CheckReferralTrxByValueRewards(c, modelsRefTrx)
+	totalGoldback, err := rwd.referralTrxRepo.GetTotalGoldbackReferrer(c, modelsRefTrx)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -790,10 +790,8 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 		return false, err
 	}
 
-	if int(refTrx.TotalGoldback) > (rewardValue * limitRewardCounter) {
-		requestLogger.Debug(models.ErrValidateGetReferralMaxReward)
-		respErrors.SetTitle("CIF " + payload.CIF + " telah melampui batas milestone rewards!")
-		return false, err
+	if int(totalGoldback) >= (rewardValue * limitRewardCounter) {
+		return false, models.ErrValidateGetReferralMaxReward
 	}
 
 	return true, nil

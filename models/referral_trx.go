@@ -8,6 +8,9 @@ var (
 
 	// ReferralTrxTypeReferrer to store referral_trx type referral
 	ReferralTrxTypeReferrer int64 = 1
+
+	// ReferralGoldback to store referral reward type goldback
+	ReferralGoldback = "goldback"
 )
 
 // ReferralType to map referral type string to int64

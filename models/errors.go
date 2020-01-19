@@ -175,10 +175,10 @@ var (
 	ErrSameCifReferrerAndReferral = errors.New("Terjadi kesalahan cif referral dan referrer sama")
 
 	// ErrValidateGetReferral to get reward referral error message
-	ErrValidateGetReferral = errors.New("Gagal untuk mendapatkan referral")
+	ErrValidateGetReferral = errors.New("Kode referral sudah pernah digunakan")
 
 	// ErrValidateGetReferralMaxReward to get max reward referral error message
-	ErrValidateGetReferralMaxReward = errors.New("Reward Milestone telah abis")
+	ErrValidateGetReferralMaxReward = errors.New("Kode referral telah melampui batas milestone rewards")
 
 	// ErrRewardFailed to store create reward failed error message
 	ErrRewardFailed = errors.New("Gagal untuk membuat reward")

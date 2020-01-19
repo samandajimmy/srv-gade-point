@@ -27,6 +27,7 @@ type ReferralTrx struct {
 	RefID            string     `json:"refId,omitempty"`
 	UsedReferralCode string     `json:"usedReferralCode,omitempty"`
 	RewardType       string     `json:"rewardType,omitempty"`
+	PhoneNumber      string     `json:"phoneNumber,omitempty"`
 	Type             int64      `json:"type,omitempty"`
 	RewardReferral   int64      `json:"rewardReferral,omitempty"`
 	CreatedAt        *time.Time `json:"createdAt,omitempty"`

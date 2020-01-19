@@ -1,0 +1,2 @@
+ALTER TABLE referral_transactions
+DROP COLUMN phone_number;

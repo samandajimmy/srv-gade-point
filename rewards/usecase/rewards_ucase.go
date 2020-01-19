@@ -750,6 +750,7 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 		RefID:            payload.RefTrx,
 		UsedReferralCode: payload.PromoCode,
 		Type:             models.ReferralTrxTypeReferral,
+		PhoneNumber:      payload.Phone,
 	}
 
 	// Value Reward CGC From GETENV

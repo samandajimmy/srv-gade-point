@@ -744,12 +744,18 @@ func randRefID(n int) string {
 func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.PayloadValidator, respErrors *models.ResponseErrors) (bool, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
+
+	if payload.Validators.CampaignCode != models.CampaignCodeReferral {
+		return true, nil
+	}
+
 	modelsRefTrx := models.ReferralTrx{
 		CIF:              payload.CIF,
 		CifReferrer:      payload.Referrer,
 		RefID:            payload.RefTrx,
 		UsedReferralCode: payload.PromoCode,
 		Type:             models.ReferralTrxTypeReferral,
+		PhoneNumber:      payload.Phone,
 	}
 
 	// Value Reward CGC From GETENV

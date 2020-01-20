@@ -23,8 +23,10 @@ func (refTrxRepo *psqlReferralTrxRepository) IsReferralTrxExist(c echo.Context, 
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	var count int64
-	query := `SELECT COUNT(ref.id) as Count FROM referral_transactions ref where ref.cif = $1 and ref.type = $2`
-	err := refTrxRepo.Conn.QueryRow(query, refTrx.CIF, models.ReferralTrxTypeReferral).Scan(&count)
+	query := `SELECT COUNT(ref.id) as Count FROM referral_transactions ref where ref.cif = $1
+		and ref.type = $2 or ref.phone_number = $3`
+	err := refTrxRepo.Conn.QueryRow(query, refTrx.CIF, models.ReferralTrxTypeReferral,
+		refTrx.PhoneNumber).Scan(&count)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -58,8 +60,8 @@ func (refTrxRepo *psqlReferralTrxRepository) Create(c echo.Context, refTrx model
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
 	query := `INSERT INTO referral_transactions (cif, ref_id, used_referral_code, type,
-		reward_referral, reward_type, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
+		reward_referral, reward_type, phone_number, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
 
 	lastID := int64(0)
 	stmt, err := refTrxRepo.Conn.Prepare(query)
@@ -72,7 +74,7 @@ func (refTrxRepo *psqlReferralTrxRepository) Create(c echo.Context, refTrx model
 
 	err = stmt.QueryRow(
 		&refTrx.CIF, &refTrx.RefID, &refTrx.UsedReferralCode, &refTrx.Type, &refTrx.RewardReferral,
-		&refTrx.RewardType, &now).Scan(&lastID)
+		&refTrx.RewardType, &refTrx.PhoneNumber, &now).Scan(&lastID)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -91,7 +93,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetMilestone(c echo.Context, payloa
 	query := fmt.Sprintf(`SELECT count(r.id) as totalRewardCounter, sum(r.reward_referral) AS totalReward
 			  FROM referral_transactions r
 			  WHERE used_referral_code = '%s' and type = '%d'`,
-			  payload.ReferralCode, models.ReferralType[models.CampaignCodeReferrer])
+		payload.ReferralCode, models.ReferralType[models.CampaignCodeReferrer])
 
 	err := refTrxRepo.Conn.QueryRow(query).Scan(
 		&result.TotalRewardCounter,

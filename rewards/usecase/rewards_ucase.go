@@ -161,15 +161,6 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		return rwdInquiry, nil
 	}
 
-	// check referral cant use referrer myself
-	if plValidator.CIF == plValidator.Referrer {
-		requestLogger.Debug(models.ErrSameCifReferrerAndReferral)
-		requestLogger.Debug(err)
-		respErrors.SetTitle(models.ErrSameCifReferrerAndReferral.Error())
-
-		return rwdInquiry, &respErrors
-	}
-
 	// check request payload base on cif and promo code
 	// get existing reward trx based on cif and phone number
 	rwrds, err := rwd.rwdTrxRepo.GetRewardByPayload(c, *plValidator)
@@ -369,6 +360,15 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	if plValidator.IsMulti == false {
 		rwdInquiry.RefTrx = rwdResponse[0].RefTrx
 		rwdResponse[0].RefTrx = ""
+	}
+
+	// check referral cant use referrer myself
+	if plValidator.IsMulti == true &&(plValidator.CIF == plValidator.Referrer) {
+		requestLogger.Debug(models.ErrSameCifReferrerAndReferral)
+		requestLogger.Debug(err)
+		respErrors.SetTitle(models.ErrSameCifReferrerAndReferral.Error())
+
+		return rwdInquiry, &respErrors
 	}
 
 	return rwdInquiry, nil

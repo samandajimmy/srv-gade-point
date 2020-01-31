@@ -23,9 +23,9 @@ func (refTrxRepo *psqlReferralTrxRepository) IsReferralTrxExist(c echo.Context, 
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	var count int64
-	query := `SELECT COUNT(ref.id) as Count FROM referral_transactions ref where ref.cif = $1
+	query := `SELECT COUNT(ref.id) as Count FROM referral_transactions ref where 
 		and ref.type = $2 or ref.phone_number = $3`
-	err := refTrxRepo.Conn.QueryRow(query, refTrx.CIF, models.ReferralTrxTypeReferral,
+	err := refTrxRepo.Conn.QueryRow(query, models.ReferralTrxTypeReferral,
 		refTrx.PhoneNumber).Scan(&count)
 
 	if err != nil {

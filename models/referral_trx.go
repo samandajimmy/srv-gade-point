@@ -60,4 +60,6 @@ type Ranking struct {
 // RankingPayload is represent a referral_transactions model
 type RankingPayload struct {
 	ReferralCode string `json:"referralCode,omitempty"`
+	StartDate    string `json:"startDate,omitempty" validate:"required"`
+	EndDate      string `json:"endDate,omitempty" validate:"required"`
 }

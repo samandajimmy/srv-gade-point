@@ -109,20 +109,20 @@ func (refTrxRepo *psqlReferralTrxRepository) GetMilestone(c echo.Context, payloa
 	return result, nil
 }
 
-func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, referralCode string) ([]models.Ranking, error) {
+func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, rp models.RankingPayload) ([]*models.Ranking, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	isInRanking := false
-	query := `select topTen.*
+	query := fmt.Sprintf(`select topTen.*
 		from (select used_referral_code as referral_code,
 		count(used_referral_code) as total,
 		row_number() over (order by count(used_referral_code) desc) as rank
 		from referral_transactions
-		where type = '1' AND created_at >= date_trunc('month', CURRENT_DATE)
+		where type = '1' AND (created_at::date >= '%s' and created_at::date <= '%s')
 		group by used_referral_code
 		order by total desc
 		limit 10
-		offset 0) as topTen`
+		offset 0) as topTen`, rp.StartDate, rp.EndDate)
 
 	rows, err := refTrxRepo.Conn.Query(query)
 
@@ -133,9 +133,11 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, referral
 	}
 
 	defer rows.Close()
-	var result []models.Ranking
+
+	result := make([]*models.Ranking, 0)
+
 	for rows.Next() {
-		var ranking models.Ranking
+		ranking := new(models.Ranking)
 		err = rows.Scan(
 			&ranking.ReferralCode,
 			&ranking.TotalUsed,
@@ -148,21 +150,23 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, referral
 			return nil, err
 		}
 
-		if referralCode == ranking.ReferralCode {
+		if rp.ReferralCode == ranking.ReferralCode {
 			isInRanking = true
 		}
 
 		result = append(result, ranking)
 	}
 
-	if !isInRanking {
-		ranking, err := refTrxRepo.GetRankingByReferralCode(c, referralCode)
+	fmt.Println(result)
+
+	if len(result) > 0 && !isInRanking {
+		ranking, err := refTrxRepo.GetRankingByReferralCode(c, rp.ReferralCode)
 		if err != nil {
 			requestLogger.Debug(err)
 
 			return nil, err
 		}
-		result = append(result, *ranking)
+		result = append(result, ranking)
 	}
 
 	return result, nil

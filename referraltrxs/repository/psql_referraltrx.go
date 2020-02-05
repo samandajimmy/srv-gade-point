@@ -157,8 +157,6 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, rp model
 		result = append(result, ranking)
 	}
 
-	fmt.Println(result)
-
 	if len(result) > 0 && !isInRanking {
 		ranking, err := refTrxRepo.GetRankingByReferralCode(c, rp.ReferralCode)
 		if err != nil {

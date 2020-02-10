@@ -52,9 +52,11 @@ type MilestonePayload struct {
 
 // Ranking is represent a referral_transactions model
 type Ranking struct {
-	NoRanking    string `json:"noRanking,omitempty"`
-	ReferralCode string `json:"referralCode,omitempty"`
-	TotalUsed    string `json:"totalUsed,omitempty"`
+	NoRanking      string `json:"noRanking,omitempty"`
+	ReferralCode   string `json:"referralCode,omitempty"`
+	TotalUsed      string `json:"totalUsed,omitempty"`
+	Date           string `json:"date,omitempty"`
+	IsReferralCode string `json:"isReferralCode,omitempty"`
 }
 
 // RankingPayload is represent a referral_transactions model

@@ -112,17 +112,32 @@ func (refTrxRepo *psqlReferralTrxRepository) GetMilestone(c echo.Context, payloa
 func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, rp models.RankingPayload) ([]*models.Ranking, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
-	isInRanking := false
-	query := fmt.Sprintf(`select topTen.*
-		from (select used_referral_code as referral_code,
-		count(used_referral_code) as total,
-		row_number() over (order by count(used_referral_code) desc) as rank
-		from referral_transactions
-		where type = '1' AND (created_at::date >= '%s' and created_at::date <= '%s')
-		group by used_referral_code
-		order by total desc
-		limit 10
-		offset 0) as topTen`, rp.StartDate, rp.EndDate)
+	query := fmt.Sprintf(`(select used, used_referral_code, date, ROW_NUMBER () OVER (ORDER BY used desc) as row,
+		CASE WHEN used_referral_code = '%s' THEN true
+		ELSE false
+		END as is_selected
+		from (
+			select count(used_referral_code) as used, used_referral_code, max(created_at) as date
+			from referral_transactions
+			where type = 1 and created_at between '%s' and '%s'
+			group by used_referral_code
+			order by used desc, date asc
+		) as bro limit 10)
+		union
+		select used, used_referral_code, date, row, true as is_selected
+		from (
+			select used_referral_code, used, date, ROW_NUMBER () OVER (ORDER BY used desc) as row from (
+				select count(used_referral_code) as used, used_referral_code, max(created_at) as date
+				from referral_transactions
+				where type = 1 and created_at between '%s' and '%s'
+				group by used_referral_code
+				order by used desc, date asc
+			) foo
+			group by used_referral_code, used, date
+			order by used desc, date asc
+		) as bro
+		where used_referral_code = '%s'
+		order by used desc, date asc`, rp.ReferralCode, rp.StartDate, rp.EndDate, rp.StartDate, rp.EndDate, rp.ReferralCode)
 
 	rows, err := refTrxRepo.Conn.Query(query)
 
@@ -139,9 +154,11 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, rp model
 	for rows.Next() {
 		ranking := new(models.Ranking)
 		err = rows.Scan(
-			&ranking.ReferralCode,
 			&ranking.TotalUsed,
+			&ranking.ReferralCode,
+			&ranking.Date,
 			&ranking.NoRanking,
+			&ranking.IsReferralCode,
 		)
 
 		if err != nil {
@@ -150,20 +167,6 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, rp model
 			return nil, err
 		}
 
-		if rp.ReferralCode == ranking.ReferralCode {
-			isInRanking = true
-		}
-
-		result = append(result, ranking)
-	}
-
-	if len(result) > 0 && !isInRanking {
-		ranking, err := refTrxRepo.GetRankingByReferralCode(c, rp.ReferralCode)
-		if err != nil {
-			requestLogger.Debug(err)
-
-			return nil, err
-		}
 		result = append(result, ranking)
 	}
 
@@ -174,7 +177,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRankingByReferralCode(c echo.Con
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	result := new(models.Ranking)
-	query := `select topTen.* 
+	query := fmt.Sprintf(`select topTen.* 
 		from (select used_referral_code,
 		count(used_referral_code) as total,
 		row_number() over (order by count(used_referral_code) desc) as URUT
@@ -184,7 +187,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRankingByReferralCode(c echo.Con
 		order by total desc
 		limit 10
 		offset 0) as topTen
-		where topTen.used_referral_code = $1`
+		where topTen.used_referral_code = '%s'`, referralCode)
 
 	err := refTrxRepo.Conn.QueryRow(query, referralCode).Scan(
 		&result.ReferralCode,

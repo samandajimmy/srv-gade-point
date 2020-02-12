@@ -118,7 +118,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, referral
 		count(used_referral_code) as total,
 		row_number() over (order by count(used_referral_code) desc) as rank
 		from referral_transactions
-		where type = '1' AND created_at >= date_trunc('month', CURRENT_DATE)
+		where type = '1' AND created_at >= date_trunc('month', CURRENT_DATE) and used_referral_code LIKE 'PDS%'
 		group by used_referral_code
 		order by total desc
 		limit 10

@@ -12,6 +12,6 @@ type Repository interface {
 	GetMilestone(echo.Context, models.MilestonePayload) (*models.Milestone, error)
 	IsReferralTrxExist(c echo.Context, refTrx models.ReferralTrx) (int64, error)
 	GetTotalGoldbackReferrer(c echo.Context, refTrx models.ReferralTrx) (float64, error)
-	GetRanking(echo.Context, string) ([]models.Ranking, error)
+	GetRanking(echo.Context, models.RankingPayload) ([]*models.Ranking, error)
 	GetRankingByReferralCode(echo.Context, string) (*models.Ranking, error)
 }

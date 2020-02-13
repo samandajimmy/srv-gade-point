@@ -53,12 +53,12 @@ func (rfr *referralTrxUseCase) GetMilestone(c echo.Context, pl models.MilestoneP
 	return milestone, nil
 }
 
-func (rfr *referralTrxUseCase) GetRanking(c echo.Context, payload models.RankingPayload) ([]models.Ranking, error) {
+func (rfr *referralTrxUseCase) GetRanking(c echo.Context, payload models.RankingPayload) ([]*models.Ranking, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
 	// get data
-	data, err :=  rfr.referralTrxRepo.GetRanking(c, payload.ReferralCode)
+	data, err :=  rfr.referralTrxRepo.GetRanking(c, payload)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrRanking)

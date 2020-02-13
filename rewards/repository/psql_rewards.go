@@ -343,6 +343,7 @@ func (rwdRepo *psqlRewardRepository) getRewardPromotions(c echo.Context, query s
 			&t.Product,
 			&t.TransactionType,
 			&t.MinTransactionAmount,
+			&t.IsPrivate,
 		)
 
 		if err != nil {
@@ -364,7 +365,7 @@ func (rwdRepo *psqlRewardRepository) GetRewardPromotions(c echo.Context, pv mode
 
 	query := `SELECT r.id, r.name, r.description, r.terms_and_conditions, r.how_to_use, 
 		r.promo_code, r.validators->>'product', r.validators->>'transactionType', 
-		r.validators->>'minTransactionAmount'
+		r.validators->>'minTransactionAmount', COALESCE(r.validators->>'isPrivate','0')
 		FROM rewards r
 		LEFT JOIN campaigns c on r.campaign_id = c.id
 		WHERE c.status = 1

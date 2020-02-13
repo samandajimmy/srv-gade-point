@@ -239,7 +239,7 @@ func (rwd *RewardHandler) getRewards(echTx echo.Context) error {
 // getRewardPromotions Get reward promotions by param promoCode, transactionDate and transactionAmount
 func (rwd *RewardHandler) getRewardPromotions(echTx echo.Context) error {
 	// metric monitoring
-	go services.AddMetric("get_all_vouchers")
+	go services.AddMetric("get_all_promo")
 
 	var rplValidator models.RewardPromotionLists
 	respErrors := &models.ResponseErrors{}

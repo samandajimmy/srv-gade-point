@@ -112,6 +112,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetMilestone(c echo.Context, payloa
 func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, rp models.RankingPayload) ([]*models.Ranking, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
+	var prefixReferral = "PDS%"
 	query := fmt.Sprintf(`(select used, used_referral_code, date, ROW_NUMBER () OVER (ORDER BY used desc) as row,
 		CASE WHEN used_referral_code = '%s' THEN true
 		ELSE false
@@ -119,7 +120,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, rp model
 		from (
 			select count(used_referral_code) as used, used_referral_code, max(created_at) as date
 			from referral_transactions
-			where type = 1 and created_at between '%s' and '%s'
+			where type = 1 and created_at between '%s' and '%s' and used_referral_code LIKE '%s'
 			group by used_referral_code
 			order by used desc, date asc
 		) as bro limit 10)
@@ -129,7 +130,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, rp model
 			select used_referral_code, used, date, ROW_NUMBER () OVER (ORDER BY used desc) as row from (
 				select count(used_referral_code) as used, used_referral_code, max(created_at) as date
 				from referral_transactions
-				where type = 1 and created_at between '%s' and '%s'
+				where type = 1 and created_at between '%s' and '%s' and used_referral_code LIKE '%s'
 				group by used_referral_code
 				order by used desc, date asc
 			) foo
@@ -137,7 +138,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, rp model
 			order by used desc, date asc
 		) as bro
 		where used_referral_code = '%s'
-		order by used desc, date asc`, rp.ReferralCode, rp.StartDate, rp.EndDate, rp.StartDate, rp.EndDate, rp.ReferralCode)
+		order by used desc, date asc`, rp.ReferralCode, rp.StartDate, rp.EndDate, prefixReferral, rp.StartDate, rp.EndDate, prefixReferral, rp.ReferralCode)
 
 	rows, err := refTrxRepo.Conn.Query(query)
 

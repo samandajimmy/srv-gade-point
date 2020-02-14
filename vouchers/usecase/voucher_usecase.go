@@ -110,6 +110,7 @@ func (vchr *voucherUseCase) UploadVoucherImages(c echo.Context, file *multipart.
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	src, err := file.Open()
+	apiURL := os.Getenv(`PDS_API_HOST`) + os.Getenv(`UPLOAD_IMAGE_URL`)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -142,7 +143,7 @@ func (vchr *voucherUseCase) UploadVoucherImages(c echo.Context, file *multipart.
 	bodyWriter.Close()
 
 	requestLogger.Debug("Do a post request to pds api.")
-	response, err := http.Post(os.Getenv(`UPLOAD_IMAGE_URL`), contentType, bodyBuf)
+	response, err := http.Post(apiURL, contentType, bodyBuf)
 
 	if err != nil {
 		requestLogger.Debug(err)

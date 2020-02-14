@@ -96,15 +96,16 @@ type RewardsPayload struct {
 
 // RewardPromotions is represent a list rewardPromotions response model
 type RewardPromotions struct {
-	ID                   int64  `json:"id,omitempty"`
-	Name                 string `json:"name,omitempty"`
-	Description          string `json:"description,omitempty"`
-	TermsAndConditions   string `json:"termsAndConditions,omitempty"`
-	HowToUse             string `json:"howToUse,omitempty"`
-	PromoCode            string `json:"promoCode,omitempty"`
+	ID                   int64   `json:"id,omitempty"`
+	Name                 string  `json:"name,omitempty"`
+	Description          string  `json:"description,omitempty"`
+	TermsAndConditions   string  `json:"termsAndConditions,omitempty"`
+	HowToUse             string  `json:"howToUse,omitempty"`
+	PromoCode            string  `json:"promoCode,omitempty"`
 	Product              *string `json:"product,omitempty"`
 	TransactionType      *string `json:"transactionType,omitempty"`
 	MinTransactionAmount *string `json:"minTransactionAmount,omitempty"`
+	IsPrivate            string  `json:"isPrivate,omitempty"`
 }
 
 // GetRewardTypeText to get text of reward type

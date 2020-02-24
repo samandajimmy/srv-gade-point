@@ -60,7 +60,7 @@ type PayloadValidator struct {
 	Validators        *Validator `json:"validators,omitempty"`
 }
 
-var skippedValidator = []string{"multiplier", "value", "formula", "maxValue", "unit"}
+var skippedValidator = []string{"multiplier", "value", "formula", "maxValue", "unit", "isPrivate"}
 var compareEqual = []string{"channel", "product", "transactionType", "source", "campaignCode"}
 var evalFunc = []string{"floor"}
 var tightenValidator = map[string]string{

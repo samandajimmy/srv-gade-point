@@ -3,7 +3,6 @@ package http
 import (
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referraltrxs"
-	"gade/srv-gade-point/services"
 	"net/http"
 	"strings"
 
@@ -33,9 +32,9 @@ func (rfr *ReferralTrxHandler) getMilestone(c echo.Context) error {
 	var pl models.MilestonePayload
 
 	respErrors := &models.ResponseErrors{}
-	response    = models.Response{}
-	logger     := models.RequestLogger{}
-	err 	   := c.Bind(&pl)
+	response = models.Response{}
+	logger := models.RequestLogger{}
+	err := c.Bind(&pl)
 
 	requestLogger := logger.GetRequestLogger(c, nil)
 	requestLogger.Info("Start to get milestone.")
@@ -74,9 +73,6 @@ func (rfr *ReferralTrxHandler) getMilestone(c echo.Context) error {
 
 // GetRanking a handler to get ranking
 func (rfr *ReferralTrxHandler) getRanking(c echo.Context) error {
-	// metric monitoring
-	go services.AddMetric("get_all_ranking")
-
 	var pl models.RankingPayload
 	respErrors := &models.ResponseErrors{}
 	response = models.Response{}
@@ -103,9 +99,6 @@ func (rfr *ReferralTrxHandler) getRanking(c echo.Context) error {
 	responseData, err := rfr.ReferralTrxUseCase.GetRanking(c, pl)
 
 	if err != nil {
-		// metric monitoring error
-		go services.AddMetric("get_all_ranking_error")
-
 		respErrors.SetTitle(err.Error())
 		response.SetResponse("", respErrors)
 
@@ -115,9 +108,6 @@ func (rfr *ReferralTrxHandler) getRanking(c echo.Context) error {
 
 	response.SetResponse(responseData, respErrors)
 	logger.DataLog(c, response).Info("End to get all ranking for client")
-
-	// metric monitoring success
-	go services.AddMetric("get_all_ranking_success")
 
 	return c.JSON(getStatusCode(err), response)
 }

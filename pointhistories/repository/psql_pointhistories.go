@@ -9,10 +9,6 @@ import (
 	"github.com/labstack/echo"
 )
 
-const (
-	timeFormat = "2006-01-02T15:04:05.999Z07:00" // reduce precision from RFC3339Nano as date format
-)
-
 type psqlPointHistoryRepository struct {
 	Conn *sql.DB
 }
@@ -200,10 +196,10 @@ func (psqlRepo *psqlPointHistoryRepository) GetUserPointHistory(c echo.Context, 
 			return nil, err
 		}
 
-		if campaign.ID != 0 {
-			// TODO change this to a reward base
-			// ph.Reward = &campaign
-		}
+		// TODO change this to a reward base
+		// if campaign.ID != 0 {
+		// ph.Reward = &campaign
+		// }
 
 		if voucherCodes.ID != 0 {
 			ph.VoucherCode = &voucherCodes

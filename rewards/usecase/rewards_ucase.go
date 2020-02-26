@@ -163,7 +163,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 	// check request payload base on cif and promo code
 	// get existing reward trx based on cif and phone number
-	rwrds, err := rwd.rwdTrxRepo.GetRewardByPayload(c, *plValidator)
+	rwrds, _ := rwd.rwdTrxRepo.GetRewardByPayload(c, *plValidator)
 
 	if len(rwrds) > 0 {
 		var rr []models.RewardResponse
@@ -201,7 +201,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		}
 
 		// if not multi
-		if plValidator.IsMulti == false {
+		if !plValidator.IsMulti {
 			rwdInquiry.RefTrx = rr[0].RefTrx
 			rr[0].RefTrx = ""
 		}
@@ -291,7 +291,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		// validate reward quota
 		available, err := rwd.quotaUC.CheckQuota(c, reward, plValidator)
 
-		if available == false {
+		if !available {
 			rewardLogger.Debug(err)
 			respErrors.AddError(err.Error())
 
@@ -323,10 +323,10 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		}
 
 		// update reward quota
-		rwd.quotaUC.UpdateReduceQuota(c, reward.ID)
+		_ = rwd.quotaUC.UpdateReduceQuota(c, reward.ID)
 
 		// if not multi
-		if plValidator.IsMulti == false {
+		if !plValidator.IsMulti {
 			break
 		}
 	}
@@ -357,13 +357,13 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	}
 
 	// if not multi
-	if plValidator.IsMulti == false {
+	if !plValidator.IsMulti {
 		rwdInquiry.RefTrx = rwdResponse[0].RefTrx
 		rwdResponse[0].RefTrx = ""
 	}
 
 	// check referral cant use referrer myself
-	if plValidator.IsMulti == true &&(plValidator.CIF == plValidator.Referrer) {
+	if (plValidator.IsMulti) && (plValidator.CIF == plValidator.Referrer) {
 		requestLogger.Debug(models.ErrSameCifReferrerAndReferral)
 		requestLogger.Debug(err)
 		respErrors.SetTitle(models.ErrSameCifReferrerAndReferral.Error())
@@ -379,6 +379,8 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
 	var rwdResp models.RewardResponse
 	var voucherCode *models.VoucherCode
 	var voucherName string
+	var err error
+
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
@@ -401,7 +403,7 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
 
 		// check voucher code base on refId
 		// if nil system will book a new voucher code
-		voucherCodeValid, err := rwd.voucherCodeRepo.ValidateVoucherGive(c, plVoucherBuy)
+		voucherCodeValid, _ := rwd.voucherCodeRepo.ValidateVoucherGive(c, plVoucherBuy)
 
 		if voucherCodeValid != nil {
 			voucherName = voucherCodeValid.Voucher.Name
@@ -451,13 +453,13 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 		if rwdPayment.RefCore == "" {
 			// rejected
 			// update voucher code
-			rwd.voucherCodeRepo.UpdateVoucherCodeRejected(c, rwdPayment.RefTrx)
+			_ = rwd.voucherCodeRepo.UpdateVoucherCodeRejected(c, rwdPayment.RefTrx)
 
 			// update reward trx
-			rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxRejected)
+			_ = rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxRejected)
 
 			// update add reward quota
-			rwd.quotaUC.UpdateAddQuota(c, *rwdTrx.RewardID)
+			_ = rwd.quotaUC.UpdateAddQuota(c, *rwdTrx.RewardID)
 
 			return responseData, nil
 		}
@@ -473,17 +475,17 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 		// succeeded
 		// update voucher code
 		trxStatus := models.RewardTrxSucceeded
-		rwd.voucherCodeRepo.UpdateVoucherCodeSucceeded(c, rwdPayment)
+		_ = rwd.voucherCodeRepo.UpdateVoucherCodeSucceeded(c, rwdPayment)
 
 		if *rwdTrx.Status == models.RewardTrxTimeOut {
 			// update reward trx timeout force to Succedeed
 			trxStatus = models.RewardTrxTimeOutForceToSucceeded
 
 			// update reduce reward quota
-			rwd.quotaUC.UpdateReduceQuota(c, *rwdTrx.RewardID)
+			_ = rwd.quotaUC.UpdateReduceQuota(c, *rwdTrx.RewardID)
 		}
 
-		rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, trxStatus)
+		_ = rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, trxStatus)
 
 		// check if promoCode is a voucher code
 		// if yes then it should redeem the voucher code itself
@@ -492,7 +494,7 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 
 		if voucherCode != nil {
 			nowStr := time.Now().Format(models.DateTimeFormat)
-			rwd.voucherCodeRepo.UpdateVoucherCodeRedeemed(c, nowStr, rwdPayment.CIF, rwdTrx.UsedPromoCode)
+			_, _ = rwd.voucherCodeRepo.UpdateVoucherCodeRedeemed(c, nowStr, rwdPayment.CIF, rwdTrx.UsedPromoCode)
 		}
 
 		// check if a referral trx
@@ -596,7 +598,7 @@ func (rwd *rewardUseCase) sendSmsVoucher(c echo.Context, rewardTrx models.Reward
 		requestLogger.Info(models.DynamicErr(models.ErrSMSNotSent, rewardTrx.RefID))
 	}
 
-	req, err := http.NewRequest("POST", apiURL, strings.NewReader(data.Encode()))
+	req, _ := http.NewRequest("POST", apiURL, strings.NewReader(data.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.SetBasicAuth(os.Getenv(`PDS_API_BASIC_USER`), os.Getenv(`PDS_API_BASIC_PASS`))
 	logger.DataLog(c, data).Info("Start sending sms request to PDS API")
@@ -647,7 +649,7 @@ func (rwd *rewardUseCase) putRewards(c echo.Context, campaigns []*models.Campaig
 
 	for _, campaign := range campaigns {
 		for _, reward := range *campaign.Rewards {
-			rwd.rewardRepo.GetRewardTags(c, &reward)
+			_, _ = rwd.rewardRepo.GetRewardTags(c, &reward)
 			reward.Campaign = campaign
 			rewards = append(rewards, reward)
 		}

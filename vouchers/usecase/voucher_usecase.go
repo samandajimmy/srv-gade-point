@@ -28,12 +28,10 @@ import (
 const (
 	letterBytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	lengthCode  = 5
-	timeFormat  = "2006-01-02T15:04:05.999Z07:00" // reduce precision from RFC3339Nano as date format
 )
 
 var (
-	statusVoucher = []string{"0", "1"} // voucher status
-	floatType     = reflect.TypeOf(float64(0))
+	floatType = reflect.TypeOf(float64(0))
 )
 
 type voucherUseCase struct {
@@ -260,7 +258,6 @@ func (vchr *voucherUseCase) GetVouchers(c echo.Context) (models.ListVoucher, *mo
 
 	responseVoucher.Vouchers = listVoucher
 	responseVoucher.TotalCount = strconv.Itoa(totalCount)
-
 
 	return responseVoucher, &respErrors, nil
 }
@@ -567,7 +564,7 @@ func (vchr *voucherUseCase) VoucherValidate(c echo.Context, pv *models.PayloadVa
 	}
 
 	vc.RefID = randRefID(20)
-	vchr.vcRepo.UpdateVoucherCodeInquired(c, *vc, *pv)
+	_ = vchr.vcRepo.UpdateVoucherCodeInquired(c, *vc, *pv)
 
 	response = append(response, models.Reward{})
 	response[0].Validators = voucher.Validators

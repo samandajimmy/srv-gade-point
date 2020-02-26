@@ -47,8 +47,8 @@ func InitMiddleware(ech *echo.Echo, echoGroup models.EchoGroup) {
 func (cm *customMiddleware) customValidation() {
 	validator := validator.New()
 	customValidator := customValidator{}
-	validator.RegisterValidation("isRequiredWith", customValidator.isRequiredWith)
-	validator.RegisterValidation("dateString", customValidator.dateString)
+	_ = validator.RegisterValidation("isRequiredWith", customValidator.isRequiredWith)
+	_ = validator.RegisterValidation("dateString", customValidator.dateString)
 	customValidator.validator = validator
 	cm.e.Validator = &customValidator
 }

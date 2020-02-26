@@ -123,14 +123,11 @@ func stringToDuration(str string) time.Duration {
 }
 
 func createJWTToken(accountToken *models.AccountToken, now time.Time, tokenExp time.Time) (string, error) {
-	claims := models.Token{
-		accountToken.Username,
-		jwt.StandardClaims{
-			Id:        accountToken.Username,
-			ExpiresAt: tokenExp.Unix(),
-		},
+	token := models.Token{
+		Name:   accountToken.Username,
+		Claims: jwt.StandardClaims{Id: accountToken.Username, ExpiresAt: tokenExp.Unix()},
 	}
 
-	rawToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+	rawToken := jwt.NewWithClaims(jwt.SigningMethodHS512, token.Claims)
 	return rawToken.SignedString([]byte(os.Getenv(`JWT_SECRET`)))
 }

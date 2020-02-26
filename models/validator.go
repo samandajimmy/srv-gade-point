@@ -131,9 +131,9 @@ func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
 
 	vReflector := reflect.ValueOf(v).Elem()
 	tempJSON, _ := json.Marshal(payloadValidator.Validators)
-	json.Unmarshal(tempJSON, &reqValidator)
+	_ = json.Unmarshal(tempJSON, &reqValidator)
 	tempJSON, _ = json.Marshal(payloadValidator)
-	json.Unmarshal(tempJSON, &payloadVal)
+	_ = json.Unmarshal(tempJSON, &payloadVal)
 
 	for i := 0; i < vReflector.NumField(); i++ {
 		interfaceValue := vReflector.Field(i).Interface()

@@ -126,7 +126,7 @@ func (rwdResp *RewardResponse) Populate(reward Reward, rwdValue float64, pv Payl
 	// convert pv struct to map
 	pvMap := map[string]interface{}{}
 	tempJSON, _ := json.Marshal(pv)
-	json.Unmarshal(tempJSON, &pvMap)
+	_ = json.Unmarshal(tempJSON, &pvMap)
 
 	if pv.Validators.CampaignCode == CampaignCodeReferral {
 		rwdResp.Reference = CampaignCodeReferral

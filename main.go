@@ -6,7 +6,6 @@ import (
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/middleware"
 	"gade/srv-gade-point/models"
-	"gade/srv-gade-point/services"
 	"gade/srv-gade-point/vouchers"
 	"net/http"
 	"os"
@@ -21,8 +20,6 @@ import (
 	_campaignTrxHttpDelivery "gade/srv-gade-point/campaigntrxs/delivery/http"
 	_campaignTrxRepository "gade/srv-gade-point/campaigntrxs/repository"
 	_campaignTrxUseCase "gade/srv-gade-point/campaigntrxs/usecase"
-	_metricRepository "gade/srv-gade-point/metrics/repository"
-	_metricUseCase "gade/srv-gade-point/metrics/usecase"
 	_pHistoryHttpDelivery "gade/srv-gade-point/pointhistories/delivery/http"
 	_pHistoryRepository "gade/srv-gade-point/pointhistories/repository"
 	_pHistoryUseCase "gade/srv-gade-point/pointhistories/usecase"
@@ -37,7 +34,6 @@ import (
 	_rewardTrxHttpDelivery "gade/srv-gade-point/rewardtrxs/delivery/http"
 	_rewardTrxRepository "gade/srv-gade-point/rewardtrxs/repository"
 	_rewardTrxUC "gade/srv-gade-point/rewardtrxs/usecase"
-	_metricService "gade/srv-gade-point/services"
 	_tagRepository "gade/srv-gade-point/tags/repository"
 	_tagUseCase "gade/srv-gade-point/tags/usecase"
 	_tokenHttpDelivery "gade/srv-gade-point/tokens/delivery/http"
@@ -64,7 +60,6 @@ import (
 )
 
 var ech *echo.Echo
-var metricService services.MetricService
 
 func init() {
 	ech = echo.New()
@@ -170,33 +165,26 @@ func main() {
 	userUseCase := _userUseCase.NewUserUseCase(userRepository, timeoutContext)
 	_userHttpDelivery.NewUserHandler(echoGroup, userUseCase)
 
-	// METRIC
-	metricRepository := _metricRepository.NewPsqlMetricRepository(dbConn)
-	metricUseCase := _metricUseCase.NewMetricUseCase(metricRepository, timeoutContext)
-
-	// Add metric
-	_metricService.NewMetricHandler(metricUseCase)
-
 	// Run every day.
 	updateStatusBasedOnStartDate(campaignUseCase, voucherUseCase)
 
 	// run refresh reward trx
 	rewardUseCase.RefreshTrx()
 
-	ech.Start(":" + os.Getenv(`PORT`))
+	_ = ech.Start(":" + os.Getenv(`PORT`))
 
 }
 
 func updateStatusBasedOnStartDate(cmp campaigns.UseCase, vcr vouchers.UseCase) {
-	scheduler.Every().Day().At(os.Getenv(`STATUS_UPDATE_TIME`)).Run(func() {
+	_, _ = scheduler.Every().Day().At(os.Getenv(`STATUS_UPDATE_TIME`)).Run(func() {
 		t := time.Now()
 		logrus.Debug("Run Scheduler! @", t)
 
 		// CAMPAIGN
-		cmp.UpdateStatusBasedOnStartDate()
+		_ = cmp.UpdateStatusBasedOnStartDate()
 
 		// VOUCHER
-		vcr.UpdateStatusBasedOnStartDate()
+		_ = vcr.UpdateStatusBasedOnStartDate()
 	})
 }
 
@@ -244,7 +232,7 @@ func getDBConn() *sql.DB {
 }
 
 func dataMigrations(dbConn *sql.DB) *migrate.Migrate {
-	driver, err := postgres.WithInstance(dbConn, &postgres.Config{})
+	driver, _ := postgres.WithInstance(dbConn, &postgres.Config{})
 
 	migrations, err := migrate.NewWithDatabaseInstance(
 		"file://migrations/",
@@ -272,6 +260,4 @@ func loadEnv() {
 	if err != nil {
 		logrus.Fatal("Error loading .env file")
 	}
-
-	return
 }

@@ -237,12 +237,6 @@ var (
 	// ErrTrxDateFormat to store a trx date format params error message
 	ErrTrxDateFormat = errors.New("Parameter tanggal tidak sesuai dengan Format")
 
-	// ErrCreateMetric to store metric error message
-	ErrCreateMetric = errors.New("Gagal membuat Metrik")
-
-	// ErrUpdateMetric to store metric error message
-	ErrUpdateMetric = errors.New("Gagal mengupdate Metrik")
-
 	// ErrRefTrxNotFound to not found ref_trx error message
 	ErrRefTrxNotFound = errors.New("ID transaksi tidak ditemukan")
 

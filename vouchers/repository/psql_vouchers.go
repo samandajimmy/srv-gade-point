@@ -17,7 +17,6 @@ import (
 )
 
 const (
-	timeFormat           = "2006-01-02T15:04:05.999Z07:00" // reduce precision from RFC3339Nano as date format
 	fieldInsertPromoCode = 3
 )
 
@@ -92,7 +91,9 @@ func (m *psqlVoucherRepository) CreatePromoCode(c echo.Context, promoCodes []*mo
 	arrSplitted := arrSpliter(promoCodes)
 
 	for _, pCodes := range arrSplitted {
-		go m.insertVoucherCodes(c, pCodes)
+		go func(pCodes []*models.VoucherCode) {
+			_ = m.insertVoucherCodes(c, pCodes)
+		}(pCodes)
 	}
 
 	requestLogger.Debug("Insert voucher codes is concurrently happened!")
@@ -193,7 +194,7 @@ func (m *psqlVoucherRepository) getVouchersAdmin(c echo.Context, query string) (
 	for rows.Next() {
 		t := new(models.Voucher)
 		var createDate, updateDate, endDate pq.NullTime
-		err = rows.Scan(
+		_ = rows.Scan(
 			&t.ID,
 			&t.Name,
 			&t.Description,

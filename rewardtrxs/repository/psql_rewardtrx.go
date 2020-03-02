@@ -61,7 +61,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 			refID = rwdResp.RefTrx
 		}
 
-		requestData, err := json.Marshal(payload)
+		requestData, _ := json.Marshal(payload)
 		responseData, err := json.Marshal(respData)
 
 		if err != nil {
@@ -79,7 +79,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) Create(c echo.Context, payload models
 		}
 
 		if rwdResp.RewardID != 0 {
-			rewardID.Scan(rwdResp.RewardID)
+			_ = rewardID.Scan(rwdResp.RewardID)
 		}
 
 		rwdTrx := models.RewardTrx{
@@ -223,7 +223,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CheckRefID(c echo.Context, refID stri
 		return nil, err
 	}
 
-	err = json.Unmarshal([]byte(reqData), &rewardTrxReqData)
+	_ = json.Unmarshal([]byte(reqData), &rewardTrxReqData)
 	err = json.Unmarshal([]byte(respData), &rewardTrxRespData)
 
 	if err != nil {

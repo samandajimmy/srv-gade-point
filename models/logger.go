@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"errors"
 
 	"github.com/fatih/structs"
 	"github.com/labstack/echo"
@@ -11,11 +10,9 @@ import (
 
 // RequestLogger a struct to store a request logger
 type RequestLogger struct {
-	RequestID string      `json:"requestID,required"`
+	RequestID string      `json:"requestID"`
 	Payload   interface{} `json:"payload,omitempty"`
 }
-
-var errReqLogger = errors.New("Error during creating a request logger")
 
 // GetRequestLogger is to get a log parameter
 func (rl *RequestLogger) GetRequestLogger(c echo.Context, payload interface{}) *logrus.Entry {

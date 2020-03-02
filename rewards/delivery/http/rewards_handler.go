@@ -3,7 +3,6 @@ package http
 import (
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewards"
-	"gade/srv-gade-point/services"
 	"net/http"
 	"strings"
 
@@ -265,9 +264,6 @@ func (rwd *RewardHandler) getRewardPromotions(echTx echo.Context) error {
 	responseData, respErrors, err := rwd.RewardUseCase.GetRewardPromotions(echTx, rplValidator)
 
 	if err != nil {
-		// metric monitoring error
-		go services.AddMetric("get_all_reward_promotions_error")
-
 		respErrors.SetTitle(err.Error())
 		response.SetResponse("", respErrors)
 
@@ -277,9 +273,6 @@ func (rwd *RewardHandler) getRewardPromotions(echTx echo.Context) error {
 
 	response.SetResponse(responseData, respErrors)
 	logger.DataLog(echTx, response).Info("End to get reward promotions for client")
-
-	// metric monitoring success
-	go services.AddMetric("get_reward_promotions_success")
 
 	return echTx.JSON(getStatusCode(err), response)
 }

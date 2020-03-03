@@ -77,9 +77,10 @@ type RewardResponse struct {
 
 // RewardPayment is represent a reward payment model
 type RewardPayment struct {
-	CIF     string `json:"cif,omitempty"`
-	RefTrx  string `json:"refTrx,omitempty"`
-	RefCore string `json:"refCore,omitempty"`
+	CIF        string `json:"cif,omitempty"`
+	RefTrx     string `json:"refTrx,omitempty"`
+	RefCore    string `json:"refCore,omitempty"`
+	IsReferral bool   `json:"isReferral,omitempty"`
 }
 
 // RewardsPayload is represent a inquire reward and reward transactiomn response model

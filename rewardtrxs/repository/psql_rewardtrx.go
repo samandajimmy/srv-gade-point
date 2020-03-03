@@ -239,12 +239,65 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CheckRefID(c echo.Context, refID stri
 	return &result, nil
 }
 
+func (rwdTrxRepo *psqlRewardTrxRepository) CheckRootRefId(c echo.Context, refID string) (*models.RewardTrx, error) {
+	var result models.RewardTrx
+	var rewardTrxReqData models.RewardTrxReqData
+	var rewardTrxRespData models.RewardsInquiry
+	var reward models.Reward
+	var reqData json.RawMessage
+	var respData json.RawMessage
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	query := `SELECT rt.id, rt.status, coalesce(rt.ref_core, ''), rt.ref_id, rt.reward_id, rt.cif,
+		rt.inquired_date, rt.transaction_date, rt.request_data, rt.response_data, r.type, rt.used_promo_code
+		from reward_transactions rt
+		left join rewards r on rt.reward_id = r.id where rt.root_ref_id = $1`
+	err := rwdTrxRepo.Conn.QueryRow(query, refID).Scan(
+		&result.ID,
+		&result.Status,
+		&result.RefCore,
+		&result.RefID,
+		&result.RewardID,
+		&result.CIF,
+		&result.InquiredDate,
+		&result.TransactionDate,
+		&reqData,
+		&respData,
+		&reward.Type,
+		&result.UsedPromoCode,
+	)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	_ = json.Unmarshal([]byte(reqData), &rewardTrxReqData)
+	err = json.Unmarshal([]byte(respData), &rewardTrxRespData)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	result.Reward = &reward
+	result.RequestData = &rewardTrxReqData
+	result.ResponseData = &rewardTrxRespData
+
+	return &result, nil
+}
+
 func (rwdTrxRepo *psqlRewardTrxRepository) UpdateRewardTrx(c echo.Context, rwdPayment *models.RewardPayment, status int64) error {
 	var refCore, cif string
 	var succeedDate, rejectedDate *time.Time
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
+	// isReferral for campaign CGC
+	isReferral := false
+	isReferral = rwdPayment.IsReferral
 
 	if status == models.RewardTrxSucceeded {
 		refCore = rwdPayment.RefCore
@@ -261,6 +314,11 @@ func (rwdTrxRepo *psqlRewardTrxRepository) UpdateRewardTrx(c echo.Context, rwdPa
 
 	query := `UPDATE reward_transactions SET cif = $1, ref_core = $2 , status = $3, succeeded_date = $4, rejected_date = $5,
 		updated_at = $6 where ref_id = $7`
+
+	if isReferral {
+		query = `UPDATE reward_transactions SET cif = $1, ref_core = $2 , status = $3, succeeded_date = $4, rejected_date = $5,
+		updated_at = $6 where root_ref_id = $7`
+	}
 
 	stmt, err := rwdTrxRepo.Conn.Prepare(query)
 
@@ -334,7 +392,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardByPayload(c echo.Context,
 	query := `SELECT rt.ref_id, r.id, r.campaign_id, r.journal_account, r.type, r.validators, rt.root_ref_id
 		FROM reward_transactions rt  join rewards r on rt.reward_id = r.id
 		WHERE rt.status = $1 and rt.cif = $2 and rt.used_promo_code = $3 and rt.request_data->>'phone' = $4
-		and rt.request_data->>'product' = $5 and rt.request_data->>'transactionType' = $6`
+		and rt.request_data->'validators'->>'product' = $5 and rt.request_data->'validators'->>'transactionType' = $6`
 
 	rows, err := rwdTrxRepo.Conn.Query(query, models.RewardTrxInquired, payload.CIF, payload.PromoCode,
 		payload.Phone, payload.Validators.Product, payload.Validators.TransactionType)

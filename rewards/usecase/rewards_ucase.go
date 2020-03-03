@@ -214,7 +214,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	voucherCode, _, _ := rwd.voucherUC.GetVoucherCode(c, plValidator)
 
 	if voucherCode != nil {
-		rewards, err := rwd.voucherUC.VoucherValidate(c, plValidator)
+		rewardsVoucher, err := rwd.voucherUC.VoucherValidate(c, plValidator)
 
 		if err != nil {
 			requestLogger.Debug(err)
@@ -224,7 +224,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		}
 
 		// get response reward
-		rwdResp, _ := rwd.responseReward(c, rewards[0], plValidator)
+		rwdResp, _ := rwd.responseReward(c, rewardsVoucher[0], plValidator)
 		rwdInquiry.RefTrx = rwdResp.RefTrx
 		rwdResp.RewardID = 0 // make rewardID nil
 		rwdResp.RefTrx = ""
@@ -250,7 +250,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 	// fresh or new reward trx start from here
 	// check available campaign
-	campaigns, err := rwd.campaignRepo.GetCampaignAvailable(c, *plValidator)
+	campaignAvailable, err := rwd.campaignRepo.GetCampaignAvailable(c, *plValidator)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrNoCampaign)
@@ -275,10 +275,10 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		return rwdInquiry, &respErrors
 	}
 
-	// create array rewards
-	rewards := rwd.putRewards(c, campaigns)
+	// create array reward
+	packRewards := rwd.putRewards(c, campaignAvailable)
 
-	for _, reward := range rewards {
+	for _, reward := range packRewards {
 		rewardLogger := logger.GetRequestLogger(c, reward.Validators)
 
 		// validate promo code
@@ -436,12 +436,21 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 	requestLogger := logger.GetRequestLogger(c, nil)
 	trimmedString := strings.Replace(rwdPayment.RefTrx, " ", "", -1)
 	refIDs := strings.Split(trimmedString, ";")
+	var rwdTrx *models.RewardTrx
+	var err error
+	isReferral := false
+	isReferral = rwdPayment.IsReferral
 
 	for _, refID := range refIDs {
 		rwdPayment.RefTrx = refID
 
 		// check available reward transaction based in ref_id
-		rwdTrx, err := rwd.rwdTrxRepo.CheckRefID(c, rwdPayment.RefTrx)
+		rwdTrx, err = rwd.rwdTrxRepo.CheckRefID(c, rwdPayment.RefTrx)
+
+		// for referral check available reward transaction base in root_ref_id
+		if isReferral {
+			rwdTrx, err = rwd.rwdTrxRepo.CheckRootRefId(c, rwdPayment.RefTrx)
+		}
 
 		if err != nil {
 			requestLogger.Debug(models.ErrRefTrxNotFound)
@@ -503,6 +512,7 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 			referralTrx.CIF = rwdPayment.CIF
 
 			_ = rwd.referralTrxRepo.Create(c, referralTrx)
+			continue
 		}
 
 		if rwdTrx.Reward.Type == nil {

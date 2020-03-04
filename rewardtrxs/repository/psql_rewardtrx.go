@@ -293,9 +293,6 @@ func (rwdTrxRepo *psqlRewardTrxRepository) UpdateRewardTrx(c echo.Context, rwdPa
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
-	// isReferral for campaign CGC
-	isReferral := false
-	isReferral = rwdPayment.IsReferral
 
 	if status == models.RewardTrxSucceeded {
 		refCore = rwdPayment.RefCore
@@ -312,11 +309,6 @@ func (rwdTrxRepo *psqlRewardTrxRepository) UpdateRewardTrx(c echo.Context, rwdPa
 
 	query := `UPDATE reward_transactions SET cif = $1, ref_core = $2 , status = $3, succeeded_date = $4, rejected_date = $5,
 		updated_at = $6 where ref_id = $7`
-
-	if isReferral {
-		query = `UPDATE reward_transactions SET cif = $1, ref_core = $2 , status = $3, succeeded_date = $4, rejected_date = $5,
-		updated_at = $6 where root_ref_id = $7`
-	}
 
 	stmt, err := rwdTrxRepo.Conn.Prepare(query)
 

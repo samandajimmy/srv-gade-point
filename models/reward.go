@@ -81,7 +81,6 @@ type RewardPayment struct {
 	RefTrx     string `json:"refTrx,omitempty"`
 	RefCore    string `json:"refCore,omitempty"`
 	RootRefTrx string `json:"rootRefTrx,omitempty"`
-	IsReferral bool   `json:"isReferral,omitempty"`
 }
 
 // RewardsPayload is represent a inquire reward and reward transactiomn response model

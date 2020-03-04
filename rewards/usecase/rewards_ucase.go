@@ -439,8 +439,6 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 	refIDs := strings.Split(trimmedString, ";")
 	var rwdTrx *models.RewardTrx
 	var err error
-	//isReferral := false
-	//isReferral = rwdPayment.IsReferral
 
 	if rwdPayment.RootRefTrx != "" {
 		refIDs, err = rwd.rwdTrxRepo.CheckRootRefId(c, rwdPayment.RootRefTrx)

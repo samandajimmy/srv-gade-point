@@ -430,55 +430,63 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
 	return &rwdResp, nil
 }
 
-func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayment) (models.RewardTrxResponse, error) {
-	var responseData models.RewardTrxResponse
+func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayment) ([]models.RewardTrxResponse, error) {
+	var responseData []models.RewardTrxResponse
+	var errorAppend []error
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	trimmedString := strings.Replace(rwdPayment.RefTrx, " ", "", -1)
 	refIDs := strings.Split(trimmedString, ";")
 	var rwdTrx *models.RewardTrx
 	var err error
-	isReferral := false
-	isReferral = rwdPayment.IsReferral
+	//isReferral := false
+	//isReferral = rwdPayment.IsReferral
+
+	if rwdPayment.RootRefTrx != "" {
+		refIDs, err = rwd.rwdTrxRepo.CheckRootRefId(c, rwdPayment.RootRefTrx)
+	}
+
+	if err != nil {
+		requestLogger.Debug(models.ErrRefTrxNotFound)
+
+		return responseData, models.ErrRefTrxNotFound
+	}
 
 	for _, refID := range refIDs {
+		responseDataOriginal := models.RewardTrxResponse{}
 		rwdPayment.RefTrx = refID
 
 		// check available reward transaction based in ref_id
 		rwdTrx, err = rwd.rwdTrxRepo.CheckRefID(c, rwdPayment.RefTrx)
 
-		// for referral check available reward transaction base in root_ref_id
-		if isReferral {
-			rwdTrx, err = rwd.rwdTrxRepo.CheckRootRefId(c, rwdPayment.RefTrx)
-		}
-
 		if err != nil {
 			requestLogger.Debug(models.ErrRefTrxNotFound)
-
-			return responseData, models.ErrRefTrxNotFound
+			errorAppend = append(errorAppend, models.ErrRefTrxNotFound)
+			continue
 		}
 
 		// no ref_core equals to trx rejected
 		if rwdPayment.RefCore == "" {
 			// rejected
 			// update voucher code
-			_ = rwd.voucherCodeRepo.UpdateVoucherCodeRejected(c, rwdPayment.RefTrx)
+			err = rwd.voucherCodeRepo.UpdateVoucherCodeRejected(c, rwdPayment.RefTrx)
 
 			// update reward trx
-			_ = rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxRejected)
+			err = rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxRejected)
 
 			// update add reward quota
-			_ = rwd.quotaUC.UpdateAddQuota(c, *rwdTrx.RewardID)
+			err = rwd.quotaUC.UpdateAddQuota(c, *rwdTrx.RewardID)
 
-			return responseData, nil
+			continue
 		}
 
 		// trx status = succeeded or status = rejected or status = forceSucceeded then return error
 		if *rwdTrx.Status != models.RewardTrxInquired && *rwdTrx.Status != models.RewardTrxTimeOut {
-			responseData.StatusCode = rwdTrx.Status
-			responseData.Status = rwdTrx.GetstatusRewardTrxText()
+			responseDataOriginal.StatusCode = rwdTrx.Status
+			responseDataOriginal.Status = rwdTrx.GetstatusRewardTrxText()
 
-			return responseData, nil
+			responseData = append(responseData, responseDataOriginal)
+			continue
 		}
 
 		// succeeded
@@ -512,7 +520,6 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 			referralTrx.CIF = rwdPayment.CIF
 
 			_ = rwd.referralTrxRepo.Create(c, referralTrx)
-			continue
 		}
 
 		if rwdTrx.Reward.Type == nil {
@@ -525,6 +532,9 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 		}
 	}
 
+	if len(errorAppend) > 0 {
+		return responseData, errorAppend[0]
+	}
 	return responseData, nil
 }
 

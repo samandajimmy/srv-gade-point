@@ -80,6 +80,7 @@ type RewardPayment struct {
 	CIF        string `json:"cif,omitempty"`
 	RefTrx     string `json:"refTrx,omitempty"`
 	RefCore    string `json:"refCore,omitempty"`
+	RootRefTrx string `json:"rootRefTrx,omitempty"`
 	IsReferral bool   `json:"isReferral,omitempty"`
 }
 

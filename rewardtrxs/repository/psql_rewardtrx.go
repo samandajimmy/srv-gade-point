@@ -242,10 +242,6 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CheckRefID(c echo.Context, refID stri
 func (rwdTrxRepo *psqlRewardTrxRepository) CheckRootRefId(c echo.Context, rootRefID string) ([]string, error) {
 	var result models.RewardTrx
 	var results []string
-	//var rewardTrxReqData models.RewardTrxReqData
-	//var rewardTrxRespData models.RewardsInquiry
-	//var reqData json.RawMessage
-	//var respData json.RawMessage
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	query := `SELECT rt.id,rt.ref_id

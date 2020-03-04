@@ -269,14 +269,6 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CheckRootRefId(c echo.Context, rootRe
 			return nil, err
 		}
 
-		//_ = json.Unmarshal([]byte(reqData), &rewardTrxReqData)
-		//err = json.Unmarshal([]byte(respData), &rewardTrxRespData)
-		//
-		//if err != nil {
-		//	requestLogger.Debug(err)
-		//
-		//	return nil, err
-		//}
 		results = append(results, result.RefID)
 	}
 

@@ -11,7 +11,7 @@ type UseCase interface {
 	CreateReward(echo.Context, *models.Reward, *models.Campaign) error
 	DeleteByCampaign(echo.Context, int64) error
 	Inquiry(echo.Context, *models.PayloadValidator) (models.RewardsInquiry, *models.ResponseErrors)
-	Payment(echo.Context, *models.RewardPayment) (models.RewardTrxResponse, error)
+	Payment(echo.Context, *models.RewardPayment) ([]models.RewardTrxResponse, error)
 	CheckTransaction(echo.Context, *models.RewardPayment) (models.RewardTrxResponse, error)
 	RefreshTrx()
 	GetRewards(echo.Context, *models.RewardsPayload) ([]models.Reward, string, error)

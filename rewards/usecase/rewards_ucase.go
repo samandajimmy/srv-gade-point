@@ -214,7 +214,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	voucherCode, _, _ := rwd.voucherUC.GetVoucherCode(c, plValidator)
 
 	if voucherCode != nil {
-		rewards, err := rwd.voucherUC.VoucherValidate(c, plValidator)
+		rewardsVoucher, err := rwd.voucherUC.VoucherValidate(c, plValidator)
 
 		if err != nil {
 			requestLogger.Debug(err)
@@ -224,7 +224,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		}
 
 		// get response reward
-		rwdResp, _ := rwd.responseReward(c, rewards[0], plValidator)
+		rwdResp, _ := rwd.responseReward(c, rewardsVoucher[0], plValidator)
 		rwdInquiry.RefTrx = rwdResp.RefTrx
 		rwdResp.RewardID = 0 // make rewardID nil
 		rwdResp.RefTrx = ""
@@ -250,7 +250,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 	// fresh or new reward trx start from here
 	// check available campaign
-	campaigns, err := rwd.campaignRepo.GetCampaignAvailable(c, *plValidator)
+	campaignAvailable, err := rwd.campaignRepo.GetCampaignAvailable(c, *plValidator)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrNoCampaign)
@@ -275,10 +275,10 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		return rwdInquiry, &respErrors
 	}
 
-	// create array rewards
-	rewards := rwd.putRewards(c, campaigns)
+	// create array reward
+	packRewards := rwd.putRewards(c, campaignAvailable)
 
-	for _, reward := range rewards {
+	for _, reward := range packRewards {
 		rewardLogger := logger.GetRequestLogger(c, reward.Validators)
 
 		// validate promo code
@@ -430,23 +430,37 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
 	return &rwdResp, nil
 }
 
-func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayment) (models.RewardTrxResponse, error) {
-	var responseData models.RewardTrxResponse
+func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayment) ([]models.RewardTrxResponse, error) {
+	var responseData []models.RewardTrxResponse
+	var errorAppend []error
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	trimmedString := strings.Replace(rwdPayment.RefTrx, " ", "", -1)
 	refIDs := strings.Split(trimmedString, ";")
+	var rwdTrx *models.RewardTrx
+	var err error
+
+	if rwdPayment.RootRefTrx != "" {
+		refIDs, err = rwd.rwdTrxRepo.CheckRootRefId(c, rwdPayment.RootRefTrx)
+	}
+
+	if err != nil {
+		requestLogger.Debug(models.ErrRefTrxNotFound)
+
+		return responseData, models.ErrRefTrxNotFound
+	}
 
 	for _, refID := range refIDs {
+		responseDataOriginal := models.RewardTrxResponse{}
 		rwdPayment.RefTrx = refID
 
 		// check available reward transaction based in ref_id
-		rwdTrx, err := rwd.rwdTrxRepo.CheckRefID(c, rwdPayment.RefTrx)
+		rwdTrx, err = rwd.rwdTrxRepo.CheckRefID(c, rwdPayment.RefTrx)
 
 		if err != nil {
 			requestLogger.Debug(models.ErrRefTrxNotFound)
-
-			return responseData, models.ErrRefTrxNotFound
+			errorAppend = append(errorAppend, models.ErrRefTrxNotFound)
+			continue
 		}
 
 		// no ref_core equals to trx rejected
@@ -461,15 +475,16 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 			// update add reward quota
 			_ = rwd.quotaUC.UpdateAddQuota(c, *rwdTrx.RewardID)
 
-			return responseData, nil
+			continue
 		}
 
 		// trx status = succeeded or status = rejected or status = forceSucceeded then return error
 		if *rwdTrx.Status != models.RewardTrxInquired && *rwdTrx.Status != models.RewardTrxTimeOut {
-			responseData.StatusCode = rwdTrx.Status
-			responseData.Status = rwdTrx.GetstatusRewardTrxText()
+			responseDataOriginal.StatusCode = rwdTrx.Status
+			responseDataOriginal.Status = rwdTrx.GetstatusRewardTrxText()
 
-			return responseData, nil
+			responseData = append(responseData, responseDataOriginal)
+			continue
 		}
 
 		// succeeded
@@ -515,6 +530,9 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 		}
 	}
 
+	if len(errorAppend) > 0 {
+		return responseData, errorAppend[0]
+	}
 	return responseData, nil
 }
 

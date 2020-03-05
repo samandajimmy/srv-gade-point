@@ -60,7 +60,7 @@ func (psqlRepo *psqlVoucherCodeRepository) GetVoucherCodeHistory(c echo.Context,
 	}
 
 	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
-		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
+		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), (payload["page"].(int)-1)*payload["limit"].(int))
 	}
 
 	query += where + " order by vc.updated_at desc, status desc" + paging + ";"
@@ -147,7 +147,7 @@ func (psqlRepo *psqlVoucherCodeRepository) GetVoucherCodes(c echo.Context, paylo
 	}
 
 	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
-		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
+		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), (payload["page"].(int)-1)*payload["limit"].(int))
 	}
 
 	query += where + " order by vc.id asc" + paging + ";"
@@ -317,7 +317,7 @@ func (psqlRepo *psqlVoucherCodeRepository) GetBoughtVoucherCode(c echo.Context, 
 	}
 
 	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
-		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
+		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), (payload["page"].(int)-1)*payload["limit"].(int))
 	}
 
 	query += where + " user_id is not null order by updated_at desc, status desc " + paging + ";"
@@ -390,7 +390,7 @@ func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeRejected(c echo.Cont
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
-	query := `UPDATE voucher_codes SET status = $1, user_id = $2, bought_date = NULL, ref_id = ''
+	query := `UPDATE voucher_codes SET status = $1, user_id = $2, bought_date = NULL, ref_id = '',
 		updated_at = $3 where status = $4 and ref_id = $5`
 	stmt, err := psqlRepo.Conn.Prepare(query)
 

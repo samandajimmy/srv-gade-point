@@ -467,13 +467,13 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 		if rwdPayment.RefCore == "" {
 			// rejected
 			// update voucher code
-			err = rwd.voucherCodeRepo.UpdateVoucherCodeRejected(c, rwdPayment.RefTrx)
+			_ = rwd.voucherCodeRepo.UpdateVoucherCodeRejected(c, rwdPayment.RefTrx)
 
 			// update reward trx
-			err = rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxRejected)
+			_ = rwd.rwdTrxRepo.UpdateRewardTrx(c, rwdPayment, models.RewardTrxRejected)
 
 			// update add reward quota
-			err = rwd.quotaUC.UpdateAddQuota(c, *rwdTrx.RewardID)
+			_ = rwd.quotaUC.UpdateAddQuota(c, *rwdTrx.RewardID)
 
 			continue
 		}

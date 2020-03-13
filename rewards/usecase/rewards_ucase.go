@@ -433,12 +433,13 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
 func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayment) ([]models.RewardTrxResponse, error) {
 	var responseData []models.RewardTrxResponse
 	var errorAppend []error
+	var rwdTrx *models.RewardTrx
+	var err error
+	var zero int64
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	trimmedString := strings.Replace(rwdPayment.RefTrx, " ", "", -1)
 	refIDs := strings.Split(trimmedString, ";")
-	var rwdTrx *models.RewardTrx
-	var err error
 
 	if rwdPayment.RootRefTrx != "" {
 		refIDs, err = rwd.rwdTrxRepo.CheckRootRefId(c, rwdPayment.RootRefTrx)
@@ -461,6 +462,11 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 			requestLogger.Debug(models.ErrRefTrxNotFound)
 			errorAppend = append(errorAppend, models.ErrRefTrxNotFound)
 			continue
+		}
+
+		// make rewardID = 0
+		if rwdTrx.RewardID == nil {
+			rwdTrx.RewardID = &zero
 		}
 
 		// no ref_core equals to trx rejected

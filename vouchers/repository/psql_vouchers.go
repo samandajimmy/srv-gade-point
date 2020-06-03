@@ -244,7 +244,7 @@ func (m *psqlVoucherRepository) GetVoucherAdmin(c echo.Context, voucherID string
 	requestLogger := logger.GetRequestLogger(c, nil)
 	result := new(models.Voucher)
 
-	query := `select v.id, v.name, v.description, v.start_date, COALESCE(v.end_date), v.point, v.journal_account,
+	query := `select v.id, v.name, v.description, v.start_date, v.end_date, v.point, v.journal_account,
 		v.image_url, v.status, v.generator_type, v.stock, v.prefix_promo_code, v.stock as amount,
 		count(vc.id) filter (where vc.status = '0') as available,
 		count(vc.id) filter (where vc.status = '1') as bought,

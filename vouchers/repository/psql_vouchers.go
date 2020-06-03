@@ -239,12 +239,12 @@ func (m *psqlVoucherRepository) getVouchersAdmin(c echo.Context, query string) (
 
 func (m *psqlVoucherRepository) GetVoucherAdmin(c echo.Context, voucherID string) (*models.Voucher, error) {
 	var validator json.RawMessage
-	var createDate, updateDate pq.NullTime
+	var createDate, updateDate, endDate pq.NullTime
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	result := new(models.Voucher)
 
-	query := `select v.id, v.name, v.description, v.start_date, v.end_date, v.point, v.journal_account,
+	query := `select v.id, v.name, v.description, v.start_date, COALESCE(v.end_date), v.point, v.journal_account,
 		v.image_url, v.status, v.generator_type, v.stock, v.prefix_promo_code, v.stock as amount,
 		count(vc.id) filter (where vc.status = '0') as available,
 		count(vc.id) filter (where vc.status = '1') as bought,
@@ -262,7 +262,7 @@ func (m *psqlVoucherRepository) GetVoucherAdmin(c echo.Context, voucherID string
 		&result.Name,
 		&result.Description,
 		&result.StartDate,
-		&result.EndDate,
+		&endDate,
 		&result.Point,
 		&result.JournalAccount,
 		&result.ImageURL,
@@ -290,6 +290,12 @@ func (m *psqlVoucherRepository) GetVoucherAdmin(c echo.Context, voucherID string
 
 	result.CreatedAt = &createDate.Time
 	result.UpdatedAt = &updateDate.Time
+	result.EndDate   = ""
+
+	if endDate.Valid {
+		result.EndDate = endDate.Time.Format(models.DateTimeFormatZone)
+	}
+
 	err = json.Unmarshal([]byte(validator), &result.Validators)
 
 	if err != nil {

@@ -33,7 +33,7 @@ type Voucher struct {
 	Name               string     `json:"name,omitempty"`
 	Description        string     `json:"description,omitempty"`
 	StartDate          string     `json:"startDate,omitempty"`
-	EndDate            string     `json:"endDate,omitempty"`
+	EndDate            string     `json:"endDate"`
 	Point              *int64     `json:"point,omitempty"`
 	JournalAccount     string     `json:"journalAccount,omitempty"`
 	Type               *int64     `json:"type,omitempty"`

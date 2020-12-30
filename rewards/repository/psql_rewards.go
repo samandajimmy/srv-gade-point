@@ -382,7 +382,7 @@ func (rwdRepo *psqlRewardRepository) GetRewardPromotions(c echo.Context, pv mode
 	}
 
 	if pv.Channel != "" {
-		where += " AND r.validator->>'channel' = '" + pv.Channel + "'"
+		where += " AND r.validators->>'channel' = '" + pv.Channel + "'"
 	}
 
 	query += where

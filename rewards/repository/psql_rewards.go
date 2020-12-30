@@ -381,6 +381,10 @@ func (rwdRepo *psqlRewardRepository) GetRewardPromotions(c echo.Context, pv mode
 		where += " AND r.validators->>'transactionType' LIKE '%" + pv.TransactionType + "%'"
 	}
 
+	if pv.Channel != "" {
+		where += " AND r.validator->>'channel' = '" + pv.Channel + "'"
+	}
+
 	query += where
 	res, err := rwdRepo.getRewardPromotions(c, query)
 

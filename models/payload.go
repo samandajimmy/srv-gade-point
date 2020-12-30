@@ -16,4 +16,5 @@ type PayloadList struct {
 type RewardPromotionLists struct {
 	Product         string `json:"product,omitempty"`
 	TransactionType string `json:"transactionType,omitempty"`
+	Channel         string `json:"channel,omitempty"`
 }

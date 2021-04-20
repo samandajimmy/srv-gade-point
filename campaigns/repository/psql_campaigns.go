@@ -289,13 +289,13 @@ func (m *psqlCampaignRepository) SavePoint(c echo.Context, cmpgnTrx *models.Camp
 	var query string
 
 	if cmpgnTrx.TransactionType == models.TransactionPointTypeDebet {
-		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, reff_core, campaign_id, created_at)
+		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, ref_core, campaign_id, created_at)
 			VALUES ($1, $2, $3, $4, $5, $6, $7)  RETURNING id`
 		id = cmpgnTrx.Campaign.ID
 	}
 
 	if cmpgnTrx.TransactionType == models.TransactionPointTypeKredit {
-		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, reff_core, voucher_code_id, created_at)
+		query = `INSERT INTO campaign_transactions (user_id, point_amount, transaction_type, transaction_date, ref_core, voucher_code_id, created_at)
 			VALUES ($1, $2, $3, $4, $5, $6, $7)  RETURNING id`
 		id = cmpgnTrx.VoucherCode.ID
 	}

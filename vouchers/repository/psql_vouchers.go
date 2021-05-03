@@ -316,7 +316,7 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 	where := ""
 	query := fmt.Sprint(`SELECT distinct v.id, v.name, v.description, v.start_date, v.end_date, v.point,
 		v.image_url, v.stock, v.validators->>'product', v.validators->>'transactionType', v.validators->>'minLoanAmount', 
-		vc.promo_code, v.terms_and_conditions, v.how_to_use, v.type, v.created_at
+		v.terms_and_conditions, v.how_to_use, v.type, v.created_at
 		FROM vouchers v
 		LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id
 		WHERE v.status = 1 AND v.end_date::date >= now()`)
@@ -334,10 +334,6 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 
 	if c.QueryParam("name") != "" {
 		where += " AND v.name LIKE '%" + c.QueryParam("name") + "%'"
-	}
-
-	if c.QueryParam("cif") != "" {
-		where += " AND vc.user_id = '" + c.QueryParam("cif") + "'"
 	}
 
 	if c.QueryParam("startDate") != "" {
@@ -384,7 +380,6 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 			&t.ProductCode,
 			&t.TransactionType,
 			&t.MinLoanAmount,
-			&t.PromoCode,
 			&t.TermsAndConditions,
 			&t.HowToUse,
 			&t.Type,
@@ -609,8 +604,8 @@ func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[stri
 	query := `SELECT vc.id, vc.promo_code, vc.bought_date, vc.voucher_id, v.name, v.description,
 		v.terms_and_conditions, v.how_to_use, v.type, v.start_date, v.end_date, v.image_url
 		FROM voucher_codes AS vc
-		LEFT JOIN vouchers AS v ON b.id = vc.voucher_id
-		WHERE a.promo_code IS NOT NULL AND vc.status = 1`
+		LEFT JOIN vouchers AS v ON v.id = vc.voucher_id
+		WHERE vc.promo_code IS NOT NULL AND vc.status = 1`
 
 	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
 		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
@@ -734,10 +729,6 @@ func (m *psqlVoucherRepository) CountVouchers(c echo.Context, expired bool) (int
 
 	if c.QueryParam("name") != "" {
 		where += " AND v.name LIKE '%" + c.QueryParam("name") + "%'"
-	}
-
-	if c.QueryParam("cif") != "" {
-		where += " AND vc.user_id = '" + c.QueryParam("cif") + "'"
 	}
 
 	if c.QueryParam("startDate") != "" {

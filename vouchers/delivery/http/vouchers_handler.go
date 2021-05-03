@@ -34,11 +34,11 @@ func NewVouchersHandler(echoGroup models.EchoGroup, us vouchers.UseCase) {
 
 	// End Point For External
 	echoGroup.API.GET("/vouchers", handler.GetVouchers)
-	echoGroup.API.GET("/vouchers/history", handler.GetHistoryVouchers)
 	echoGroup.API.GET("/hidden/vouchers/:id", handler.GetVoucher)
 	echoGroup.API.POST("/vouchers/buy", handler.VoucherBuy)
 	echoGroup.API.POST("/hidden/vouchers/redeem", handler.VoucherRedeem)
-	echoGroup.API.GET("/hidden/vouchers/user", handler.GetVouchersUser)
+	echoGroup.API.GET("/vouchers/user", handler.GetVouchersUser)
+	echoGroup.API.GET("/vouchers/user/history", handler.GetHistoryVouchersUser)
 	echoGroup.API.POST("/hidden/vouchers/validate", handler.VoucherValidate)
 }
 
@@ -325,43 +325,73 @@ func (vchr *VouchersHandler) GetVouchers(c echo.Context) error {
 }
 
 // GetVouchers Get all history vouchers by param name, start date and end date
-func (vchr *VouchersHandler) GetHistoryVouchers(c echo.Context) error {
-	var pl models.PayloadList
-	respErrors := &models.ResponseErrors{}
+func (vchr *VouchersHandler) GetHistoryVouchersUser(c echo.Context) error {
 	response = models.Response{}
-	logger := models.RequestLogger{}
-	logger.DataLog(c, pl).Info("Start to get all history voucher for client")
-	err := c.Bind(&pl)
+	userID := c.QueryParam("userId")
+	pageStr := c.QueryParam("page")
+	limitStr := c.QueryParam("limit")
 
-	if err != nil {
-		respErrors.SetTitle(models.MessageUnprocessableEntity)
-		response.SetResponse("", respErrors)
-		logger.DataLog(c, response).Info("End to get all history voucher for client")
-
-		return c.JSON(http.StatusUnprocessableEntity, response)
+	// validate page and limit string input
+	if pageStr == "" {
+		pageStr = "0"
 	}
 
-	if err = c.Validate(pl); err != nil {
-		respErrors.SetTitle(err.Error())
-		response.SetResponse("", respErrors)
-		logger.DataLog(c, response).Info("End to get all history voucher for client")
+	if limitStr == "" {
+		limitStr = "0"
+	}
+
+	// prepare payload for logger
+	payload := map[string]interface{}{
+		"userID": userID,
+		"page":   pageStr,
+		"limit":  limitStr,
+	}
+
+	logger := models.RequestLogger{
+		Payload: payload,
+	}
+
+	requestLogger := logger.GetRequestLogger(c, payload)
+	requestLogger.Info("Start to get all voucher for client")
+
+	// validate payload values
+	page, err := strconv.Atoi(payload["page"].(string))
+
+	if err != nil {
+		requestLogger.Debug(err)
+		response.Status = models.StatusError
+		response.Message = http.StatusText(http.StatusBadRequest)
 
 		return c.JSON(http.StatusBadRequest, response)
 	}
 
-	// Get Voucher History with CIF
-	responseData, respErrors, err := vchr.VoucherUseCase.GetHistoryVouchers(c)
+	limit, err := strconv.Atoi(payload["limit"].(string))
 
 	if err != nil {
-		respErrors.SetTitle(err.Error())
-		response.SetResponse("", respErrors)
-		logger.DataLog(c, response).Info("End to get all history voucher for client")
+		requestLogger.Debug(err)
+		response.Status = models.StatusError
+		response.Message = http.StatusText(http.StatusBadRequest)
 
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	payload["page"] = page
+	payload["limit"] = limit
+	responseData, totalCount, err := vchr.VoucherUseCase.GetHistoryVouchersUser(c)
+
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	response.SetResponse(responseData, respErrors)
-	logger.DataLog(c, response).Info("End to get all history voucher for client")
+	if len(responseData) > 0 {
+		response.Data = responseData
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MessagePointSuccess
+	response.TotalCount = totalCount
 
 	return c.JSON(getStatusCode(err), response)
 }

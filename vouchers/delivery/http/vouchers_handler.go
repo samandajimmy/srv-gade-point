@@ -36,7 +36,7 @@ func NewVouchersHandler(echoGroup models.EchoGroup, us vouchers.UseCase) {
 	echoGroup.API.GET("/vouchers", handler.GetVouchers)
 	echoGroup.API.GET("/vouchers/history", handler.GetHistoryVouchers)
 	echoGroup.API.GET("/hidden/vouchers/:id", handler.GetVoucher)
-	echoGroup.API.POST("/hidden/vouchers/buy", handler.VoucherBuy)
+	echoGroup.API.POST("/vouchers/buy", handler.VoucherBuy)
 	echoGroup.API.POST("/hidden/vouchers/redeem", handler.VoucherRedeem)
 	echoGroup.API.GET("/hidden/vouchers/user", handler.GetVouchersUser)
 	echoGroup.API.POST("/hidden/vouchers/validate", handler.VoucherValidate)

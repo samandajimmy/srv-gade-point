@@ -615,6 +615,14 @@ func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[stri
 		where += " AND vc.user_id='" + payload["userID"].(string) + "'"
 	}
 
+	if c.QueryParam("productCode") != "" {
+		where += ` AND v.validators->>'product' = '` + c.QueryParam("productCode") + "'"
+	}
+
+	if c.QueryParam("transactionType") != "" {
+		where += ` AND v.validators->>'transactionType' = '` + c.QueryParam("transactionType") + "'"
+	}
+
 	query += where + " ORDER BY vc.bought_date DESC" + paging
 
 	rows, err := m.Conn.Query(query)
@@ -716,7 +724,7 @@ func (m *psqlVoucherRepository) CountVouchers(c echo.Context, expired bool) (int
 	requestLogger := logger.GetRequestLogger(c, nil)
 	where := ""
 	var total int
-	query := `SELECT coalesce(COUNT(distinct vc.id), 0) FROM vouchers v
+	query := `SELECT coalesce(COUNT(distinct v.id), 0) FROM vouchers v
 		LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id
 		WHERE v.id IS NOT NULL AND v.status = 1`
 	defaultStatus := strconv.Itoa(int(models.VoucherCodeStatusBought))
@@ -794,18 +802,29 @@ func (m *psqlVoucherRepository) CountPromoCode(c echo.Context, payload map[strin
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	where := ""
-	query := `SELECT coalesce(COUNT(id), 0) FROM voucher_codes WHERE id IS NOT NULL`
+	query := `SELECT coalesce(COUNT(vc.id), 0)
+		FROM voucher_codes AS vc
+		LEFT JOIN vouchers AS v ON v.id = vc.voucher_id
+		WHERE v.id IS NOT NULL`
 
 	if payload["userID"].(string) != "" {
-		where += " AND user_id='" + payload["userID"].(string) + "'"
+		where += " AND vc.user_id='" + payload["userID"].(string) + "'"
 	}
 
 	if payload["status"].(string) != "" {
-		where += " AND status='" + payload["status"].(string) + "'"
+		where += " AND vc.status='" + payload["status"].(string) + "'"
 	}
 
 	if payload["voucherID"].(string) != "" {
-		where += " AND voucher_id='" + payload["voucherID"].(string) + "'"
+		where += " AND vc.voucher_id='" + payload["voucherID"].(string) + "'"
+	}
+
+	if c.QueryParam("productCode") != "" {
+		where += ` AND v.validators->>'product' = '` + c.QueryParam("productCode") + "'"
+	}
+
+	if c.QueryParam("transactionType") != "" {
+		where += ` AND v.validators->>'transactionType' = '` + c.QueryParam("transactionType") + "'"
 	}
 
 	query += where

@@ -338,12 +338,6 @@ func (vchr *voucherUseCase) GetVouchersUser(c echo.Context, payload map[string]i
 		return nil, "", models.ErrGetVoucherCounter
 	}
 
-	if totalCount <= 0 {
-		requestLogger.Debug(models.ErrGetVoucherCounter)
-
-		return vouchersUser, "", models.ErrGetVoucherCounter
-	}
-
 	return vouchersUser, strconv.Itoa(totalCount), nil
 }
 

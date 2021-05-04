@@ -21,12 +21,12 @@ type Repository interface {
 	GetVouchersUser(echo.Context, map[string]interface{}) ([]models.VoucherCode, error)
 	CountVouchers(echo.Context, bool) (int, error)
 	DeleteVoucher(echo.Context, int64) error
-	CountPromoCode(echo.Context, map[string]interface{}) (int, error)
+	CountVouchersUser(echo.Context, map[string]interface{}) (int, error)
 	UpdatePromoCodeRedeemed(echo.Context, string, string, string) (*models.VoucherCode, error)
 	GetVoucherCode(echo.Context, *models.PayloadValidator) (*models.VoucherCode, string, error)
 	UpdateExpiryDate(echo.Context) error
 	UpdateStatusBasedOnStartDate() error
 	CountBoughtVoucher(echo.Context, string, string) (int64, error)
-	CountHistoryVouchers(c echo.Context, expired bool) (int, error)
-	GetHistoryVouchers(c echo.Context) ([]*models.Voucher, error)
+	CountHistoryVouchersUser(c echo.Context, expired bool) (int, error)
+	GetHistoryVouchersUser(c echo.Context) ([]models.VoucherCode, error)
 }

@@ -262,43 +262,28 @@ func (vchr *voucherUseCase) GetVouchers(c echo.Context) (models.ListVoucher, *mo
 	return responseVoucher, &respErrors, nil
 }
 
-func (vchr *voucherUseCase) GetHistoryVouchers(c echo.Context) (models.ListVoucher, *models.ResponseErrors, error) {
-	var listVoucher []*models.Voucher
-	var responseVoucher models.ListVoucher
+func (vchr *voucherUseCase) GetHistoryVouchersUser(c echo.Context) ([]models.VoucherCode, string, error) {
 	var err error
 	var totalCount int
 	logger := models.RequestLogger{}
-	var respErrors models.ResponseErrors
 	requestLogger := logger.GetRequestLogger(c, nil)
-
-	listVoucher, err = vchr.voucherRepo.GetHistoryVouchers(c)
+	vouchersUser, err := vchr.voucherRepo.GetHistoryVouchersUser(c)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrGetVouchers)
 
-		respErrors.SetTitle(models.ErrGetVouchers.Error())
-		return responseVoucher, &respErrors, err
+		return nil, "", err
 	}
 
-	totalCount, err = vchr.voucherRepo.CountHistoryVouchers(c, true)
+	totalCount, err = vchr.voucherRepo.CountHistoryVouchersUser(c, true)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrGetVoucherCounter)
 
-		respErrors.SetTitle(models.ErrGetVoucherCounter.Error())
-		return responseVoucher, &respErrors, models.ErrGetVoucherCounter
+		return nil, "", models.ErrGetVoucherCounter
 	}
 
-	if totalCount <= 0 {
-		requestLogger.Debug(models.ErrVoucherUnavailable)
-
-		respErrors.SetTitle(models.ErrVoucherUnavailable.Error())
-		return responseVoucher, &respErrors, models.ErrVoucherUnavailable
-	}
-	responseVoucher.Vouchers = listVoucher
-	responseVoucher.TotalCount = strconv.Itoa(totalCount)
-
-	return responseVoucher, &respErrors, nil
+	return vouchersUser, strconv.Itoa(totalCount), nil
 }
 
 func (vchr *voucherUseCase) GetVoucher(c echo.Context, voucherID string) (*models.Voucher, error) {
@@ -330,18 +315,12 @@ func (vchr *voucherUseCase) GetVouchersUser(c echo.Context, payload map[string]i
 
 	payload["status"] = "1" // to get the bought status
 	payload["voucherID"] = ""
-	totalCount, err = vchr.voucherRepo.CountPromoCode(c, payload)
+	totalCount, err = vchr.voucherRepo.CountVouchersUser(c, payload)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrGetVoucherCounter)
 
 		return nil, "", models.ErrGetVoucherCounter
-	}
-
-	if totalCount <= 0 {
-		requestLogger.Debug(models.ErrGetVoucherCounter)
-
-		return vouchersUser, "", models.ErrGetVoucherCounter
 	}
 
 	return vouchersUser, strconv.Itoa(totalCount), nil

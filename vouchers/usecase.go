@@ -23,5 +23,5 @@ type UseCase interface {
 	VoucherRedeem(echo.Context, *models.PayloadValidator) (*models.VoucherCode, error)
 	GetVoucherCode(echo.Context, *models.PayloadValidator) (*models.VoucherCode, string, error)
 	UpdateStatusBasedOnStartDate() error
-	GetHistoryVouchers(c echo.Context) (models.ListVoucher, *models.ResponseErrors, error)
+	GetHistoryVouchersUser(c echo.Context) ([]models.VoucherCode, string, error)
 }

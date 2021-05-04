@@ -316,17 +316,10 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 	where := ""
 	query := fmt.Sprint(`SELECT distinct v.id, v.name, v.description, v.start_date, v.end_date, v.point,
 		v.image_url, v.stock, v.validators->>'product', v.validators->>'transactionType', v.validators->>'minLoanAmount', 
-		vc.promo_code, v.terms_and_conditions, v.how_to_use, v.type, v.created_at
+		v.terms_and_conditions, v.how_to_use, v.type, v.created_at
 		FROM vouchers v
 		LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id
 		WHERE v.status = 1 AND v.end_date::date >= now()`)
-
-	defaultStatus := strconv.Itoa(int(models.VoucherCodeStatusBought))
-	if c.QueryParam("status") != "" {
-		defaultStatus = c.QueryParam("status")
-	}
-
-	where += " AND vc.status IN (" + defaultStatus + ", 5)"
 
 	if c.QueryParam("page") != "" || c.QueryParam("limit") != "" {
 		paging = fmt.Sprintf("LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
@@ -334,10 +327,6 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 
 	if c.QueryParam("name") != "" {
 		where += " AND v.name LIKE '%" + c.QueryParam("name") + "%'"
-	}
-
-	if c.QueryParam("cif") != "" {
-		where += " AND vc.user_id = '" + c.QueryParam("cif") + "'"
 	}
 
 	if c.QueryParam("startDate") != "" {
@@ -354,6 +343,10 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 
 	if c.QueryParam("transactionType") != "" {
 		where += ` AND v.validators->>'transactionType' = '` + c.QueryParam("transactionType") + "'"
+	}
+
+	if c.QueryParam("channel") != "" {
+		where += ` AND v.validators->>'channel' = '` + c.QueryParam("channel") + "'"
 	}
 
 	query += where + " ORDER BY v.created_at DESC " + paging
@@ -384,99 +377,10 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 			&t.ProductCode,
 			&t.TransactionType,
 			&t.MinLoanAmount,
-			&t.PromoCode,
 			&t.TermsAndConditions,
 			&t.HowToUse,
 			&t.Type,
 			&createDate,
-		)
-
-		if err != nil {
-			requestLogger.Debug(err)
-
-			return nil, err
-		}
-
-		t.CreatedAt = &createDate.Time
-		result = append(result, t)
-	}
-
-	return result, nil
-}
-
-func (m *psqlVoucherRepository) GetHistoryVouchers(c echo.Context) ([]*models.Voucher, error) {
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-	page, _ := strconv.Atoi(c.QueryParam("page"))
-	limit, _ := strconv.Atoi(c.QueryParam("limit"))
-	paging := ""
-	where := ""
-	query := `SELECT distinct v.id, v.name, v.description, v.start_date, v.end_date,
-		v.image_url, v.validators->>'product', v.validators->>'transactionType', v.validators->>'minLoanAmount', 
-		vc.promo_code, v.terms_and_conditions, v.how_to_use, v.created_at, vc.status
-		FROM vouchers v
-		LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id
-		WHERE v.status = 1 AND v.end_date::date >= now() AND vc.status in ('2','3','4')`
-
-	if c.QueryParam("page") != "" || c.QueryParam("limit") != "" {
-		paging = fmt.Sprintf("LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
-	}
-
-	if c.QueryParam("name") != "" {
-		where += " AND v.name LIKE '%" + c.QueryParam("name") + "%'"
-	}
-
-	if c.QueryParam("cif") != "" {
-		where += " AND vc.user_id = '" + c.QueryParam("cif") + "'"
-	}
-
-	if c.QueryParam("startDate") != "" {
-		where += " AND v.start_date::timestamp::date >= '" + c.QueryParam("startDate") + "'"
-	}
-
-	if c.QueryParam("endDate") != "" {
-		where += " AND v.end_date::timestamp::date <= '" + c.QueryParam("endDate") + "'"
-	}
-
-	if c.QueryParam("productCode") != "" {
-		where += ` AND v.validators->>'product' = '` + c.QueryParam("productCode") + "'"
-	}
-
-	if c.QueryParam("transactionType") != "" {
-		where += ` AND v.validators->>'transactionType' = '` + c.QueryParam("transactionType") + "'"
-	}
-
-	query += where + " ORDER BY v.created_at DESC " + paging
-	rows, err := m.Conn.Query(query)
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return nil, err
-	}
-
-	defer rows.Close()
-	result := make([]*models.Voucher, 0)
-
-	for rows.Next() {
-		t := new(models.Voucher)
-		var createDate pq.NullTime
-
-		err = rows.Scan(
-			&t.ID,
-			&t.Name,
-			&t.Description,
-			&t.StartDate,
-			&t.EndDate,
-			&t.ImageURL,
-			&t.ProductCode,
-			&t.TransactionType,
-			&t.MinLoanAmount,
-			&t.PromoCode,
-			&t.TermsAndConditions,
-			&t.HowToUse,
-			&createDate,
-			&t.Status,
 		)
 
 		if err != nil {
@@ -609,8 +513,8 @@ func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[stri
 	query := `SELECT vc.id, vc.promo_code, vc.bought_date, vc.voucher_id, v.name, v.description,
 		v.terms_and_conditions, v.how_to_use, v.type, v.start_date, v.end_date, v.image_url
 		FROM voucher_codes AS vc
-		LEFT JOIN vouchers AS v ON b.id = vc.voucher_id
-		WHERE a.promo_code IS NOT NULL AND vc.status = 1`
+		LEFT JOIN vouchers AS v ON v.id = vc.voucher_id
+		WHERE vc.promo_code IS NOT NULL AND vc.status in ('1', '5')`
 
 	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
 		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
@@ -618,6 +522,14 @@ func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[stri
 
 	if payload["userID"].(string) != "" {
 		where += " AND vc.user_id='" + payload["userID"].(string) + "'"
+	}
+
+	if c.QueryParam("productCode") != "" {
+		where += ` AND v.validators->>'product' = '` + c.QueryParam("productCode") + "'"
+	}
+
+	if c.QueryParam("transactionType") != "" {
+		where += ` AND v.validators->>'transactionType' = '` + c.QueryParam("transactionType") + "'"
 	}
 
 	query += where + " ORDER BY vc.bought_date DESC" + paging
@@ -667,44 +579,120 @@ func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[stri
 	return result, nil
 }
 
-func (m *psqlVoucherRepository) CountHistoryVouchers(c echo.Context, expired bool) (int, error) {
+func (m *psqlVoucherRepository) GetHistoryVouchersUser(c echo.Context) ([]models.VoucherCode, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
+	page, _ := strconv.Atoi(c.QueryParam("page"))
+	limit, _ := strconv.Atoi(c.QueryParam("limit"))
+	paging := ""
 	where := ""
-	var total int
-	query := `SELECT coalesce(COUNT(distinct v.id), 0) FROM vouchers v
-		LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id
-		WHERE v.id IS NOT NULL AND v.status = 1 AND vc.status in('2','3','4')`
+	query := `SELECT vc.id, vc.promo_code, vc.bought_date, vc.voucher_id, v.name, v.description,
+		v.terms_and_conditions, v.how_to_use, v.type, v.start_date, v.end_date, v.image_url
+		FROM voucher_codes AS vc
+		LEFT JOIN vouchers AS v ON v.id = vc.voucher_id
+		WHERE vc.promo_code IS NOT NULL AND vc.status in ('2', '3', '4')`
 
-	if c.QueryParam("name") != "" {
-		where += " AND v.name LIKE '%" + c.QueryParam("name") + "%'"
+	if c.QueryParam("page") != "" || c.QueryParam("limit") != "" {
+		paging = fmt.Sprintf("LIMIT %d OFFSET %d", limit, (page - 1) * limit)
 	}
 
-	if c.QueryParam("cif") != "" {
-		where += " AND vc.user_id = '" + c.QueryParam("cif") + "'"
-	}
-
-	if c.QueryParam("startDate") != "" {
-		where += " AND v.start_date::timestamp::date >= '" + c.QueryParam("startDate") + "'"
-	}
-
-	if c.QueryParam("endDate") != "" {
-		where += " AND v.end_date::timestamp::date <= '" + c.QueryParam("endDate") + "'"
+	if c.QueryParam("userId") != "" {
+		where += " AND vc.user_id='" + c.QueryParam("userId") + "'"
 	}
 
 	if c.QueryParam("productCode") != "" {
-		where += " AND v.validators->>'product' = '" + c.QueryParam("productCode") + "'"
+		where += ` AND v.validators->>'product' = '` + c.QueryParam("productCode") + "'"
 	}
 
 	if c.QueryParam("transactionType") != "" {
 		where += ` AND v.validators->>'transactionType' = '` + c.QueryParam("transactionType") + "'"
 	}
 
-	if expired {
-		where += " AND v.end_date::date >= now()"
+	if c.QueryParam("channel") != "" {
+		where += ` AND v.validators->>'channel' = '` + c.QueryParam("channel") + "'"
 	}
 
-	query += where
+	query += where + " ORDER BY vc.bought_date DESC " + paging
+
+	rows, err := m.Conn.Query(query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	defer rows.Close()
+	var result []models.VoucherCode
+
+	for rows.Next() {
+		var promoCode models.VoucherCode
+		var voucher models.Voucher
+		err = rows.Scan(
+			&promoCode.ID,
+			&promoCode.PromoCode,
+			&promoCode.BoughtDate,
+			&voucher.ID,
+			&voucher.Name,
+			&voucher.Description,
+			&voucher.TermsAndConditions,
+			&voucher.HowToUse,
+			&voucher.Type,
+			&voucher.StartDate,
+			&voucher.EndDate,
+			&voucher.ImageURL,
+		)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		if voucher.ID != 0 {
+			promoCode.Voucher = &voucher
+		}
+
+		result = append(result, promoCode)
+	}
+
+	return result, nil
+}
+
+func (m *psqlVoucherRepository) CountHistoryVouchersUser(c echo.Context, expired bool) (int, error) {
+	var total int
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	page, _ := strconv.Atoi(c.QueryParam("page"))
+	limit, _ := strconv.Atoi(c.QueryParam("limit"))
+	paging := ""
+	where := ""
+	query := `SELECT coalesce(COUNT(vc.id), 0)
+		FROM voucher_codes AS vc
+		LEFT JOIN vouchers AS v ON v.id = vc.voucher_id
+		WHERE v.id IS NOT NULL AND vc.status IN ('2', '3', '4')`
+
+	if c.QueryParam("page") != "" || c.QueryParam("limit") != "" {
+		paging = fmt.Sprintf("LIMIT %d OFFSET %d", limit, (page - 1) * limit)
+	}
+
+	if c.QueryParam("userId") != "" {
+		where += " AND vc.user_id='" + c.QueryParam("userId") + "'"
+	}
+
+	if c.QueryParam("productCode") != "" {
+		where += ` AND v.validators->>'product' = '` + c.QueryParam("productCode") + "'"
+	}
+
+	if c.QueryParam("transactionType") != "" {
+		where += ` AND v.validators->>'transactionType' = '` + c.QueryParam("transactionType") + "'"
+	}
+
+	if c.QueryParam("channel") != "" {
+		where += ` AND v.validators->>'channel' = '` + c.QueryParam("channel") + "'"
+	}
+
+	query += where + paging
 	err := m.Conn.QueryRow(query).Scan(&total)
 
 	if err != nil {
@@ -724,19 +712,9 @@ func (m *psqlVoucherRepository) CountVouchers(c echo.Context, expired bool) (int
 	query := `SELECT coalesce(COUNT(distinct v.id), 0) FROM vouchers v
 		LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id
 		WHERE v.id IS NOT NULL AND v.status = 1`
-	defaultStatus := strconv.Itoa(int(models.VoucherCodeStatusBought))
-
-	if c.QueryParam("status") != "" {
-		defaultStatus = c.QueryParam("status")
-	}
-	where += " AND vc.status = " + defaultStatus
 
 	if c.QueryParam("name") != "" {
 		where += " AND v.name LIKE '%" + c.QueryParam("name") + "%'"
-	}
-
-	if c.QueryParam("cif") != "" {
-		where += " AND vc.user_id = '" + c.QueryParam("cif") + "'"
 	}
 
 	if c.QueryParam("startDate") != "" {
@@ -753,6 +731,10 @@ func (m *psqlVoucherRepository) CountVouchers(c echo.Context, expired bool) (int
 
 	if c.QueryParam("transactionType") != "" {
 		where += ` AND v.validators->>'transactionType' = '` + c.QueryParam("transactionType") + "'"
+	}
+
+	if c.QueryParam("channel") != "" {
+		where += ` AND v.validators->>'channel' = '` + c.QueryParam("channel") + "'"
 	}
 
 	if expired {
@@ -797,23 +779,34 @@ func (m *psqlVoucherRepository) DeleteVoucher(c echo.Context, id int64) error {
 	return nil
 }
 
-func (m *psqlVoucherRepository) CountPromoCode(c echo.Context, payload map[string]interface{}) (int, error) {
+func (m *psqlVoucherRepository) CountVouchersUser(c echo.Context, payload map[string]interface{}) (int, error) {
 	var total int
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	where := ""
-	query := `SELECT coalesce(COUNT(id), 0) FROM voucher_codes WHERE id IS NOT NULL`
+	query := `SELECT coalesce(COUNT(vc.id), 0)
+		FROM voucher_codes AS vc
+		LEFT JOIN vouchers AS v ON v.id = vc.voucher_id
+		WHERE v.id IS NOT NULL AND vc.status in ('1', '5')`
 
 	if payload["userID"].(string) != "" {
-		where += " AND user_id='" + payload["userID"].(string) + "'"
+		where += " AND vc.user_id='" + payload["userID"].(string) + "'"
 	}
 
 	if payload["status"].(string) != "" {
-		where += " AND status='" + payload["status"].(string) + "'"
+		where += " AND vc.status='" + payload["status"].(string) + "'"
 	}
 
 	if payload["voucherID"].(string) != "" {
-		where += " AND voucher_id='" + payload["voucherID"].(string) + "'"
+		where += " AND vc.voucher_id='" + payload["voucherID"].(string) + "'"
+	}
+
+	if c.QueryParam("productCode") != "" {
+		where += ` AND v.validators->>'product' = '` + c.QueryParam("productCode") + "'"
+	}
+
+	if c.QueryParam("transactionType") != "" {
+		where += ` AND v.validators->>'transactionType' = '` + c.QueryParam("transactionType") + "'"
 	}
 
 	query += where

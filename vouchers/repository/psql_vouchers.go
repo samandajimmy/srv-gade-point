@@ -511,7 +511,7 @@ func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[stri
 	paging := ""
 	where := ""
 	query := `SELECT vc.id, v.name, v.description, v.start_date, v.end_date, v.validators->>'product',
-		v.validators->>'transactionType', vc.promo_code, v.validators->>'minLoanAmount', v.terms_and_conditions,
+		v.validators->>'transactionType', vc.promo_code, v.validators->>'minTransactionAmount', v.terms_and_conditions,
 		v.how_to_use, vc.status, v.image_url, v.created_at
 		FROM voucher_codes AS vc
 		LEFT JOIN vouchers AS v ON v.id = vc.voucher_id
@@ -559,7 +559,7 @@ func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[stri
 			&voucher.ProductCode,
 			&voucher.TransactionType,
 			&voucher.PromoCode,
-			&voucher.MinLoanAmount,
+			&voucher.MinTransactionAmount,
 			&voucher.TermsAndConditions,
 			&voucher.HowToUse,
 			&voucher.Status,
@@ -587,7 +587,7 @@ func (m *psqlVoucherRepository) GetHistoryVouchersUser(c echo.Context) ([]*model
 	paging := ""
 	where := ""
 	query := `SELECT vc.id, v.name, v.description, v.start_date, v.end_date, v.validators->>'product',
-		v.validators->>'transactionType', vc.promo_code, v.validators->>'minLoanAmount', v.terms_and_conditions,
+		v.validators->>'transactionType', vc.promo_code, v.validators->>'minTransactionAmount', v.terms_and_conditions,
 		v.how_to_use, vc.status, v.image_url, v.created_at
 		FROM voucher_codes AS vc
 		LEFT JOIN vouchers AS v ON v.id = vc.voucher_id
@@ -639,7 +639,7 @@ func (m *psqlVoucherRepository) GetHistoryVouchersUser(c echo.Context) ([]*model
 			&voucher.ProductCode,
 			&voucher.TransactionType,
 			&voucher.PromoCode,
-			&voucher.MinLoanAmount,
+			&voucher.MinTransactionAmount,
 			&voucher.TermsAndConditions,
 			&voucher.HowToUse,
 			&voucher.Status,

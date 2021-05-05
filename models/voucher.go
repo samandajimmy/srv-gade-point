@@ -23,7 +23,7 @@ var (
 
 // ListVoucher is parent represent a vouchers model
 type ListVoucher struct {
-	Vouchers   []*Voucher `json:"listVoucher,omitempty"`
+	Vouchers   []*Voucher `json:"listVoucher"`
 	TotalCount string     `json:"totalCount,omitempty"`
 }
 

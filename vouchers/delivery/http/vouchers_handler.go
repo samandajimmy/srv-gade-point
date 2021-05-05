@@ -377,7 +377,7 @@ func (vchr *VouchersHandler) GetHistoryVouchersUser(c echo.Context) error {
 
 	payload["page"] = page
 	payload["limit"] = limit
-	responseData, totalCount, err := vchr.VoucherUseCase.GetHistoryVouchersUser(c)
+	responseData, err := vchr.VoucherUseCase.GetHistoryVouchersUser(c)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -385,13 +385,9 @@ func (vchr *VouchersHandler) GetHistoryVouchersUser(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	if len(responseData) > 0 {
-		response.Data = responseData
-	}
-
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
-	response.TotalCount = totalCount
+	response.Data = responseData
 
 	return c.JSON(getStatusCode(err), response)
 }
@@ -480,7 +476,7 @@ func (vchr *VouchersHandler) GetVouchersUser(c echo.Context) error {
 
 	payload["page"] = page
 	payload["limit"] = limit
-	responseData, totalCount, err := vchr.VoucherUseCase.GetVouchersUser(c, payload)
+	responseData, err := vchr.VoucherUseCase.GetVouchersUser(c, payload)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -488,13 +484,10 @@ func (vchr *VouchersHandler) GetVouchersUser(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	if len(responseData) > 0 {
-		response.Data = responseData
-	}
-
 	response.Status = models.StatusSuccess
 	response.Message = models.MessagePointSuccess
-	response.TotalCount = totalCount
+	response.Data = responseData
+
 	return c.JSON(getStatusCode(err), response)
 }
 

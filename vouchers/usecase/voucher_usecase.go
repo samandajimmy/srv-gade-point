@@ -262,9 +262,10 @@ func (vchr *voucherUseCase) GetVouchers(c echo.Context) (models.ListVoucher, *mo
 	return responseVoucher, &respErrors, nil
 }
 
-func (vchr *voucherUseCase) GetHistoryVouchersUser(c echo.Context) ([]models.VoucherCode, string, error) {
+func (vchr *voucherUseCase) GetHistoryVouchersUser(c echo.Context) (models.ListVoucher, error) {
 	var err error
 	var totalCount int
+	var responseVoucher models.ListVoucher
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	vouchersUser, err := vchr.voucherRepo.GetHistoryVouchersUser(c)
@@ -272,7 +273,7 @@ func (vchr *voucherUseCase) GetHistoryVouchersUser(c echo.Context) ([]models.Vou
 	if err != nil {
 		requestLogger.Debug(models.ErrGetVouchers)
 
-		return nil, "", err
+		return responseVoucher, err
 	}
 
 	totalCount, err = vchr.voucherRepo.CountHistoryVouchersUser(c, true)
@@ -280,10 +281,13 @@ func (vchr *voucherUseCase) GetHistoryVouchersUser(c echo.Context) ([]models.Vou
 	if err != nil {
 		requestLogger.Debug(models.ErrGetVoucherCounter)
 
-		return nil, "", models.ErrGetVoucherCounter
+		return responseVoucher, models.ErrGetVoucherCounter
 	}
 
-	return vouchersUser, strconv.Itoa(totalCount), nil
+	responseVoucher.Vouchers = vouchersUser
+	responseVoucher.TotalCount = strconv.Itoa(totalCount)
+
+	return responseVoucher, nil
 }
 
 func (vchr *voucherUseCase) GetVoucher(c echo.Context, voucherID string) (*models.Voucher, error) {
@@ -300,9 +304,10 @@ func (vchr *voucherUseCase) GetVoucher(c echo.Context, voucherID string) (*model
 	return voucherDetail, nil
 }
 
-func (vchr *voucherUseCase) GetVouchersUser(c echo.Context, payload map[string]interface{}) ([]models.VoucherCode, string, error) {
+func (vchr *voucherUseCase) GetVouchersUser(c echo.Context, payload map[string]interface{}) (models.ListVoucher, error) {
 	var err error
 	var totalCount int
+	var responseVoucher models.ListVoucher
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	vouchersUser, err := vchr.voucherRepo.GetVouchersUser(c, payload)
@@ -310,20 +315,24 @@ func (vchr *voucherUseCase) GetVouchersUser(c echo.Context, payload map[string]i
 	if err != nil {
 		requestLogger.Debug(models.ErrGetVouchers)
 
-		return nil, "", err
+		return responseVoucher, err
 	}
 
 	payload["status"] = "1" // to get the bought status
 	payload["voucherID"] = ""
+
 	totalCount, err = vchr.voucherRepo.CountVouchersUser(c, payload)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrGetVoucherCounter)
 
-		return nil, "", models.ErrGetVoucherCounter
+		return responseVoucher, models.ErrGetVoucherCounter
 	}
 
-	return vouchersUser, strconv.Itoa(totalCount), nil
+	responseVoucher.Vouchers = vouchersUser
+	responseVoucher.TotalCount = strconv.Itoa(totalCount)
+
+	return responseVoucher, nil
 }
 
 func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.PayloadVoucherBuy) (*models.VoucherCode, error) {

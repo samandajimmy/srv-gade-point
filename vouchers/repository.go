@@ -18,7 +18,7 @@ type Repository interface {
 	GetVoucher(echo.Context, string) (*models.Voucher, error)
 	UpdatePromoCodeBought(echo.Context, string, string) (*models.VoucherCode, error)
 	BookVoucherCode(echo.Context, *models.PayloadVoucherBuy) (*models.VoucherCode, error)
-	GetVouchersUser(echo.Context, map[string]interface{}) ([]models.VoucherCode, error)
+	GetVouchersUser(echo.Context, map[string]interface{}) ([]*models.Voucher, error)
 	CountVouchers(echo.Context, bool) (int, error)
 	DeleteVoucher(echo.Context, int64) error
 	CountVouchersUser(echo.Context, map[string]interface{}) (int, error)
@@ -27,6 +27,6 @@ type Repository interface {
 	UpdateExpiryDate(echo.Context) error
 	UpdateStatusBasedOnStartDate() error
 	CountBoughtVoucher(echo.Context, string, string) (int64, error)
+	GetHistoryVouchersUser(echo.Context) ([]*models.Voucher, error)
 	CountHistoryVouchersUser(c echo.Context, expired bool) (int, error)
-	GetHistoryVouchersUser(c echo.Context) ([]models.VoucherCode, error)
 }

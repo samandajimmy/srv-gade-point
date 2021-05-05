@@ -505,13 +505,14 @@ func (m *psqlVoucherRepository) UpdateVoucherStock(c echo.Context, voucherId str
 	return nil
 }
 
-func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[string]interface{}) ([]models.VoucherCode, error) {
+func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[string]interface{}) ([]*models.Voucher, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	paging := ""
 	where := ""
-	query := `SELECT vc.id, vc.promo_code, vc.bought_date, vc.voucher_id, v.name, v.description,
-		v.terms_and_conditions, v.how_to_use, v.type, v.start_date, v.end_date, v.image_url
+	query := `SELECT vc.id, v.name, v.description, v.start_date, v.end_date, v.validators->>'product',
+		v.validators->>'transactionType', vc.promo_code, v.validators->>'minLoanAmount', v.terms_and_conditions,
+		v.how_to_use, vc.status, v.image_url, v.created_at
 		FROM voucher_codes AS vc
 		LEFT JOIN vouchers AS v ON v.id = vc.voucher_id
 		WHERE vc.promo_code IS NOT NULL AND vc.status in ('1', '5')`
@@ -543,24 +544,27 @@ func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[stri
 	}
 
 	defer rows.Close()
-	var result []models.VoucherCode
+	result := make([]*models.Voucher, 0)
+
 
 	for rows.Next() {
-		var promoCode models.VoucherCode
-		var voucher models.Voucher
+		voucher := new(models.Voucher)
+
 		err = rows.Scan(
-			&promoCode.ID,
-			&promoCode.PromoCode,
-			&promoCode.BoughtDate,
 			&voucher.ID,
 			&voucher.Name,
 			&voucher.Description,
-			&voucher.TermsAndConditions,
-			&voucher.HowToUse,
-			&voucher.Type,
 			&voucher.StartDate,
 			&voucher.EndDate,
+			&voucher.ProductCode,
+			&voucher.TransactionType,
+			&voucher.PromoCode,
+			&voucher.MinLoanAmount,
+			&voucher.TermsAndConditions,
+			&voucher.HowToUse,
+			&voucher.Status,
 			&voucher.ImageURL,
+			&voucher.CreatedAt,
 		)
 
 		if err != nil {
@@ -569,25 +573,22 @@ func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[stri
 			return nil, err
 		}
 
-		if voucher.ID != 0 {
-			promoCode.Voucher = &voucher
-		}
-
-		result = append(result, promoCode)
+		result = append(result, voucher)
 	}
 
 	return result, nil
 }
 
-func (m *psqlVoucherRepository) GetHistoryVouchersUser(c echo.Context) ([]models.VoucherCode, error) {
+func (m *psqlVoucherRepository) GetHistoryVouchersUser(c echo.Context) ([]*models.Voucher, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	page, _ := strconv.Atoi(c.QueryParam("page"))
 	limit, _ := strconv.Atoi(c.QueryParam("limit"))
 	paging := ""
 	where := ""
-	query := `SELECT vc.id, vc.promo_code, vc.bought_date, vc.voucher_id, v.name, v.description,
-		v.terms_and_conditions, v.how_to_use, v.type, v.start_date, v.end_date, v.image_url
+	query := `SELECT vc.id, v.name, v.description, v.start_date, v.end_date, v.validators->>'product',
+		v.validators->>'transactionType', vc.promo_code, v.validators->>'minLoanAmount', v.terms_and_conditions,
+		v.how_to_use, vc.status, v.image_url, v.created_at
 		FROM voucher_codes AS vc
 		LEFT JOIN vouchers AS v ON v.id = vc.voucher_id
 		WHERE vc.promo_code IS NOT NULL AND vc.status in ('2', '3', '4')`
@@ -623,24 +624,27 @@ func (m *psqlVoucherRepository) GetHistoryVouchersUser(c echo.Context) ([]models
 	}
 
 	defer rows.Close()
-	var result []models.VoucherCode
+	result := make([]*models.Voucher, 0)
+
 
 	for rows.Next() {
-		var promoCode models.VoucherCode
-		var voucher models.Voucher
+		voucher := new(models.Voucher)
+
 		err = rows.Scan(
-			&promoCode.ID,
-			&promoCode.PromoCode,
-			&promoCode.BoughtDate,
 			&voucher.ID,
 			&voucher.Name,
 			&voucher.Description,
-			&voucher.TermsAndConditions,
-			&voucher.HowToUse,
-			&voucher.Type,
 			&voucher.StartDate,
 			&voucher.EndDate,
+			&voucher.ProductCode,
+			&voucher.TransactionType,
+			&voucher.PromoCode,
+			&voucher.MinLoanAmount,
+			&voucher.TermsAndConditions,
+			&voucher.HowToUse,
+			&voucher.Status,
 			&voucher.ImageURL,
+			&voucher.CreatedAt,
 		)
 
 		if err != nil {
@@ -649,11 +653,7 @@ func (m *psqlVoucherRepository) GetHistoryVouchersUser(c echo.Context) ([]models
 			return nil, err
 		}
 
-		if voucher.ID != 0 {
-			promoCode.Voucher = &voucher
-		}
-
-		result = append(result, promoCode)
+		result = append(result, voucher)
 	}
 
 	return result, nil

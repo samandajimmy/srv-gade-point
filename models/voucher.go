@@ -29,34 +29,35 @@ type ListVoucher struct {
 
 // Voucher is represent a vouchers model
 type Voucher struct {
-	ID                 int64      `json:"id,omitempty"`
-	Name               string     `json:"name,omitempty"`
-	Description        string     `json:"description,omitempty"`
-	StartDate          string     `json:"startDate,omitempty"`
-	EndDate            string     `json:"endDate"`
-	Point              *int64     `json:"point,omitempty"`
-	JournalAccount     string     `json:"journalAccount,omitempty"`
-	Type               *int64     `json:"type,omitempty"`
-	Value              *float64   `json:"value,omitempty"`
-	ImageURL           string     `json:"imageUrl,omitempty"`
-	Status             *int8      `json:"status,omitempty"`
-	GeneratorType      *int8      `json:"generatorType,omitempty"`
-	Stock              *int32     `json:"stock,omitempty"`
-	PrefixPromoCode    string     `json:"prefixPromoCode,omitempty"`
-	ProductCode        *string    `json:"productCode,omitempty"`
-	TransactionType    *string    `json:"transactionType,omitempty"`
-	MinLoanAmount      *string    `json:"minLoanAmount,omitempty"`
-	PromoCode          *string    `json:"promoCode,omitempty"`
-	Amount             *int32     `json:"amount,omitempty"`
-	Available          *int32     `json:"available,omitempty"`
-	Bought             *int32     `json:"bought,omitempty"`
-	Redeemed           *int32     `json:"redeemed,omitempty"`
-	Expired            *int32     `json:"expired,omitempty"`
-	TermsAndConditions string     `json:"termsAndConditions,omitempty"`
-	HowToUse           string     `json:"howToUse,omitempty"`
-	Validators         *Validator `json:"validators,omitempty"`
-	UpdatedAt          *time.Time `json:"updatedAt,omitempty"`
-	CreatedAt          *time.Time `json:"createdAt,omitempty"`
+	ID                   int64      `json:"id,omitempty"`
+	Name                 string     `json:"name,omitempty"`
+	Description          string     `json:"description,omitempty"`
+	StartDate            string     `json:"startDate,omitempty"`
+	EndDate              string     `json:"endDate"`
+	Point                *int64     `json:"point,omitempty"`
+	JournalAccount       string     `json:"journalAccount,omitempty"`
+	Type                 *int64     `json:"type,omitempty"`
+	Value                *float64   `json:"value,omitempty"`
+	ImageURL             string     `json:"imageUrl,omitempty"`
+	Status               *int8      `json:"status,omitempty"`
+	GeneratorType        *int8      `json:"generatorType,omitempty"`
+	Stock                *int32     `json:"stock,omitempty"`
+	PrefixPromoCode      string     `json:"prefixPromoCode,omitempty"`
+	ProductCode          *string    `json:"productCode,omitempty"`
+	TransactionType      *string    `json:"transactionType,omitempty"`
+	MinLoanAmount        *string    `json:"minLoanAmount,omitempty"`
+	MinTransactionAmount *string    `json:"minTransactionAmount,omitempty"`
+	PromoCode            *string    `json:"promoCode,omitempty"`
+	Amount               *int32     `json:"amount,omitempty"`
+	Available            *int32     `json:"available,omitempty"`
+	Bought               *int32     `json:"bought,omitempty"`
+	Redeemed             *int32     `json:"redeemed,omitempty"`
+	Expired              *int32     `json:"expired,omitempty"`
+	TermsAndConditions   string     `json:"termsAndConditions,omitempty"`
+	HowToUse             string     `json:"howToUse,omitempty"`
+	Validators           *Validator `json:"validators,omitempty"`
+	UpdatedAt            *time.Time `json:"updatedAt,omitempty"`
+	CreatedAt            *time.Time `json:"createdAt,omitempty"`
 }
 
 // UpdateVoucher to store payload for update status

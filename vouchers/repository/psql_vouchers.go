@@ -290,7 +290,7 @@ func (m *psqlVoucherRepository) GetVoucherAdmin(c echo.Context, voucherID string
 
 	result.CreatedAt = &createDate.Time
 	result.UpdatedAt = &updateDate.Time
-	result.EndDate   = ""
+	result.EndDate = ""
 
 	if endDate.Valid {
 		result.EndDate = endDate.Time.Format(models.DateTimeFormatZone)
@@ -515,7 +515,7 @@ func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[stri
 		v.how_to_use, vc.status, v.image_url, v.created_at
 		FROM voucher_codes AS vc
 		LEFT JOIN vouchers AS v ON v.id = vc.voucher_id
-		WHERE vc.promo_code IS NOT NULL AND vc.status in ('1', '5')`
+		WHERE vc.promo_code IS NOT NULL AND vc.status in ('1', '5') AND v.end_date::date >= now()`
 
 	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
 		paging = fmt.Sprintf(" LIMIT %d OFFSET %d", payload["limit"].(int), ((payload["page"].(int) - 1) * payload["limit"].(int)))
@@ -545,7 +545,6 @@ func (m *psqlVoucherRepository) GetVouchersUser(c echo.Context, payload map[stri
 
 	defer rows.Close()
 	result := make([]*models.Voucher, 0)
-
 
 	for rows.Next() {
 		voucher := new(models.Voucher)
@@ -591,10 +590,10 @@ func (m *psqlVoucherRepository) GetHistoryVouchersUser(c echo.Context) ([]*model
 		v.how_to_use, vc.status, v.image_url, v.created_at
 		FROM voucher_codes AS vc
 		LEFT JOIN vouchers AS v ON v.id = vc.voucher_id
-		WHERE vc.promo_code IS NOT NULL AND vc.status in ('2', '3', '4')`
+		WHERE vc.promo_code IS NOT NULL AND vc.status in ('2', '3') AND v.end_date::date >= now()`
 
 	if c.QueryParam("page") != "" || c.QueryParam("limit") != "" {
-		paging = fmt.Sprintf("LIMIT %d OFFSET %d", limit, (page - 1) * limit)
+		paging = fmt.Sprintf("LIMIT %d OFFSET %d", limit, (page-1)*limit)
 	}
 
 	if c.QueryParam("userId") != "" {
@@ -625,7 +624,6 @@ func (m *psqlVoucherRepository) GetHistoryVouchersUser(c echo.Context) ([]*model
 
 	defer rows.Close()
 	result := make([]*models.Voucher, 0)
-
 
 	for rows.Next() {
 		voucher := new(models.Voucher)
@@ -670,10 +668,10 @@ func (m *psqlVoucherRepository) CountHistoryVouchersUser(c echo.Context, expired
 	query := `SELECT coalesce(COUNT(vc.id), 0)
 		FROM voucher_codes AS vc
 		LEFT JOIN vouchers AS v ON v.id = vc.voucher_id
-		WHERE v.id IS NOT NULL AND vc.status IN ('2', '3', '4')`
+		WHERE v.id IS NOT NULL AND vc.status IN ('2', '3') AND v.end_date::date >= now()`
 
 	if c.QueryParam("page") != "" || c.QueryParam("limit") != "" {
-		paging = fmt.Sprintf("LIMIT %d OFFSET %d", limit, (page - 1) * limit)
+		paging = fmt.Sprintf("LIMIT %d OFFSET %d", limit, (page-1)*limit)
 	}
 
 	if c.QueryParam("userId") != "" {
@@ -787,7 +785,7 @@ func (m *psqlVoucherRepository) CountVouchersUser(c echo.Context, payload map[st
 	query := `SELECT coalesce(COUNT(vc.id), 0)
 		FROM voucher_codes AS vc
 		LEFT JOIN vouchers AS v ON v.id = vc.voucher_id
-		WHERE v.id IS NOT NULL AND vc.status in ('1', '5')`
+		WHERE v.id IS NOT NULL AND vc.status in ('1', '5') AND v.end_date::date >= now()`
 
 	if payload["userID"].(string) != "" {
 		where += " AND vc.user_id='" + payload["userID"].(string) + "'"

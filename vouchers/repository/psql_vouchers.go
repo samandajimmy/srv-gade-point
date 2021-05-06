@@ -791,10 +791,6 @@ func (m *psqlVoucherRepository) CountVouchersUser(c echo.Context, payload map[st
 		where += " AND vc.user_id='" + payload["userID"].(string) + "'"
 	}
 
-	if payload["status"].(string) != "" {
-		where += " AND vc.status='" + payload["status"].(string) + "'"
-	}
-
 	if payload["voucherID"].(string) != "" {
 		where += " AND vc.voucher_id='" + payload["voucherID"].(string) + "'"
 	}

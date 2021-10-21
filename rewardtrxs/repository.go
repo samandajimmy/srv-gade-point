@@ -14,7 +14,7 @@ type Repository interface {
 	UpdateRewardTrx(echo.Context, *models.RewardPayment, int64) error
 	CheckTrx(echo.Context, string) (*models.RewardTrx, error)
 	CheckRefID(echo.Context, string) (*models.RewardTrx, error)
-	GetRewardByPayload(echo.Context, models.PayloadValidator) ([]*models.Reward, error)
+	GetRewardByPayload(echo.Context, models.PayloadValidator, *models.VoucherCode) ([]*models.Reward, error)
 	RewardTrxTimeout(models.RewardTrx)
 	UpdateTimeoutTrx() error
 	GetInquiredTrx() ([]models.RewardTrx, error)

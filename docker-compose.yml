@@ -2,22 +2,36 @@ version: '3'
 services:
   db:
     image: postgres:9.6-alpine
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
 
   app:
     build: .
     ports:
       - 8080:8080
     environment:
+      - PORT=8080
       - CONTEXT_TIMEOUT=2000
       - DB_HOST=db
-      - DB_USER=postgres
-      - DB_PASS=
       - DB_PORT=
-      - DB_NAME=db_greward
-      - DB_SSLMODE=disable
-      - PORT=8080
-      - JWT_SECRET=docker-compose-secret
-      - JWT_TOKEN_EXP=24
-      - BASIC_USERNAME=docker-admin
-      - BASIC_PASSWORD=docker-admin123
+      - DB_USER=postgres
+      - DB_PASS=:postgres
+      - DB_NAME=postgres
+      - DB_LOGGER=true
+      - JWT_SECRET=gade-secret
+      - JWT_TOKEN_EXP=720
+      - BASIC_USERNAME=admin
+      - BASIC_PASSWORD=admin
+      - STATUS_UPDATE_TIME=13:58
       - UPLOAD_IMAGE_URL=http://pds-api.hookiarisan.com/gpoint/voucherimage/add
+      - REWARD_TRX_TIMEOUT=5
+      - PDS_API_BASIC_USER=aplikasijs
+      - PDS_API_BASIC_PASS=aplikasi123
+      - PDS_API_HOST=https://apidigitaldev123.pegadaian.co.id/v2
+      - SEND_SMS_PROMO_PATH=/notification/send_sms_promo
+      - CS_NUMBER_1=085959114119
+      - CS_NUMBER_2=089603239653
+      - STAGE=25000
+      - LIMIT_REWARD_COUNTER=100

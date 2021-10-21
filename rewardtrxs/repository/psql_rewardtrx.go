@@ -360,15 +360,16 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CountByCIF(c echo.Context, quot model
 }
 
 func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardByPayload(c echo.Context,
-	payload models.PayloadValidator) ([]*models.Reward, error) {
+	payload models.PayloadValidator, voucherCode *models.VoucherCode) ([]*models.Reward, error) {
 
 	var reward []*models.Reward
 	var validator json.RawMessage
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
-	query := `SELECT rt.ref_id, r.id, r.campaign_id, r.journal_account, r.type, r.validators, rt.root_ref_id
-		FROM reward_transactions rt  join rewards r on rt.reward_id = r.id
+	query := `SELECT rt.ref_id, coalesce(r.id, 0) id, r.campaign_id, coalesce(r.journal_account, '') journal_account,
+		r.type, coalesce(r.validators, '{}'::jsonb) validators, rt.root_ref_id
+		FROM reward_transactions rt left join rewards r on rt.reward_id = r.id
 		WHERE rt.status = $1 and rt.cif = $2 and rt.used_promo_code = $3 and rt.request_data->>'phone' = $4
 		and rt.request_data->'validators'->>'product' = $5 and rt.request_data->'validators'->>'transactionType' = $6`
 
@@ -408,6 +409,12 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardByPayload(c echo.Context,
 			requestLogger.Debug(err)
 
 			return nil, err
+		}
+
+		if voucherCode != nil {
+			r.JournalAccount = voucherCode.Voucher.JournalAccount
+			r.Type = voucherCode.Voucher.Type
+			r.Validators = voucherCode.Voucher.Validators
 		}
 
 		reward = append(reward, &r)

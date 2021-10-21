@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 var (
 	// VoucherCodeStatusAvailable to store voucher code available status
@@ -29,7 +31,8 @@ type VoucherCode struct {
 	Status       *int8      `json:"status,omitempty"`
 	UserID       string     `json:"userId,omitempty"`
 	RefID        string     `json:"refId,omitempty"`
-	Voucher      *Voucher   `json:"voucher,omitempty"`
+	VoucherID    int64      `json:"voucher_id,omitempty"`
+	Voucher      *Voucher   `json:"voucher,omitempty" bun:"rel:belongs-to"`
 	RedeemedDate *time.Time `json:"redeemedDate,omitempty"`
 	BoughtDate   *time.Time `json:"boughtDate,omitempty"`
 	UpdatedAt    *time.Time `json:"updatedAt,omitempty"`

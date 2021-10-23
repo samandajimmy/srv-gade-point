@@ -234,10 +234,11 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 		// get response reward
 		rwdResp, _ := rwd.responseReward(c, rewardsVoucher[0], plValidator)
-		rwdInquiry.RefTrx = rwdResp.RefTrx
-		rwdResp.RewardID = 0 // make rewardID nil
-		rwdResp.RefTrx = ""
+		rwdInquiry.RefTrx = rwdResp.RefTrx // nolint
+		rwdResp.RewardID = 0               // nolint
+		rwdResp.RefTrx = ""                // nolint
 
+		// nolint
 		if rwdResp != nil {
 			rwdResponse = append(rwdResponse, *rwdResp)
 		}

@@ -316,12 +316,12 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 	limit, _ := strconv.Atoi(c.QueryParam("limit"))
 	paging := ""
 	where := ""
-	query := fmt.Sprint(`SELECT distinct v.id, v.name, v.description, v.start_date, v.end_date, v.point,
+	query := `SELECT distinct v.id, v.name, v.description, v.start_date, v.end_date, v.point,
 		v.image_url, v.stock, v.validators->>'product', v.validators->>'transactionType', v.validators->>'minLoanAmount', 
 		v.terms_and_conditions, v.how_to_use, v.type, v.created_at
 		FROM vouchers v
 		LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id
-		WHERE v.status = 1 AND v.end_date::date >= now()`)
+		WHERE v.status = 1 AND v.end_date::date >= now()`
 
 	if c.QueryParam("page") != "" || c.QueryParam("limit") != "" {
 		paging = fmt.Sprintf("LIMIT %d OFFSET %d", limit, ((page - 1) * limit))

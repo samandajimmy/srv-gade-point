@@ -22,7 +22,7 @@ variables:
 
 lint:
   image:
-    name: artifactory.pegadaian.co.id:8084/dian/golangci:v1.23.1
+    name: artifactory.pegadaian.co.id:8084/golangci/golangci-lint:v1.42.1
     entrypoint: [""]
   stage: lint
   before_script:
@@ -35,7 +35,7 @@ lint:
 
 test:
   stage: test
-  image: artifactory.pegadaian.co.id:8084/golang:1.11
+  image: artifactory.pegadaian.co.id:8084/golang:1.16
   before_script:
     - *inject-gopath
   script:

@@ -37,22 +37,22 @@ type Voucher struct {
 	Point                *int64     `json:"point,omitempty"`
 	JournalAccount       string     `json:"journalAccount,omitempty"`
 	Type                 *int64     `json:"type,omitempty"`
-	Value                *float64   `json:"value,omitempty"`
+	Value                *float64   `json:"value,omitempty" bun:"-"`
 	ImageURL             string     `json:"imageUrl,omitempty"`
 	Status               *int8      `json:"status,omitempty"`
 	GeneratorType        *int8      `json:"generatorType,omitempty"`
 	Stock                *int32     `json:"stock,omitempty"`
 	PrefixPromoCode      string     `json:"prefixPromoCode,omitempty"`
-	ProductCode          *string    `json:"productCode,omitempty"`
-	TransactionType      *string    `json:"transactionType,omitempty"`
-	MinLoanAmount        *string    `json:"minLoanAmount,omitempty"`
-	MinTransactionAmount *string    `json:"minTransactionAmount,omitempty"`
-	PromoCode            *string    `json:"promoCode,omitempty"`
-	Amount               *int32     `json:"amount,omitempty"`
-	Available            *int32     `json:"available,omitempty"`
-	Bought               *int32     `json:"bought,omitempty"`
-	Redeemed             *int32     `json:"redeemed,omitempty"`
-	Expired              *int32     `json:"expired,omitempty"`
+	ProductCode          *string    `json:"productCode,omitempty" bun:"-"`
+	TransactionType      *string    `json:"transactionType,omitempty" bun:"-"`
+	MinLoanAmount        *string    `json:"minLoanAmount,omitempty" bun:"-"`
+	MinTransactionAmount *string    `json:"minTransactionAmount,omitempty" bun:"-"`
+	PromoCode            *string    `json:"promoCode,omitempty" bun:"-"`
+	Amount               *int32     `json:"amount,omitempty" bun:"-"`
+	Available            *int32     `json:"available,omitempty" bun:"-"`
+	Bought               *int32     `json:"bought,omitempty" bun:"-"`
+	Redeemed             *int32     `json:"redeemed,omitempty" bun:"-"`
+	Expired              *int32     `json:"expired,omitempty" bun:"-"`
 	TermsAndConditions   string     `json:"termsAndConditions,omitempty"`
 	HowToUse             string     `json:"howToUse,omitempty"`
 	Validators           *Validator `json:"validators,omitempty"`

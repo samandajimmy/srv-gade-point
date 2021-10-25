@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -17,7 +16,7 @@ func TestPing(t *testing.T) {
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
-	pingJSON := fmt.Sprintf("{\"status\":\"Success\",\"message\":\"PONG!!\"}\n")
+	pingJSON := "{\"status\":\"Success\",\"message\":\"PONG!!\"}\n"
 
 	// Assertions
 	if assert.NoError(t, ping(c)) {

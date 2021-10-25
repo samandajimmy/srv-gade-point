@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	log "gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/vouchers"
 	"strconv"
@@ -11,9 +12,9 @@ import (
 	"time"
 
 	"github.com/labstack/echo"
-	"github.com/labstack/gommon/log"
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
+	"github.com/uptrace/bun"
 )
 
 const (
@@ -26,11 +27,12 @@ var (
 
 type psqlVoucherRepository struct {
 	Conn *sql.DB
+	bun  *bun.DB
 }
 
 // NewPsqlVoucherRepository will create an object that represent the vouchers. Repository interface
-func NewPsqlVoucherRepository(Conn *sql.DB) vouchers.Repository {
-	return &psqlVoucherRepository{Conn}
+func NewPsqlVoucherRepository(Conn *sql.DB, bun *bun.DB) vouchers.Repository {
+	return &psqlVoucherRepository{Conn, bun}
 }
 
 func (m *psqlVoucherRepository) CreateVoucher(c echo.Context, voucher *models.Voucher) error {
@@ -314,12 +316,12 @@ func (m *psqlVoucherRepository) GetVouchers(c echo.Context) ([]*models.Voucher, 
 	limit, _ := strconv.Atoi(c.QueryParam("limit"))
 	paging := ""
 	where := ""
-	query := fmt.Sprint(`SELECT distinct v.id, v.name, v.description, v.start_date, v.end_date, v.point,
+	query := `SELECT distinct v.id, v.name, v.description, v.start_date, v.end_date, v.point,
 		v.image_url, v.stock, v.validators->>'product', v.validators->>'transactionType', v.validators->>'minLoanAmount', 
 		v.terms_and_conditions, v.how_to_use, v.type, v.created_at
 		FROM vouchers v
 		LEFT JOIN voucher_codes vc ON v.id = vc.voucher_id
-		WHERE v.status = 1 AND v.end_date::date >= now()`)
+		WHERE v.status = 1 AND v.end_date::date >= now()`
 
 	if c.QueryParam("page") != "" || c.QueryParam("limit") != "" {
 		paging = fmt.Sprintf("LIMIT %d OFFSET %d", limit, ((page - 1) * limit))
@@ -427,7 +429,7 @@ func (m *psqlVoucherRepository) UpdateStatusBasedOnStartDate() error {
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
-		log.Debug("Update Status Base on Start Date: ", err)
+		logrus.Debug("Update Status Base on Start Date: ", err)
 		return err
 	}
 
@@ -438,7 +440,7 @@ func (m *psqlVoucherRepository) UpdateStatusBasedOnStartDate() error {
 	err = stmt.QueryRow(&now).Scan(&lastID)
 
 	if err != nil {
-		log.Debug("Update Status Base on Start Date: ", err)
+		logrus.Debug("Update Status Base on Start Date: ", err)
 		return err
 	}
 
@@ -917,29 +919,40 @@ func (m *psqlVoucherRepository) UpdatePromoCodeRedeemed(c echo.Context, voucherI
 
 func (m *psqlVoucherRepository) GetVoucherCode(c echo.Context, pv *models.PayloadValidator) (*models.VoucherCode, string, error) {
 	var voucherID string
-	result := &models.VoucherCode{}
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-	query := `SELECT pc.id, pc.promo_code, pc.status, pc.redeemed_date, pc.bought_date, pc.voucher_id
-			  FROM voucher_codes pc WHERE pc.promo_code = $1 AND (pc.status = $2 OR pc.status = $3 OR pc.status = $4);`
+	voucherCode := models.VoucherCode{}
 
-	err := m.Conn.QueryRow(query, pv.PromoCode, models.VoucherCodeStatusBought,
-		models.VoucherCodeStatusInquired, models.VoucherCodeStatusAvailable).Scan(
-		&result.ID,
-		&result.PromoCode,
-		&result.Status,
-		&result.RedeemedDate,
-		&result.BoughtDate,
-		&voucherID,
-	)
+	err := m.bun.NewSelect().Model(&voucherCode).
+		Column("id", "promo_code", "status", "redeemed_date", "bought_date", "voucher_id", "user_id").
+		Relation("Voucher", func(q *bun.SelectQuery) *bun.SelectQuery {
+			return q.Column("validators", "journal_account", "type")
+		}).
+		Where("voucher_code.promo_code = ?", pv.PromoCode).
+		WhereGroup(" AND ", func(q *bun.SelectQuery) *bun.SelectQuery {
+			return q.Where("voucher_code.status = ? OR voucher_code.status = ? OR voucher_code.status = ?", models.VoucherCodeStatusBought,
+				models.VoucherCodeStatusInquired, models.VoucherCodeStatusAvailable)
+		}).Scan(c.Request().Context())
+
+	if err == sql.ErrNoRows {
+		return nil, "", nil
+	}
 
 	if err != nil {
-		requestLogger.Debug(err)
+		log.Make(c, err)
 
 		return nil, "", err
 	}
 
-	return result, voucherID, nil
+	voucherID = strconv.Itoa(int(voucherCode.VoucherID))
+
+	if voucherCode.UserID == "" {
+		return &voucherCode, voucherID, nil
+	}
+
+	if pv.CIF != voucherCode.UserID {
+		return nil, "", models.ErrVoucherNotFound
+	}
+
+	return &voucherCode, voucherID, nil
 }
 
 func (m *psqlVoucherRepository) insertVoucherCodes(c echo.Context, pCodes []*models.VoucherCode) error {

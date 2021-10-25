@@ -3,6 +3,7 @@ package usecase
 import (
 	"encoding/json"
 	"fmt"
+
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/quotas"
@@ -12,6 +13,7 @@ import (
 	"gade/srv-gade-point/tags"
 	"gade/srv-gade-point/vouchercodes"
 	"gade/srv-gade-point/vouchers"
+
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -161,9 +163,18 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		return rwdInquiry, nil
 	}
 
+	// get voucher code with promo code
+	voucherCode, _, err := rwd.voucherUC.GetVoucherCode(c, plValidator)
+
+	if err != nil {
+		respErrors.SetTitle(err.Error())
+
+		return rwdInquiry, &respErrors
+	}
+
 	// check request payload base on cif and promo code
 	// get existing reward trx based on cif and phone number
-	rwrds, _ := rwd.rwdTrxRepo.GetRewardByPayload(c, *plValidator)
+	rwrds, _ := rwd.rwdTrxRepo.GetRewardByPayload(c, *plValidator, voucherCode)
 
 	if len(rwrds) > 0 {
 		var rr []models.RewardResponse
@@ -211,8 +222,6 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 	// check if promoCode is a voucher code
 	// if yes then it should call validate voucher
-	voucherCode, _, _ := rwd.voucherUC.GetVoucherCode(c, plValidator)
-
 	if voucherCode != nil {
 		rewardsVoucher, err := rwd.voucherUC.VoucherValidate(c, plValidator)
 
@@ -225,10 +234,11 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 		// get response reward
 		rwdResp, _ := rwd.responseReward(c, rewardsVoucher[0], plValidator)
-		rwdInquiry.RefTrx = rwdResp.RefTrx
-		rwdResp.RewardID = 0 // make rewardID nil
-		rwdResp.RefTrx = ""
+		rwdInquiry.RefTrx = rwdResp.RefTrx // nolint
+		rwdResp.RewardID = 0               // nolint
+		rwdResp.RefTrx = ""                // nolint
 
+		// nolint
 		if rwdResp != nil {
 			rwdResponse = append(rwdResponse, *rwdResp)
 		}

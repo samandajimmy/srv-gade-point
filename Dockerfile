@@ -1,5 +1,5 @@
 
-FROM artifactory.pegadaian.co.id:8084/golang:1.11 as build-env
+FROM artifactory.pegadaian.co.id:8084/golang:1.16.9 as build-env
 
 # add ssl certificate
 ADD ssl_certificate.crt /usr/local/share/ca-certificates/ssl_certificate.crt
@@ -11,18 +11,12 @@ RUN apt-get update && apt-get install git
 RUN mkdir /srv-gade-point
 WORKDIR /srv-gade-point
 
-# Force the go compiler to use modules
-ENV GO111MODULE=on
-
 # Force to download lib from nexus pgdn
 ENV GOPROXY="https://artifactory.pegadaian.co.id/repository/go-group-01/"
 
 # COPY go.mod and go.sum files to the workspace
 COPY go.mod .
 COPY go.sum .
-
-# CHECK VERSION OF GIT
-RUN git version
 
 # Get dependancies - will also be cached if we won't change mod/sum
 RUN go mod download

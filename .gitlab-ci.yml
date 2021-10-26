@@ -2,6 +2,7 @@ stages:
   - lint
   - test
   - build
+  - deploy
 
 variables:
   DOCKER_AUTH_CONFIG: '{"auths": {"artifactory.pegadaian.co.id:8084": {"auth": "$DOCKER_AU_CONFIG"},"artifactory.pegadaian.co.id:5443": {"auth": "$DOCKER_AU_CONFIG"}}}'
@@ -53,3 +54,12 @@ build:
     - docker build --pull -t $IMAGE_URL .
     - docker login -u $NEXUS_DOCKER_USER -p $NEXUS_DOCKER_PASS artifactory.pegadaian.co.id:5443
     - docker push $IMAGE_URL
+
+deploy_dev:
+  image: artifactory.pegadaian.co.id:8084/tj/openshift-client:latest
+  stage: deploy
+  script:
+    - while true; do result=0; oc login -u $OC_USER -p $OC_PASS --server=$OPENSHIFT_OC_URL --insecure-skip-tls-verify || result=$?; tj=$((tj+1)); if [ $result -eq 0 ]; then break; elif [ $tj -gt 5 ]; then exit 1; fi; echo "retry $tj";done;
+    - oc rollout latest dc/srv-greward
+  only:
+    - master

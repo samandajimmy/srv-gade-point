@@ -23,6 +23,12 @@ variables:
       && cp ssl_certificate.crt /usr/local/share/ca-certificates
       && chmod 644 /usr/local/share/ca-certificates/ssl_certificate.crt && update-ca-certificates
 
+.store_commit_hash: &store_commit_hash
+  before_script:
+    - touch latest_commit_hash
+    - echo $CI_COMMIT_SHA > latest_commit_hash
+    - echo $CI_COMMIT_TIMESTAMP >> latest_commit_hash
+
 lint:
   image:
     name: artifactory.pegadaian.co.id:8084/golangci/golangci-lint:v1.42.1
@@ -51,6 +57,7 @@ build:
   services:
     - name: artifactory.pegadaian.co.id:8084/docker:dind
       command: ["--insecure-registry=artifactory.pegadaian.co.id:8084"]
+  <<: *store_commit_hash
   script:
     - docker login -u $NEXUS_DOCKER_USER -p $NEXUS_DOCKER_PASS artifactory.pegadaian.co.id:8084
     - docker build --pull -t $IMAGE_URL .

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"database/sql"
 	"fmt"
 	"gade/srv-gade-point/campaigns"
@@ -182,12 +183,27 @@ func ping(echTx echo.Context) error {
 	res := echTx.Response()
 	rid := res.Header().Get(echo.HeaderXRequestID)
 	params := map[string]interface{}{"rid": rid}
+	file, err := os.Open("latest_commit_hash")
+
+	if err != nil {
+		logger.Make(nil, nil).Debug("failed to open")
+
+	}
+
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	var text []string
+
+	for scanner.Scan() {
+		text = append(text, scanner.Text())
+	}
 
 	logger.Make(echTx, params).Info("Start to ping server.")
 	response := models.Response{}
 	response.Status = models.StatusSuccess
 	response.Message = "PONG!!"
-
+	response.Data = text
 	logger.Make(echTx, params).Info("End of ping server.")
 
 	return echTx.JSON(http.StatusOK, response)

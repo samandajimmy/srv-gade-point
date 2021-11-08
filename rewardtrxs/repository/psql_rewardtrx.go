@@ -440,6 +440,9 @@ func (rwdTrxRepo *psqlRewardTrxRepository) RewardTrxTimeout(rewardTrx models.Rew
 
 	defer rows.Close()
 
+	// make voucher codes timeout
+	rwdTrxRepo.voucherTrxTimeout(rewardTrx.RefID)
+
 	if rewardTrx.RewardID == nil {
 		return
 	}
@@ -463,12 +466,15 @@ func (rwdTrxRepo *psqlRewardTrxRepository) UpdateTimeoutTrx() error {
 		err = rows.Scan(
 			&t.RewardID,
 			&t.RefCore,
+			&t.RefID,
 		)
 
 		if err != nil {
 			logrus.Debug(err)
 		}
 
+		// make voucher codes timeout
+		rwdTrxRepo.voucherTrxTimeout(t.RefID)
 		rwdTrxRepo.updateLockedQuota(*t.RewardID, t.RefID)
 	}
 
@@ -686,4 +692,22 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardTrxs(c echo.Context, rewardP
 	}
 
 	return data, nil
+}
+
+func (rwdTrxRepo *psqlRewardTrxRepository) voucherTrxTimeout(refId string) {
+	now := time.Now()
+	query := `UPDATE voucher_codes SET status = $1, updated_at = $2 where status = $3 and ref_id = $4`
+	stmt, err := rwdTrxRepo.Conn.Prepare(query)
+
+	if err != nil {
+		logrus.Debug(err)
+	}
+
+	rows, err := stmt.Query(&models.VoucherCodeStatusBought, &now, &models.VoucherCodeStatusInquired, refId)
+
+	if err != nil {
+		logrus.Debug(err)
+	}
+
+	defer rows.Close()
 }

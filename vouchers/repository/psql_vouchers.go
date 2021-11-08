@@ -917,7 +917,9 @@ func (m *psqlVoucherRepository) UpdatePromoCodeRedeemed(c echo.Context, voucherI
 	return result, nil
 }
 
-func (m *psqlVoucherRepository) GetVoucherCode(c echo.Context, pv *models.PayloadValidator) (*models.VoucherCode, string, error) {
+func (m *psqlVoucherRepository) GetVoucherCodeData(c echo.Context, pv *models.PayloadValidator,
+	isThrough bool) (*models.VoucherCode, string, error) {
+
 	var voucherID string
 	voucherCode := models.VoucherCode{}
 
@@ -944,7 +946,7 @@ func (m *psqlVoucherRepository) GetVoucherCode(c echo.Context, pv *models.Payloa
 
 	voucherID = strconv.Itoa(int(voucherCode.VoucherID))
 
-	if voucherCode.UserID == "" {
+	if voucherCode.UserID == "" || isThrough {
 		return &voucherCode, voucherID, nil
 	}
 

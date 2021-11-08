@@ -164,7 +164,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	}
 
 	// get voucher code with promo code
-	voucherCode, _, err := rwd.voucherUC.GetVoucherCode(c, plValidator)
+	voucherCode, _, err := rwd.voucherUC.GetVoucherCode(c, plValidator, false)
 
 	if err != nil {
 		respErrors.SetTitle(err.Error())
@@ -521,7 +521,7 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 		// check if promoCode is a voucher code
 		// if yes then it should redeem the voucher code itself
 		pv := &models.PayloadValidator{PromoCode: rwdTrx.UsedPromoCode}
-		voucherCode, _, _ := rwd.voucherUC.GetVoucherCode(c, pv)
+		voucherCode, _, _ := rwd.voucherUC.GetVoucherCode(c, pv, true)
 
 		if voucherCode != nil {
 			nowStr := time.Now().Format(models.DateTimeFormat)
@@ -579,7 +579,7 @@ func (rwd *rewardUseCase) CheckTransaction(c echo.Context, rwdPayment *models.Re
 }
 
 func (rwd *rewardUseCase) RefreshTrx() {
-	now := time.Now()
+	now := models.NowUTC()
 	// update trx that should be timeout
 	err := rwd.rwdTrxRepo.UpdateTimeoutTrx()
 

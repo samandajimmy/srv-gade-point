@@ -1,6 +1,10 @@
 package models
 
-import "github.com/labstack/echo"
+import (
+	"time"
+
+	"github.com/labstack/echo"
+)
 
 var (
 	// StatusSuccess to store a status response success
@@ -78,4 +82,9 @@ type EchoGroup struct {
 	Admin *echo.Group
 	API   *echo.Group
 	Token *echo.Group
+}
+
+// NowUTC to get real current datetime but UTC format
+func NowUTC() time.Time {
+	return time.Now().UTC().Add(7 * time.Hour)
 }

@@ -487,12 +487,14 @@ func (vchr *voucherUseCase) VoucherGive(ech echo.Context, payload *models.Payloa
 	return voucherCode, nil
 }
 
-func (vchr *voucherUseCase) GetVoucherCode(c echo.Context, pv *models.PayloadValidator) (*models.VoucherCode, string, error) {
+func (vchr *voucherUseCase) GetVoucherCode(c echo.Context, pv *models.PayloadValidator,
+	isThrough bool) (*models.VoucherCode, string, error) {
+
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
 	// check voucher codes
-	voucherCode, voucherID, err := vchr.voucherRepo.GetVoucherCode(c, pv)
+	voucherCode, voucherID, err := vchr.voucherRepo.GetVoucherCodeData(c, pv, isThrough)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrVoucherCodeUnavailable)
@@ -510,7 +512,7 @@ func (vchr *voucherUseCase) VoucherValidate(c echo.Context, pv *models.PayloadVa
 	now, _ := time.Parse(models.DateTimeFormatMillisecond, pv.TransactionDate)
 
 	// check voucher codes
-	vc, voucherID, err := vchr.voucherRepo.GetVoucherCode(c, pv)
+	vc, voucherID, err := vchr.voucherRepo.GetVoucherCodeData(c, pv, true)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrVoucherCodeUnavailable)

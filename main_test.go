@@ -16,7 +16,7 @@ func TestPing(t *testing.T) {
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
-	pingJSON := "{\"status\":\"Success\",\"message\":\"PONG!!\"}\n"
+	pingJSON := "{\"status\":\"Success\",\"message\":\"PONG!!\",\"data\":null}\n"
 
 	// Assertions
 	if assert.NoError(t, ping(c)) {

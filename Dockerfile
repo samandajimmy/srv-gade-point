@@ -32,6 +32,7 @@ FROM artifactory.pegadaian.co.id:8084/alpine:3.7
 COPY --from=build-env /go/bin/srv-gade-point /go/bin/srv-gade-point
 COPY --from=build-env /srv-gade-point/entrypoint.sh /srv-gade-point/entrypoint.sh
 COPY --from=build-env /srv-gade-point/migrations /migrations
+COPY --from=build-env /srv-gade-point/latest_commit_hash /latest_commit_hash
 
 # add apk ca certificate
 RUN apk add ca-certificates

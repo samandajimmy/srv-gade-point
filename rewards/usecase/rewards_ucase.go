@@ -132,258 +132,6 @@ func (rwd *rewardUseCase) DeleteByCampaign(c echo.Context, campaignID int64) err
 	return nil
 }
 
-func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadValidator) (models.RewardsInquiry, *models.ResponseErrors) {
-	var rwdInquiry models.RewardsInquiry
-	var rwdResponse []models.RewardResponse
-	var respErrors models.ResponseErrors
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-
-	// validate trx date
-	_, err := time.Parse(models.DateTimeFormatMillisecond, plValidator.TransactionDate)
-
-	if err != nil {
-		requestLogger.Debug(models.ErrTrxDateFormat)
-		respErrors.SetTitle(models.ErrTrxDateFormat.Error())
-
-		return rwdInquiry, &respErrors
-	}
-
-	// validate the inquiry request, if refId exist
-	if plValidator.RefTrx != "" {
-		rwdInquiry, err = rwd.rwdTrxRepo.GetByRefID(c, plValidator.RefTrx)
-
-		if (err != nil || rwdInquiry == models.RewardsInquiry{}) {
-			requestLogger.Debug(models.ErrRefTrxNotFound)
-			respErrors.SetTitle(models.ErrRefTrxNotFound.Error())
-
-			return rwdInquiry, &respErrors
-		}
-
-		return rwdInquiry, nil
-	}
-
-	// get voucher code with promo code
-	voucherCode, _, err := rwd.voucherUC.GetVoucherCode(c, plValidator, false)
-
-	if err != nil {
-		respErrors.SetTitle(err.Error())
-
-		return rwdInquiry, &respErrors
-	}
-
-	// check request payload base on cif and promo code
-	// get existing reward trx based on cif and phone number
-	rwrds, _ := rwd.rwdTrxRepo.GetRewardByPayload(c, *plValidator, voucherCode)
-
-	if len(rwrds) > 0 {
-		var rr []models.RewardResponse
-
-		requestLogger.Debug(models.ErrMessageRewardTrxAlreadyExists)
-
-		for _, reward := range rwrds {
-			// validate each reward
-			err = reward.Validators.Validate(plValidator)
-
-			if err != nil {
-				requestLogger.Debug(err)
-				respErrors.AddError(err.Error())
-
-				continue
-			}
-
-			// get response reward
-			respData, err := rwd.responseReward(c, *reward, plValidator)
-
-			if err != nil {
-				requestLogger.Debug(err)
-				respErrors.AddError(err.Error())
-
-				continue
-			}
-
-			rr = append(rr, *respData)
-		}
-
-		rwdInquiry.Rewards = &rr
-
-		if rwrds[0].RootRefID != "" {
-			rwdInquiry.RefTrx = rwrds[0].RootRefID
-		}
-
-		// if not multi
-		if !plValidator.IsMulti {
-			rwdInquiry.RefTrx = rr[0].RefTrx
-			rr[0].RefTrx = ""
-		}
-
-		return rwdInquiry, nil
-	}
-
-	// check if promoCode is a voucher code
-	// if yes then it should call validate voucher
-	if voucherCode != nil {
-		rewardsVoucher, err := rwd.voucherUC.VoucherValidate(c, plValidator)
-
-		if err != nil {
-			requestLogger.Debug(err)
-			respErrors.SetTitle(models.ErrVoucherUnavailable.Error())
-
-			return rwdInquiry, &respErrors
-		}
-
-		// get response reward
-		rwdResp, _ := rwd.responseReward(c, rewardsVoucher[0], plValidator)
-		rwdInquiry.RefTrx = rwdResp.RefTrx // nolint
-		rwdResp.RewardID = 0               // nolint
-		rwdResp.RefTrx = ""                // nolint
-
-		// nolint
-		if rwdResp != nil {
-			rwdResponse = append(rwdResponse, *rwdResp)
-		}
-
-		rwdInquiry.Rewards = &rwdResponse
-
-		// insert data to reward transaction
-		_, err = rwd.createRewardTrx(c, *plValidator, rwdInquiry)
-
-		if err != nil {
-			requestLogger.Debug(err)
-			respErrors.SetTitle(err.Error())
-
-			return rwdInquiry, &respErrors
-		}
-
-		return rwdInquiry, &respErrors
-	}
-
-	// fresh or new reward trx start from here
-	// check available campaign
-	campaignAvailable, err := rwd.campaignRepo.GetCampaignAvailable(c, *plValidator)
-
-	if err != nil {
-		requestLogger.Debug(models.ErrNoCampaign)
-		respErrors.SetTitle(models.ErrNoCampaign.Error())
-
-		return rwdInquiry, &respErrors
-	}
-
-	// Logic referral
-	// check for referral validate
-	isValidate, err := rwd.validateReferralInq(c, plValidator, &respErrors)
-
-	if err != nil {
-		respErrors.SetTitle(err.Error())
-
-		return rwdInquiry, &respErrors
-	}
-
-	if !isValidate {
-		requestLogger.Debug(err)
-
-		return rwdInquiry, &respErrors
-	}
-
-	// create array reward
-	packRewards := rwd.putRewards(c, campaignAvailable)
-
-	for _, reward := range packRewards {
-		rewardLogger := logger.GetRequestLogger(c, reward.Validators)
-
-		// validate promo code
-		if err = rwd.validatePromoCode(*reward.Tags, reward, plValidator.PromoCode); err != nil {
-			rewardLogger.Debug(err)
-
-			continue
-		}
-
-		// validate reward quota
-		available, err := rwd.quotaUC.CheckQuota(c, reward, plValidator)
-
-		if !available {
-			rewardLogger.Debug(err)
-			respErrors.AddError(err.Error())
-
-			continue
-		}
-
-		// validate each reward
-		err = reward.Validators.Validate(plValidator)
-
-		if err != nil {
-			rewardLogger.Debug(err)
-			respErrors.AddError(err.Error())
-
-			continue
-		}
-
-		// get response reward
-		rwdResp, err := rwd.responseReward(c, reward, plValidator)
-
-		if err != nil {
-			rewardLogger.Debug(err)
-			respErrors.SetTitle(err.Error())
-
-			return rwdInquiry, &respErrors
-		}
-
-		if rwdResp != nil {
-			rwdResponse = append(rwdResponse, *rwdResp)
-		}
-
-		// update reward quota
-		_ = rwd.quotaUC.UpdateReduceQuota(c, reward.ID)
-
-		// if not multi
-		if !plValidator.IsMulti {
-			break
-		}
-	}
-
-	// if no reward found
-	if len(rwdResponse) == 0 {
-		requestLogger.Debug(models.ErrMessageNoRewards)
-		respErrors.SetTitle(models.ErrMessageNoRewards.Error())
-
-		return rwdInquiry, &respErrors
-	}
-
-	rwdInquiry.Rewards = &rwdResponse
-
-	// if reward greater then one
-	if len(*rwdInquiry.Rewards) > 1 {
-		rwdInquiry.RefTrx = randRefID(20)
-	}
-
-	// insert data to reward transaction
-	_, err = rwd.createRewardTrx(c, *plValidator, rwdInquiry)
-
-	if err != nil {
-		requestLogger.Debug(err)
-		respErrors.SetTitle(err.Error())
-
-		return rwdInquiry, &respErrors
-	}
-
-	// if not multi
-	if !plValidator.IsMulti {
-		rwdInquiry.RefTrx = rwdResponse[0].RefTrx
-		rwdResponse[0].RefTrx = ""
-	}
-
-	// check referral cant use referrer myself
-	if (plValidator.IsMulti) && (plValidator.CIF == plValidator.Referrer) {
-		requestLogger.Debug(models.ErrSameCifReferrerAndReferral)
-		requestLogger.Debug(err)
-		respErrors.SetTitle(models.ErrSameCifReferrerAndReferral.Error())
-
-		return rwdInquiry, &respErrors
-	}
-
-	return rwdInquiry, nil
-}
-
 func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
 	plValidator *models.PayloadValidator) (*models.RewardResponse, error) {
 	var rwdResp models.RewardResponse
@@ -549,29 +297,25 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 	if len(errorAppend) > 0 {
 		return responseData, errorAppend[0]
 	}
+
 	return responseData, nil
 }
 
 func (rwd *rewardUseCase) CheckTransaction(c echo.Context, rwdPayment *models.RewardPayment) (models.RewardTrxResponse, error) {
 	var responseData models.RewardTrxResponse
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
 	trimmedString := strings.Replace(rwdPayment.RefTrx, " ", "", -1)
 	refIDs := strings.Split(trimmedString, ";")
 
 	for _, refID := range refIDs {
 		rwdPayment.RefTrx = refID
-
 		// check available reward transaction based in ref_id
 		rewardtrx, err := rwd.rwdTrxRepo.CheckRefID(c, rwdPayment.RefTrx)
 
 		if err != nil {
-			requestLogger.Debug(models.ErrRefTrxNotFound)
 
 			return responseData, models.ErrRefTrxNotFound
 		}
 
-		responseData.StatusCode = rewardtrx.Status
 		responseData.Status = rewardtrx.GetstatusRewardTrxText()
 	}
 
@@ -726,20 +470,6 @@ func (rwd *rewardUseCase) createRewardTrx(c echo.Context, plValidator models.Pay
 	}
 
 	return rewardTrx, nil
-}
-
-func (rwd *rewardUseCase) timeoutTrxJob(c echo.Context, rewardTrx models.RewardTrx) {
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-	diff := rewardTrx.TimeoutDate.Sub(*rewardTrx.InquiredDate)
-	delay := time.Duration(diff.Seconds())
-
-	go func(rwdTrx models.RewardTrx, delay time.Duration) {
-		requestLogger.Debug("Store job to background for ref ID: " + rwdTrx.RefID)
-		time.Sleep(delay * time.Second)
-		requestLogger.Debug("Start to make ref ID: " + rwdTrx.RefID + " expired!")
-		rwd.rwdTrxRepo.RewardTrxTimeout(rwdTrx)
-	}(rewardTrx, delay)
 }
 
 func (rwd *rewardUseCase) GetRewards(c echo.Context, rewardPayload *models.RewardsPayload) ([]models.Reward, string, error) {

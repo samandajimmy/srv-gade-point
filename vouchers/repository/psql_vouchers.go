@@ -929,10 +929,9 @@ func (m *psqlVoucherRepository) GetVoucherCodeData(c echo.Context, pv *models.Pa
 			return q.Column("validators", "journal_account", "type")
 		}).
 		Where("voucher_code.promo_code = ?", pv.PromoCode).
-		WhereGroup(" AND ", func(q *bun.SelectQuery) *bun.SelectQuery {
-			return q.Where("voucher_code.status = ? OR voucher_code.status = ? OR voucher_code.status = ?", models.VoucherCodeStatusBought,
-				models.VoucherCodeStatusInquired, models.VoucherCodeStatusAvailable)
-		}).Scan(c.Request().Context())
+		Where("voucher_code.status IN (?, ?, ?, ?)", models.VoucherCodeStatusBought,
+			models.VoucherCodeStatusInquired, models.VoucherCodeStatusAvailable, models.VoucherCodeStatusRedeemed).
+		Scan(c.Request().Context())
 
 	if err == sql.ErrNoRows {
 		return nil, "", nil

@@ -490,38 +490,48 @@ func (vchr *voucherUseCase) VoucherGive(ech echo.Context, payload *models.Payloa
 func (vchr *voucherUseCase) GetVoucherCode(c echo.Context, pv *models.PayloadValidator,
 	isThrough bool) (*models.VoucherCode, string, error) {
 
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-
 	// check voucher codes
 	voucherCode, voucherID, err := vchr.voucherRepo.GetVoucherCodeData(c, pv, isThrough)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrVoucherCodeUnavailable)
-
-		return nil, "", models.ErrVoucherCodeUnavailable
+		return nil, "", err
 	}
 
 	return voucherCode, voucherID, nil
 }
 
-func (vchr *voucherUseCase) VoucherValidate(c echo.Context, pv *models.PayloadValidator) ([]models.Reward, error) {
+func (vchr *voucherUseCase) VoucherValidate(c echo.Context, pv *models.PayloadValidator,
+	vc *models.VoucherCode) ([]models.Reward, error) {
+
+	var err error
 	response := []models.Reward{}
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now, _ := time.Parse(models.DateTimeFormatMillisecond, pv.TransactionDate)
 
 	// check voucher codes
-	vc, voucherID, err := vchr.voucherRepo.GetVoucherCodeData(c, pv, true)
+	if vc == nil {
+		vc, _, err = vchr.voucherRepo.GetVoucherCodeData(c, pv, true)
 
-	if err != nil {
-		requestLogger.Debug(models.ErrVoucherCodeUnavailable)
+		if err != nil {
+			requestLogger.Debug(models.ErrVoucherCodeUnavailable)
 
-		return response, models.ErrVoucherCodeUnavailable
+			return response, models.ErrVoucherCodeUnavailable
+		}
+	}
+
+	// when voucher code still in process
+	if *vc.Status == int8(models.VoucherCodeStatusInquired) {
+		return response, models.ErrVoucherPrcessed
+	}
+
+	// when voucher code has been redeemed
+	if *vc.Status == int8(models.VoucherCodeStatusRedeemed) {
+		return response, models.ErrVoucherRedemeed
 	}
 
 	// get voucher detail
-	voucher, err := vchr.voucherRepo.GetVoucherAdmin(c, voucherID)
+	voucher, err := vchr.voucherRepo.GetVoucherAdmin(c, strconv.Itoa(int(vc.VoucherID)))
 
 	if err != nil {
 		requestLogger.Debug(err)

@@ -1,7 +1,10 @@
 package middleware
 
 import (
+	"encoding/json"
+	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
+	"net/url"
 	"os"
 	"reflect"
 	"time"
@@ -31,17 +34,25 @@ func InitMiddleware(ech *echo.Echo, echoGroup models.EchoGroup) {
 	cm := &customMiddleware{ech}
 	echGroup = echoGroup
 	ech.Use(middleware.RequestIDWithConfig(middleware.DefaultRequestIDConfig))
-
-	ech.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "requestID=${id}, method=${method}, status=${status}, path=${path}, latency=${latency_human} " +
-			"host=${host}, remote_ip=${remote_ip}, user_agent=${user_agent}, error=${error} \n",
-	}))
+	cm.customBodyDump()
 
 	ech.Use(middleware.Recover())
 	cm.cors()
 	cm.basicAuth()
 	cm.jwtAuth()
 	cm.customValidation()
+}
+
+func (cm *customMiddleware) customBodyDump() {
+	cm.e.Use(middleware.BodyDumpWithConfig(middleware.BodyDumpConfig{
+		Handler: func(c echo.Context, req, resp []byte) {
+			bodyParser(c, &req)
+			reqBody := c.Request()
+
+			logger.MakeWithoutReportCaller(c, req).Info("Request payload for endpoint " + reqBody.Method + " " + reqBody.URL.Path)
+			logger.MakeWithoutReportCaller(c, resp).Info("Response payload for endpoint " + reqBody.Method + " " + reqBody.URL.Path)
+		},
+	}))
 }
 
 func (cm *customMiddleware) customValidation() {
@@ -110,4 +121,21 @@ func (cv *customValidator) dateString(fl validator.FieldLevel) bool {
 	}
 
 	return true
+}
+
+func bodyParser(c echo.Context, pl *[]byte) {
+	if string(*pl) == "" {
+		rawQuery := c.Request().URL.RawQuery
+		m, err := url.ParseQuery(rawQuery)
+
+		if err != nil {
+			logger.Make(nil, nil).Fatal(err)
+		}
+
+		*pl, err = json.Marshal(m)
+
+		if err != nil {
+			logger.Make(nil, nil).Fatal(err)
+		}
+	}
 }

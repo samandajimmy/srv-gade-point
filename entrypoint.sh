@@ -3,5 +3,5 @@
 sleep 5
 
 # Start server
-echo "== Running ./srv-gade-point cacing2"
+echo "== Running ./srv-gade-point"
 /go/bin/srv-gade-point

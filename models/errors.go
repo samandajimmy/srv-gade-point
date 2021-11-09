@@ -263,6 +263,12 @@ var (
 
 	// ErrCIF to not found data cif
 	ErrCIF = errors.New("CIF tidak ditemukan")
+
+	// ErrVoucherPrcessed voucher still on progress
+	ErrVoucherPrcessed = errors.New("Kode voucher sedang diproses")
+
+	// ErrVoucherRedemeed voucher voucher has been redemmeed
+	ErrVoucherRedemeed = errors.New("Kode voucher sudah digunakan")
 )
 
 // DynamicErr to return parameterize errors

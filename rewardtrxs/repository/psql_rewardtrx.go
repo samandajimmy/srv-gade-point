@@ -452,7 +452,8 @@ func (rwdTrxRepo *psqlRewardTrxRepository) RewardTrxTimeout(rewardTrx models.Rew
 
 func (rwdTrxRepo *psqlRewardTrxRepository) UpdateTimeoutTrx() error {
 	now := time.Now()
-	query := `UPDATE reward_transactions SET status = $1, updated_at = $2 where timeout_date <= $3 and status = $4`
+	query := `UPDATE reward_transactions SET status = $1, updated_at = $2 where timeout_date <= $3
+		and status = $4 RETURNING reward_id, ref_id`
 	rows, err := rwdTrxRepo.Conn.Query(query, &models.RewardTrxTimeOut, &now, &now, &models.RewardTrxInquired)
 
 	if err != nil {
@@ -465,7 +466,6 @@ func (rwdTrxRepo *psqlRewardTrxRepository) UpdateTimeoutTrx() error {
 		var t models.RewardTrx
 		err = rows.Scan(
 			&t.RewardID,
-			&t.RefCore,
 			&t.RefID,
 		)
 
@@ -475,7 +475,10 @@ func (rwdTrxRepo *psqlRewardTrxRepository) UpdateTimeoutTrx() error {
 
 		// make voucher codes timeout
 		rwdTrxRepo.voucherTrxTimeout(t.RefID)
-		rwdTrxRepo.updateLockedQuota(*t.RewardID, t.RefID)
+
+		if t.RewardID != nil {
+			rwdTrxRepo.updateLockedQuota(*t.RewardID, t.RefID)
+		}
 	}
 
 	if err != nil {
@@ -696,14 +699,15 @@ func (rwdTrxRepo *psqlRewardTrxRepository) GetRewardTrxs(c echo.Context, rewardP
 
 func (rwdTrxRepo *psqlRewardTrxRepository) voucherTrxTimeout(refId string) {
 	now := time.Now()
-	query := `UPDATE voucher_codes SET status = $1, updated_at = $2 where status = $3 and ref_id = $4`
+	query := `UPDATE voucher_codes SET user_id = NULL, ref_id = NULL, status = $1, updated_at = $2
+		where status = $3 and ref_id = $4`
 	stmt, err := rwdTrxRepo.Conn.Prepare(query)
 
 	if err != nil {
 		logrus.Debug(err)
 	}
 
-	rows, err := stmt.Query(&models.VoucherCodeStatusBought, &now, &models.VoucherCodeStatusInquired, refId)
+	rows, err := stmt.Query(&models.VoucherCodeStatusAvailable, &now, &models.VoucherCodeStatusInquired, refId)
 
 	if err != nil {
 		logrus.Debug(err)

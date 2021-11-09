@@ -538,7 +538,7 @@ func (vchr *VouchersHandler) VoucherValidate(c echo.Context) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, payloadValidator)
 	requestLogger.Info("Start to validate a voucher")
-	responseData, err := vchr.VoucherUseCase.VoucherValidate(c, &payloadValidator)
+	responseData, err := vchr.VoucherUseCase.VoucherValidate(c, &payloadValidator, nil)
 
 	if err != nil {
 		response.Status = models.StatusError

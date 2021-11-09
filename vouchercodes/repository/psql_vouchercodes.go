@@ -390,8 +390,8 @@ func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeRejected(c echo.Cont
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
-	query := `UPDATE voucher_codes SET status = $1, user_id = $2, bought_date = NULL, ref_id = '',
-		updated_at = $3 where status = $4 and ref_id = $5`
+	query := `UPDATE voucher_codes SET user_id = NULL, bought_date = NULL, ref_id = NULL, status = $1,
+		updated_at = $2 where ref_id = $3 AND status IN ($4, $5)`
 	stmt, err := psqlRepo.Conn.Prepare(query)
 
 	if err != nil {
@@ -400,8 +400,8 @@ func (psqlRepo *psqlVoucherCodeRepository) UpdateVoucherCodeRejected(c echo.Cont
 		return err
 	}
 
-	rows, err := stmt.Query(&models.VoucherCodeStatusAvailable, "", &now,
-		&models.VoucherCodeStatusBooked, &refID)
+	rows, err := stmt.Query(&models.VoucherCodeStatusAvailable, &now, &refID,
+		&models.VoucherCodeStatusInquired, &models.VoucherCodeStatusBooked)
 
 	if err != nil {
 		requestLogger.Debug(err)

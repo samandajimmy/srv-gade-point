@@ -140,8 +140,9 @@ func (vchr *voucherUseCase) UploadVoucherImages(c echo.Context, file *multipart.
 	contentType := bodyWriter.FormDataContentType()
 	bodyWriter.Close()
 
-	requestLogger.Debug("Do a post request to pds api.")
-	response, err := http.Post(apiURL, contentType, bodyBuf)
+	req, err := http.NewRequest(echo.POST, apiURL, bodyBuf)
+	req.Header.Add("Content-Type", contentType)
+	req.SetBasicAuth(os.Getenv(`PDS_API_BASIC_USER`), os.Getenv(`PDS_API_BASIC_PASS`))
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -149,8 +150,17 @@ func (vchr *voucherUseCase) UploadVoucherImages(c echo.Context, file *multipart.
 		return "", err
 	}
 
-	defer response.Body.Close()
-	responseBody, err := ioutil.ReadAll(response.Body)
+	client := http.Client{}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return "", err
+	}
+
+	defer resp.Body.Close()
+	responseBody, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
 		requestLogger.Debug(err)

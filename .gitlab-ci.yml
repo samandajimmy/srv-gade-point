@@ -20,7 +20,7 @@ variables:
       && export GO111MODULE=on
       && export PATH="$PATH:/go/bin"
       && export GOPROXY="https://artifactory.pegadaian.co.id/repository/go-group-01/"
-      && cp ssl_certificate.crt /usr/local/share/ca-certificates
+      && cp ${ARTIFACTORY_SSL_CERT} /usr/local/share/ca-certificates/ssl_certificate.crt
       && chmod 644 /usr/local/share/ca-certificates/ssl_certificate.crt && update-ca-certificates
 
 .store_commit_hash: &store_commit_hash
@@ -51,7 +51,7 @@ test:
     - go mod download
     - go test
 
-build:
+build_dev:
   stage: build
   image: artifactory.pegadaian.co.id:8084/docker:latest
   services:
@@ -59,10 +59,28 @@ build:
       command: ["--insecure-registry=artifactory.pegadaian.co.id:8084"]
   <<: *store_commit_hash
   script:
-    - docker login -u $NEXUS_DOCKER_USER -p $NEXUS_DOCKER_PASS artifactory.pegadaian.co.id:8084
+    - cp ${ARTIFACTORY_SSL_CERT} ${CI_PROJECT_DIR}/ssl_certificate.crt
+    - mkdir -p ~/.docker/ && echo $DOCKER_AUTH_CONFIG > ~/.docker/config.json
     - docker build --pull -t $IMAGE_URL .
-    - docker login -u $NEXUS_DOCKER_USER -p $NEXUS_DOCKER_PASS artifactory.pegadaian.co.id:5443
     - docker push $IMAGE_URL
+  only:
+    - master
+  
+build_prod:
+  stage: build
+  image: artifactory.pegadaian.co.id:8084/docker:latest
+  services:
+    - name: artifactory.pegadaian.co.id:8084/docker:dind
+      command: ["--insecure-registry=artifactory.pegadaian.co.id:8084"]
+  only:
+    - tags
+  <<: *store_commit_hash
+  script:
+    - if [ -z "$CI_COMMIT_TAG" ]; then export TAG=$CI_COMMIT_REF_SLUG; else export TAG=$CI_COMMIT_TAG; fi
+    - cp ${ARTIFACTORY_SSL_CERT} ${CI_PROJECT_DIR}/ssl_certificate.crt
+    - mkdir -p ~/.docker/ && echo $DOCKER_AUTH_CONFIG > ~/.docker/config.json
+    - docker build --pull -t artifactory.pegadaian.co.id:5443/$CI_PROJECT_NAME:$TAG .
+    - docker push artifactory.pegadaian.co.id:5443/$CI_PROJECT_NAME:$TAG
 
 deploy_dev:
   image: artifactory.pegadaian.co.id:8084/tj/openshift-client:latest

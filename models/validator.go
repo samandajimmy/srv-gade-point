@@ -296,7 +296,7 @@ func (v *Validator) getField(field string) (interface{}, error) {
 	val := reflect.Indirect(r).FieldByName(strings.Title(field))
 
 	if !val.IsValid() {
-		return 0, errors.New("Formula is not valid")
+		return 0, errors.New("formula is not valid")
 	}
 
 	f := val.Interface()

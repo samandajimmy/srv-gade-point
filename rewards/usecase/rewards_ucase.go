@@ -281,7 +281,7 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 			referralTrx := rwdTrx.GetReferralTrx()
 			referralTrx.CIF = rwdPayment.CIF
 
-			_ = rwd.referralTrxRepo.Create(c, referralTrx)
+			_ = rwd.referralTrxRepo.PostReferralTrx(c, referralTrx)
 		}
 
 		if rwdTrx.Reward.Type == nil {
@@ -511,6 +511,8 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
+	// check the campaign code, referral or not
+	// if not then go through
 	if payload.Validators.CampaignCode != models.CampaignCodeReferral {
 		return true, nil
 	}
@@ -542,6 +544,8 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 		return false, err
 	}
 
+	// get amount of trx that used referral code from the referral/user
+	// to make sure one user only use one referral code
 	countReftrx, err := rwd.referralTrxRepo.IsReferralTrxExist(c, modelsRefTrx)
 
 	if err != nil {
@@ -554,6 +558,8 @@ func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.Pa
 		return false, models.ErrValidateGetReferral
 	}
 
+	// get total goldback from the referrer based on the referral code
+	// if totalGoldback beyond the limit then its not valid
 	totalGoldback, err := rwd.referralTrxRepo.GetTotalGoldbackReferrer(c, modelsRefTrx)
 
 	if err != nil {

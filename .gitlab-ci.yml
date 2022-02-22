@@ -5,21 +5,17 @@ stages:
   - deploy
 
 variables:
-  DOCKER_AUTH_CONFIG: '{"auths": {"artifactory.pegadaian.co.id:8084": {"auth": "$DOCKER_AU_CONFIG"},"artifactory.pegadaian.co.id:5443": {"auth": "$DOCKER_AU_CONFIG"}}}'
   IMAGE_URL: artifactory.pegadaian.co.id:5443/$CI_PROJECT_PATH:$CI_COMMIT_REF_SLUG
   PACKAGE_PATH: /go/src/gade/srv-gade-point
-  OPENSHIFT_REGION: sby
-  OPENSHIFT_OC_URL: https://api.ocp-$OPENSHIFT_REGION.pegadaian.co.id:6443
 
 # A hack to make Golang-in-Gitlab happy
 .anchors:
   - &inject-gopath
-      mkdir -p $(dirname ${PACKAGE_PATH})
-      && ln -s ${CI_PROJECT_DIR} ${PACKAGE_PATH}
-      && cd ${PACKAGE_PATH}
-      && export GO111MODULE=on
+      export GO111MODULE=on
       && export PATH="$PATH:/go/bin"
+      && export GOPRIVATE="https://artifactory.pegadaian.co.id/repository/go-group-01/"
       && export GOPROXY="https://artifactory.pegadaian.co.id/repository/go-group-01/"
+      && export GONOSUMDB="github.com/*,golang.org/*,gopkg.in/*,gitlab.com/*,cloud.google.com/*,go.*,google.golang.org/*,gotest.*,honnef.co/*,mellium.im/*"
       && cp ${ARTIFACTORY_SSL_CERT} /usr/local/share/ca-certificates/ssl_certificate.crt
       && chmod 644 /usr/local/share/ca-certificates/ssl_certificate.crt && update-ca-certificates
 

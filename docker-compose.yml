@@ -11,27 +11,5 @@ services:
     build: .
     ports:
       - 8080:8080
-    environment:
-      - PORT=8080
-      - CONTEXT_TIMEOUT=2000
-      - DB_HOST=db
-      - DB_PORT=
-      - DB_USER=postgres
-      - DB_PASS=:postgres
-      - DB_NAME=postgres
-      - DB_LOGGER=true
-      - JWT_SECRET=gade-secret
-      - JWT_TOKEN_EXP=720
-      - BASIC_USERNAME=admin
-      - BASIC_PASSWORD=admin
-      - STATUS_UPDATE_TIME=13:58
-      - UPLOAD_IMAGE_URL=http://pds-api.hookiarisan.com/gpoint/voucherimage/add
-      - REWARD_TRX_TIMEOUT=5
-      - PDS_API_BASIC_USER=aplikasijs
-      - PDS_API_BASIC_PASS=aplikasi123
-      - PDS_API_HOST=https://apidigitaldev123.pegadaian.co.id/v2
-      - SEND_SMS_PROMO_PATH=/notification/send_sms_promo
-      - CS_NUMBER_1=085959114119
-      - CS_NUMBER_2=089603239653
-      - STAGE=25000
-      - LIMIT_REWARD_COUNTER=100
+    env_file:
+      - .env

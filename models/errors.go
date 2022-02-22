@@ -269,6 +269,8 @@ var (
 
 	// ErrVoucherRedemeed voucher voucher has been redemmeed
 	ErrVoucherRedemeed = errors.New("Kode voucher sudah digunakan")
+
+	ErrFormulaNotValid = errors.New("formula is not valid")
 )
 
 // DynamicErr to return parameterize errors

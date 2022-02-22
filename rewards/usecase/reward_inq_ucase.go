@@ -25,17 +25,10 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	}
 
 	// validate the inquiry request, if refId exist
-	if plValidator.RefTrx != "" {
-		rwdInquiry, err = rwd.rwdTrxRepo.GetByRefID(c, plValidator.RefTrx)
+	rwdInquiry = rwd.getInquiredTrxByRefTrx(c, plValidator)
 
-		if (err != nil || rwdInquiry == models.RewardsInquiry{}) {
-			logger.Make(c, nil).Debug(models.ErrRefTrxNotFound)
-			respErrors.SetTitle(models.ErrRefTrxNotFound.Error())
-
-			return rwdInquiry, &respErrors
-		}
-
-		return rwdInquiry, nil
+	if (rwdInquiry != models.RewardsInquiry{}) {
+		return rwdInquiry, &respErrors
 	}
 
 	// get voucher code with promo code
@@ -49,50 +42,10 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 	// check request payload base on cif and promo code
 	// get existing reward trx based on cif and phone number
-	rwrds, _ := rwd.rwdTrxRepo.GetRewardByPayload(c, *plValidator, voucherCode)
+	rwdInquiry = rwd.getInquiredTrxByPayload(c, plValidator, voucherCode)
 
-	if len(rwrds) > 0 && voucherCode == nil {
-		var rr []models.RewardResponse
-
-		logger.Make(c, nil).Debug(models.ErrMessageRewardTrxAlreadyExists)
-
-		for _, reward := range rwrds {
-			// validate each reward
-			err = reward.Validators.Validate(plValidator)
-
-			if err != nil {
-				logger.Make(c, nil).Debug(err)
-				respErrors.AddError(err.Error())
-
-				continue
-			}
-
-			// get response reward
-			respData, err := rwd.responseReward(c, *reward, plValidator)
-
-			if err != nil {
-				logger.Make(c, nil).Debug(err)
-				respErrors.AddError(err.Error())
-
-				continue
-			}
-
-			rr = append(rr, *respData)
-		}
-
-		rwdInquiry.Rewards = &rr
-
-		if rwrds[0].RootRefID != "" {
-			rwdInquiry.RefTrx = rwrds[0].RootRefID
-		}
-
-		// if not multi
-		if !plValidator.IsMulti {
-			rwdInquiry.RefTrx = rr[0].RefTrx
-			rr[0].RefTrx = ""
-		}
-
-		return rwdInquiry, nil
+	if (rwdInquiry != models.RewardsInquiry{}) {
+		return rwdInquiry, &respErrors
 	}
 
 	// check if promoCode is a voucher code
@@ -113,7 +66,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	}
 
 	// Logic referral
-	// check for referral validate
+	// check for referral code valid or not
 	isValidate, err := rwd.validateReferralInq(c, plValidator, &respErrors)
 
 	if err != nil {
@@ -276,4 +229,73 @@ func (rwd *rewardUseCase) timeoutTrxJob(c echo.Context, rewardTrx models.RewardT
 		requestLogger.Debug("Start to make ref ID: " + rwdTrx.RefID + " expired!")
 		rwd.rwdTrxRepo.RewardTrxTimeout(rwdTrx)
 	}(rewardTrx, delay)
+}
+
+func (rwd *rewardUseCase) getInquiredTrxByRefTrx(c echo.Context, plValidator *models.PayloadValidator) models.RewardsInquiry {
+	var rwdInquiry models.RewardsInquiry
+
+	if plValidator.RefTrx == "" {
+		return rwdInquiry
+	}
+
+	rwdInquiry, err := rwd.rwdTrxRepo.GetByRefID(c, plValidator.RefTrx)
+
+	if (err != nil || rwdInquiry == models.RewardsInquiry{}) {
+		logger.Make(c, nil).Debug(models.ErrRefTrxNotFound)
+	}
+
+	return rwdInquiry
+}
+
+func (rwd *rewardUseCase) getInquiredTrxByPayload(c echo.Context, plValidator *models.PayloadValidator, voucherCode *models.VoucherCode) models.RewardsInquiry {
+	var rwdInquiry models.RewardsInquiry
+	var rr []models.RewardResponse
+
+	rwrds, err := rwd.rwdTrxRepo.GetRewardByPayload(c, *plValidator, voucherCode)
+
+	if err != nil {
+		return rwdInquiry
+	}
+
+	if len(rwrds) == 0 && voucherCode == nil {
+		return rwdInquiry
+	}
+
+	logger.Make(c, nil).Debug(models.ErrMessageRewardTrxAlreadyExists)
+
+	for _, reward := range rwrds {
+		// validate each reward
+		err = reward.Validators.Validate(plValidator)
+
+		if err != nil {
+			logger.Make(c, nil).Debug(err)
+
+			continue
+		}
+
+		// get response reward
+		respData, err := rwd.responseReward(c, *reward, plValidator)
+
+		if err != nil {
+			logger.Make(c, nil).Debug(err)
+
+			continue
+		}
+
+		rr = append(rr, *respData)
+	}
+
+	rwdInquiry.Rewards = &rr
+
+	if rwrds[0].RootRefID != "" {
+		rwdInquiry.RefTrx = rwrds[0].RootRefID
+	}
+
+	// if not multi
+	if !plValidator.IsMulti {
+		rwdInquiry.RefTrx = rr[0].RefTrx
+		rr[0].RefTrx = ""
+	}
+
+	return rwdInquiry
 }

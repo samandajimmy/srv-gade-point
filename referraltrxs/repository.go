@@ -8,7 +8,7 @@ import (
 
 // Repository represent the referral transactions repository contract
 type Repository interface {
-	Create(echo.Context, models.ReferralTrx) error
+	PostReferralTrx(echo.Context, models.ReferralTrx) error
 	GetMilestone(echo.Context, models.MilestonePayload) (*models.Milestone, error)
 	IsReferralTrxExist(c echo.Context, refTrx models.ReferralTrx) (int64, error)
 	GetTotalGoldbackReferrer(c echo.Context, refTrx models.ReferralTrx) (float64, error)

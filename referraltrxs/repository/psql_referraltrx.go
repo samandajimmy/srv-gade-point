@@ -55,7 +55,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetTotalGoldbackReferrer(c echo.Con
 	return total, nil
 }
 
-func (refTrxRepo *psqlReferralTrxRepository) Create(c echo.Context, refTrx models.ReferralTrx) error {
+func (refTrxRepo *psqlReferralTrxRepository) PostReferralTrx(c echo.Context, refTrx models.ReferralTrx) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()

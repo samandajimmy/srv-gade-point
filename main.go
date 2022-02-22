@@ -25,6 +25,9 @@ import (
 	_pHistoryUseCase "gade/srv-gade-point/pointhistories/usecase"
 	_quotaRepository "gade/srv-gade-point/quotas/repository"
 	_quotaUseCase "gade/srv-gade-point/quotas/usecase"
+	_referralsHttpDelivery "gade/srv-gade-point/referrals/delivery/http"
+	_referralsRepository "gade/srv-gade-point/referrals/repository"
+	_referralsUseCase "gade/srv-gade-point/referrals/usecase"
 	_referralTrxHttpDelivery "gade/srv-gade-point/referraltrxs/delivery/http"
 	_referralTrxRepository "gade/srv-gade-point/referraltrxs/repository"
 	_referralTrxUseCase "gade/srv-gade-point/referraltrxs/usecase"
@@ -155,6 +158,11 @@ func main() {
 	userRepository := _userRepository.NewPsqlUserRepository(dbConn)
 	userUseCase := _userUseCase.NewUserUseCase(userRepository, timeoutContext)
 	_userHttpDelivery.NewUserHandler(echoGroup, userUseCase)
+
+	// REFERRALS
+	referralsRepository := _referralsRepository.NewPsqlReferralRepository(dbConn)
+	referralsUseCase := _referralsUseCase.NewReferralUseCase(referralsRepository)
+	_referralsHttpDelivery.NewReferralsHandler(echoGroup, referralsUseCase)
 
 	// Run every day.
 	updateStatusBasedOnStartDate(campaignUseCase, voucherUseCase)

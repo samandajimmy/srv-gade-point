@@ -271,6 +271,9 @@ var (
 	ErrVoucherRedemeed = errors.New("Kode voucher sudah digunakan")
 
 	ErrFormulaNotValid = errors.New("formula is not valid")
+
+	// ErrCoreFailed to store create core Transaction failed error message
+	ErrCoreTrxFailed = errors.New("Gagal untuk menyimpan transaksi")
 )
 
 // DynamicErr to return parameterize errors

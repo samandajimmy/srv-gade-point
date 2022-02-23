@@ -65,3 +65,24 @@ type RankingPayload struct {
 	StartDate    string `json:"startDate,omitempty" validate:"required"`
 	EndDate      string `json:"endDate,omitempty" validate:"required"`
 }
+
+type CoreTrxPayload struct {
+	CIF              string `json:"cif,omitempty" validate:"required"`
+	RefID            string `json:"refId,omitempty" validate:"required"`
+	UsedReferralCode string `json:"usedReferralCode,omitempty" validate:"required"`
+	Type             int64  `json:"type,omitempty" validate:"required"`
+	RewardReferral   int64  `json:"rewardReferral,omitempty" validate:"required"`
+	RewardType       string `json:"rewardType,omitempty" validate:"required"`
+	PhoneNumber      string `json:"phoneNumber,omitempty" validate:"required"`
+	TrxAmount        int64  `json:"trxAmount,omitempty" validate:"required"`
+	LoanAmount       int64  `json:"loanAmount,omitempty" validate:"required"`
+	InterestAmount   int64  `json:"interestAmount,omitempty" validate:"required"`
+	TrxID            int64  `json:"trxId,omitempty" validate:"required"`
+	TrxDate          string `json:"trxDate,omitempty" validate:"required"`
+	ProductCode      int64  `json:"productCode,omitempty" validate:"required"`
+}
+
+type CoreTrxResponse struct {
+	StatusCode *int64 `json:"statusCode,omitempty"`
+	Status     string `json:"status,omitempty"`
+}

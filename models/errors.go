@@ -271,6 +271,12 @@ var (
 	ErrVoucherRedemeed = errors.New("Kode voucher sudah digunakan")
 
 	ErrFormulaNotValid = errors.New("formula is not valid")
+
+	// ErrReferralCodeFailed to store create reward failed error message
+	ErrReferralCodeFailed = errors.New("Gagal untuk membuat referral code")
+
+	// ErrCampaignNotReferral to store create reward failed error message
+	ErrCampaignNotReferral = errors.New("Campaign tidak tersedia untuk referral")
 )
 
 // DynamicErr to return parameterize errors

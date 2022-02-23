@@ -23,6 +23,12 @@ type Campaign struct {
 	UpdatedAt   *time.Time `json:"updatedAt,omitempty"`
 	CreatedAt   *time.Time `json:"createdAt,omitempty"`
 	Rewards     *[]Reward  `json:"rewards,omitempty"`
+	Metadata    *Metadata  `json:"metadata,omitempty"`
+}
+
+type Metadata struct {
+	IsReferral bool   `json:"isReferral,omitempty"`
+	Prefix     string `json:"prefix,omitempty"`
 }
 
 // GetCampaignValue to store payload get campaign value

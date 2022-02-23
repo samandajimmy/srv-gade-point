@@ -75,6 +75,9 @@ var (
 
 	// ErrSMSNotSent to store error sms not sent
 	ErrSMSNotSent = "Ref Transaksi: %s, Gagal mengirim SMS"
+
+	// AlreadyHadRefCodes to notice if a cif already had referral codes
+	AlreadyHadRefCodes = "Cif %s sudah memiliki Kode Referral"
 )
 
 // EchoGroup to store routes group

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referrals"
 	"net/http"
@@ -30,11 +31,9 @@ func (rc *ReferralHandler) CreateReferralCodes(c echo.Context) error {
 
 	respErrors := &models.ResponseErrors{}
 	response = models.Response{}
-	logger := models.RequestLogger{}
 	err := c.Bind(&referralcodes)
 
-	requestLogger := logger.GetRequestLogger(c, referralcodes)
-	requestLogger.Info("Start to create a referral code.")
+	logger.Make(c, nil).Debug("Start to create referral code for client")
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -45,12 +44,12 @@ func (rc *ReferralHandler) CreateReferralCodes(c echo.Context) error {
 	if err = c.Validate(referralcodes); err != nil {
 		respErrors.SetTitle(err.Error())
 		response.SetResponse("", respErrors)
-		logger.DataLog(c, response).Info("End to create referral code for client")
+		logger.Make(c, nil).Debug("End to creater referral code for client")
 
 		return c.JSON(http.StatusBadRequest, response)
 	}
 
-	err = rc.ReferralUseCase.CreateReferralCodes(c, &referralcodes)
+	data, err := rc.ReferralUseCase.CreateReferralCodes(c, referralcodes)
 
 	if err != nil {
 		response.Status = models.StatusError
@@ -60,9 +59,9 @@ func (rc *ReferralHandler) CreateReferralCodes(c echo.Context) error {
 
 	response.Status = models.StatusSuccess
 	response.Message = models.MessageSaveSuccess
-	response.Data = referralcodes
+	response.Data = data
 
-	requestLogger.Info("End of create a referral code.")
+	logger.Make(c, nil).Info("End of create a referral code.")
 
 	return c.JSON(http.StatusCreated, response)
 }

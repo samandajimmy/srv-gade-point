@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referrals"
 	"math/rand"
@@ -24,56 +25,54 @@ func NewReferralUseCase(refRepo referrals.Repository) referrals.UseCase {
 	}
 }
 
-func (rcUc *referralUseCase) CreateReferralCodes(c echo.Context, referralCodes *models.ReferralCodes) error {
+func (rcUc *referralUseCase) CreateReferralCodes(c echo.Context, referralCodes models.ReferralCodes) (models.ReferralCodes, error) {
 
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
+	var payload models.ReferralCodes
+	payload.CIF = referralCodes.CIF
+	payload.Prefix = referralCodes.Prefix
 
 	// Check if a cif already had a referral code
-	_ = rcUc.referralRepo.GetReferralCodesByCif(c, referralCodes)
+	referral, _ := rcUc.referralRepo.GetReferralCodesByCif(c, payload)
 
 	// if exist, return existing referral code
-	if referralCodes.ReferralCode != "" {
-		requestLogger.Info(models.DynamicErr(models.AlreadyHadRefCodes, referralCodes.CIF))
+	if referral.ReferralCode != "" {
+		logger.Make(c, nil).Info(models.DynamicErr(models.AlreadyHadRefCodes, referralCodes.CIF))
 
-		return nil
+		return referral, nil
 	}
 
 	// if not, generate referral code, getting campaign id first
 	campaignId, err := rcUc.GetCampaignByPrefix(c, referralCodes.Prefix)
 
 	if err != nil {
-		requestLogger.Debug(err)
+		logger.Make(c, nil).Debug(err)
 
-		return err
+		return models.ReferralCodes{}, err
 	}
 
 	// map campaign id, generate referral code according to requirements (with prefix)
-	referralCodes.CampaignId = campaignId
-	referralCodes.ReferralCode = GenerateReferalCode(referralCodes.Prefix)
+	payload.CampaignId = campaignId
+	payload.ReferralCode = GenerateReferalCode(payload.Prefix)
 
 	// create referral code data
-	err = rcUc.referralRepo.CreateReferralCodes(c, referralCodes)
+	result, err := rcUc.referralRepo.CreateReferralCodes(c, payload)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrReferralCodeFailed)
+		logger.Make(c, nil).Debug(models.ErrReferralCodeFailed)
 
-		return models.ErrReferralCodeFailed
+		return models.ReferralCodes{}, models.ErrReferralCodeFailed
 	}
 
-	return nil
+	return result, nil
 }
 
 func (rcUc *referralUseCase) GetCampaignByPrefix(c echo.Context, prefix string) (int64, error) {
-
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
 
 	// get campaign id by prefix
 	campaignId, err := rcUc.referralRepo.GetCampaignByPrefix(c, prefix)
 
 	if err != nil {
-		requestLogger.Debug(err)
+		logger.Make(c, nil).Debug(err)
 
 		return 0, err
 	}

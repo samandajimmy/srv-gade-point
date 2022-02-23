@@ -2,91 +2,67 @@ package repository
 
 import (
 	"database/sql"
+	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referrals"
 	"time"
 
 	"github.com/labstack/echo"
+	"github.com/uptrace/bun"
 )
 
 type psqlReferralsRepository struct {
 	Conn *sql.DB
+	Bun  *bun.DB
 }
 
 // NewPsqlReferralRepository will create an object that represent the referrals.Repository interface
-func NewPsqlReferralRepository(Conn *sql.DB) referrals.Repository {
-	return &psqlReferralsRepository{Conn}
+func NewPsqlReferralRepository(Conn *sql.DB, Bun *bun.DB) referrals.Repository {
+	return &psqlReferralsRepository{Conn, Bun}
 }
 
-func (m *psqlReferralsRepository) CreateReferralCodes(c echo.Context, refcodes *models.ReferralCodes) error {
-
-	var lastID int64
-
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
+func (m *psqlReferralsRepository) CreateReferralCodes(c echo.Context, refcodes models.ReferralCodes) (models.ReferralCodes, error) {
 
 	now := time.Now()
-	query := `INSERT INTO referral_codes (cif, referral_code, campaign_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5) RETURNING id`
-	stmt, err := m.Conn.Prepare(query)
+	refcodes.CreatedAt = now
+	refcodes.UpdatedAt = now
+
+	query := `INSERT INTO referral_codes (cif, referral_code, campaign_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?) RETURNING id`
+
+	_, err := m.Bun.QueryContext(c.Request().Context(), query, refcodes.CIF, refcodes.ReferralCode, refcodes.CampaignId, refcodes.CreatedAt, refcodes.UpdatedAt)
 
 	if err != nil {
-		requestLogger.Debug(err)
+		logger.Make(c, nil).Debug(err)
 
-		return err
+		return models.ReferralCodes{}, err
 	}
 
-	err = stmt.QueryRow(refcodes.CIF, refcodes.ReferralCode, refcodes.CampaignId, &now, &now).Scan(&lastID)
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return err
-	}
-
-	refcodes.CreatedAt = &now
-	refcodes.UpdatedAt = &now
-
-	return nil
+	return refcodes, nil
 }
 
-func (m *psqlReferralsRepository) GetReferralCodesByCif(c echo.Context, refCodes *models.ReferralCodes) error {
+func (m *psqlReferralsRepository) GetReferralCodesByCif(c echo.Context, refCodes models.ReferralCodes) (models.ReferralCodes, error) {
 
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-	var CreatedAt, UpdatedAt time.Time
+	var result models.ReferralCodes
 
-	query := `select cif, referral_code, campaign_id, created_at, updated_at from referral_codes rc where cif = $1 order by created_at desc limit 1;`
+	query := `select cif, referral_code, campaign_id, created_at, updated_at from referral_codes rc where cif = ? order by created_at desc limit 1;`
 
-	stmt, err := m.Conn.Query(query, refCodes.CIF)
+	rows, err := m.Bun.QueryContext(c.Request().Context(), query, refCodes.CIF)
 
 	if err != nil {
-		requestLogger.Debug(err)
+		logger.Make(c, nil).Debug(err)
 
-		return err
+		return models.ReferralCodes{}, err
 	}
 
-	defer stmt.Close()
+	err = m.Bun.ScanRows(c.Request().Context(), rows, &result)
 
-	for stmt.Next() {
-		err = stmt.Scan(
-			&refCodes.CIF,
-			&refCodes.ReferralCode,
-			&refCodes.CampaignId,
-			&CreatedAt,
-			&UpdatedAt,
-		)
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
 
-		if err != nil {
-			requestLogger.Debug(err)
-
-			return err
-		}
+		return models.ReferralCodes{}, err
 	}
 
-	refCodes.CreatedAt = &CreatedAt
-	refCodes.UpdatedAt = &UpdatedAt
-
-	return nil
+	return result, nil
 }
 
 func (m *psqlReferralsRepository) GetCampaignByPrefix(c echo.Context, prefix string) (int64, error) {
@@ -94,31 +70,28 @@ func (m *psqlReferralsRepository) GetCampaignByPrefix(c echo.Context, prefix str
 	var code int64
 	now := time.Now()
 
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
+	query := `select id from campaigns c where metadata->>'prefix' = ? and start_date <= ? and end_date >= ?;`
 
-	stmt, err := m.Conn.Query(`select id from campaigns c where metadata->>'prefix' = $1 and start_date <= $2 and end_date >= $3;`, prefix, &now, &now)
+	rows, err := m.Bun.QueryContext(c.Request().Context(), query, prefix, &now, &now)
 
 	if err != nil {
-		requestLogger.Debug(err)
+		logger.Make(c, nil).Debug(err)
 
 		return 0, err
 	}
 
-	defer stmt.Close()
+	err = m.Bun.ScanRows(c.Request().Context(), rows, &code)
 
-	if !stmt.Next() {
-		requestLogger.Debug(models.ErrCampaignNotReferral)
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return 0, err
+	}
+
+	if code == 0 {
+		logger.Make(c, nil).Debug(models.ErrCampaignNotReferral)
 
 		return 0, models.ErrCampaignNotReferral
-	}
-
-	err = stmt.Scan(&code)
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return 0, err
 	}
 
 	return code, nil

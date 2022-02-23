@@ -160,7 +160,7 @@ func main() {
 	_userHttpDelivery.NewUserHandler(echoGroup, userUseCase)
 
 	// REFERRALS
-	referralsRepository := _referralsRepository.NewPsqlReferralRepository(dbConn)
+	referralsRepository := _referralsRepository.NewPsqlReferralRepository(dbConn, dbBun)
 	referralsUseCase := _referralsUseCase.NewReferralUseCase(referralsRepository)
 	_referralsHttpDelivery.NewReferralsHandler(echoGroup, referralsUseCase)
 

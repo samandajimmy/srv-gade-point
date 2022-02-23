@@ -8,5 +8,5 @@ import (
 
 // UseCase represent the referrals usecases
 type UseCase interface {
-	CreateReferralCodes(echo.Context, *models.ReferralCodes) error
+	CreateReferralCodes(echo.Context, models.ReferralCodes) (models.ReferralCodes, error)
 }

@@ -18,7 +18,7 @@ func NewReferralUseCase(rwdTrxRepo referrals.Repository) referrals.UseCase {
 	}
 }
 
-func (ref *referralUseCase) PostCoreTrx(c echo.Context, coreTrx models.CoreTrxPayload) ([]models.CoreTrxResponse, error) {
+func (ref *referralUseCase) PostCoreTrx(c echo.Context, coreTrx []models.CoreTrxPayload) ([]models.CoreTrxResponse, error) {
 	var responseData []models.CoreTrxResponse
 	err := ref.referralRepo.PostCoreTrx(c, coreTrx)
 

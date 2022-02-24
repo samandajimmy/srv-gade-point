@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referrals"
 	"net/http"
@@ -26,7 +27,8 @@ func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.UseCase) {
 }
 
 func (ref *ReferralHandler) coreTrx(echTx echo.Context) error {
-	var referralCore models.CoreTrxPayload
+	fmt.Println("Multiple handler")
+	var referralCore []models.CoreTrxPayload
 	var responseData []models.CoreTrxResponse
 	response = models.Response{}
 	respErrors := &models.ResponseErrors{}
@@ -39,12 +41,12 @@ func (ref *ReferralHandler) coreTrx(echTx echo.Context) error {
 		return echTx.JSON(http.StatusUnprocessableEntity, response)
 	}
 
-	if err := echTx.Validate(referralCore); err != nil {
-		respErrors.SetTitle(err.Error())
-		response.SetResponse("", respErrors)
+	// if err := echTx.Validate(referralCore); err != nil {
+	// 	respErrors.SetTitle(err.Error())
+	// 	response.SetResponse("", respErrors)
 
-		return echTx.JSON(http.StatusBadRequest, response)
-	}
+	// 	return echTx.JSON(http.StatusBadRequest, response)
+	// }
 
 	responseData, err = ref.ReferralUseCase.PostCoreTrx(echTx, referralCore)
 

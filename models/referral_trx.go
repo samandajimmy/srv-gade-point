@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 var (
 	// ReferralTrxTypeReferral to store referral_trx type referral
@@ -67,19 +69,19 @@ type RankingPayload struct {
 }
 
 type CoreTrxPayload struct {
-	CIF              string `json:"cif,omitempty" validate:"required"`
-	RefID            string `json:"refId,omitempty" validate:"required"`
-	UsedReferralCode string `json:"usedReferralCode,omitempty" validate:"required"`
-	Type             int64  `json:"type,omitempty" validate:"required"`
-	RewardReferral   int64  `json:"rewardReferral,omitempty" validate:"required"`
-	RewardType       string `json:"rewardType,omitempty" validate:"required"`
-	PhoneNumber      string `json:"phoneNumber,omitempty" validate:"required"`
-	TrxAmount        int64  `json:"trxAmount,omitempty" validate:"required"`
-	LoanAmount       int64  `json:"loanAmount,omitempty" validate:"required"`
-	InterestAmount   int64  `json:"interestAmount,omitempty" validate:"required"`
-	TrxID            int64  `json:"trxId,omitempty" validate:"required"`
-	TrxDate          string `json:"trxDate,omitempty" validate:"required"`
-	ProductCode      int64  `json:"productCode,omitempty" validate:"required"`
+	CIF              string `bun:"cif,omitempty"`
+	RefID            string `json:"refId,omitempty"`
+	UsedReferralCode string `json:"usedReferralCode,omitempty"`
+	Type             int64  `json:"type,omitempty"`
+	RewardReferral   int64  `json:"rewardReferral,omitempty"`
+	RewardType       string `json:"rewardType,omitempty"`
+	PhoneNumber      string `json:"phoneNumber,omitempty"`
+	TrxAmount        int64  `json:"trxAmount,omitempty"`
+	LoanAmount       int64  `json:"loanAmount,omitempty"`
+	InterestAmount   int64  `json:"interestAmount,omitempty"`
+	TrxID            int64  `json:"trxId,omitempty"`
+	TrxDate          string `json:"trxDate,omitempty"`
+	ProductCode      int64  `json:"productCode,omitempty"`
 }
 
 type CoreTrxResponse struct {

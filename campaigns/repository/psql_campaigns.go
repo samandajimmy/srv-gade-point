@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/models"
@@ -29,8 +30,8 @@ func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
-	query := `INSERT INTO campaigns (name, description, start_date, end_date, status, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
+	query := `INSERT INTO campaigns (name, description, start_date, end_date, status, created_at, metadata)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
@@ -51,8 +52,16 @@ func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models
 		endDate = &campaign.EndDate
 	}
 
+	metadata, err := json.Marshal(campaign.Metadata)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
 	err = stmt.QueryRow(campaign.Name, campaign.Description, campaign.StartDate, endDate,
-		campaign.Status, &now).Scan(&lastID)
+		campaign.Status, &now, string(metadata)).Scan(&lastID)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -148,7 +157,7 @@ func (m *psqlCampaignRepository) GetCampaign(c echo.Context, payload map[string]
 	paging := ""
 	where := ""
 	query := `SELECT id, name, description, start_date, end_date, status, updated_at, created_at,
-		DATE_PART('day', end_date::timestamp - now()::timestamp) as days_remaining
+		DATE_PART('day', end_date::timestamp - now()::timestamp) as days_remaining, metadata
 		FROM campaigns WHERE id IS NOT NULL`
 
 	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
@@ -204,6 +213,7 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 		t := new(models.Campaign)
 		var createDate, updateDate, endDate pq.NullTime
 		var daysRemaining *int64
+		var metadata json.RawMessage
 
 		err = rows.Scan(
 			&t.ID,
@@ -215,7 +225,16 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 			&updateDate,
 			&createDate,
 			&daysRemaining,
+			&metadata,
 		)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		err = json.Unmarshal([]byte(metadata), &t.Metadata)
 
 		if err != nil {
 			requestLogger.Debug(err)
@@ -361,9 +380,10 @@ func (m *psqlCampaignRepository) GetCampaignDetail(c echo.Context, id int64) (*m
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	var createDate, updateDate pq.NullTime
+	var metadata json.RawMessage
 	result := new(models.Campaign)
 
-	query := `SELECT id, name, description, start_date, end_date, status, updated_at, created_at FROM campaigns WHERE id = $1`
+	query := `SELECT id, name, description, start_date, end_date, status, updated_at, created_at, metadata FROM campaigns WHERE id = $1`
 
 	err := m.Conn.QueryRow(query, id).Scan(
 		&result.ID,
@@ -374,7 +394,16 @@ func (m *psqlCampaignRepository) GetCampaignDetail(c echo.Context, id int64) (*m
 		&result.Status,
 		&createDate,
 		&updateDate,
+		&metadata,
 	)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	err = json.Unmarshal([]byte(metadata), &result.Metadata)
 
 	if err != nil {
 		requestLogger.Debug(err)

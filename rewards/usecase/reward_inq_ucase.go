@@ -110,16 +110,6 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		rwdResponse[0].RefTrx = ""
 	}
 
-	// TODO: need to refactor/move this block validation
-	// check referral cant use referrer myself
-	if (plValidator.IsMulti) && (plValidator.CIF == plValidator.Referrer) {
-		logger.Make(c, nil).Debug(models.ErrSameCifReferrerAndReferral)
-		logger.Make(c, nil).Debug(err)
-		respErrors.SetTitle(models.ErrSameCifReferrerAndReferral.Error())
-
-		return rwdInquiry, &respErrors
-	}
-
 	return rwdInquiry, nil
 }
 

@@ -83,6 +83,6 @@ type CoreTrxPayload struct {
 }
 
 type CoreTrxResponse struct {
-	StatusCode *int64 `json:"statusCode,omitempty"`
+	StatusCode int64  `json:"statusCode,omitempty"`
 	Status     string `json:"status,omitempty"`
 }

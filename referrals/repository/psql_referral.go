@@ -21,7 +21,7 @@ func NewPsqlReferralRepository(Conn *sql.DB, Bun *bun.DB) referrals.Repository {
 	return &psqlReferralsRepository{Conn, Bun}
 }
 
-func (refRepo *psqlReferralsRepository) CreateCoreTrx(c echo.Context, coreTrx models.CoreTrxPayload) error {
+func (refRepo *psqlReferralsRepository) PostCoreTrx(c echo.Context, coreTrx models.CoreTrxPayload) error {
 	now := time.Now()
 	createdAt := now
 	trxType := 1

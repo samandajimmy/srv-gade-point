@@ -46,7 +46,7 @@ func (reff *ReferralHandler) coreTrx(echTx echo.Context) error {
 		return echTx.JSON(http.StatusBadRequest, response)
 	}
 
-	responseData, err = reff.ReferralUseCase.Schedule(echTx, referralCore)
+	responseData, err = reff.ReferralUseCase.PostCoreTrx(echTx, referralCore)
 
 	if err != nil {
 		respErrors.SetTitle(err.Error())

@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referrals"
 
@@ -19,12 +18,11 @@ func NewReferralUseCase(rwdTrxRepo referrals.Repository) referrals.UseCase {
 	}
 }
 
-func (reff *referralUseCase) Schedule(c echo.Context, coreTrx models.CoreTrxPayload) ([]models.CoreTrxResponse, error) {
+func (ref *referralUseCase) PostCoreTrx(c echo.Context, coreTrx models.CoreTrxPayload) ([]models.CoreTrxResponse, error) {
 	var responseData []models.CoreTrxResponse
-	err := reff.referralRepo.CreateCoreTrx(c, coreTrx)
+	err := ref.referralRepo.PostCoreTrx(c, coreTrx)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(models.ErrCoreTrxFailed)
 		return nil, models.ErrCoreTrxFailed
 	}
 

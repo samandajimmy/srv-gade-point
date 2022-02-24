@@ -8,5 +8,5 @@ import (
 
 // Repository represent the referrals repository contract
 type Repository interface {
-	CreateCoreTrx(echo.Context, models.CoreTrxPayload) error
+	PostCoreTrx(echo.Context, models.CoreTrxPayload) error
 }

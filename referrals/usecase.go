@@ -8,5 +8,5 @@ import (
 
 // UseCase represent the referrals usecases
 type UseCase interface {
-	Schedule(echo.Context, models.CoreTrxPayload) ([]models.CoreTrxResponse, error)
+	PostCoreTrx(echo.Context, models.CoreTrxPayload) ([]models.CoreTrxResponse, error)
 }

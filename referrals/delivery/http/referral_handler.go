@@ -25,7 +25,7 @@ func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.UseCase) {
 	echoGroup.API.POST("/referral/core-trx", handler.coreTrx)
 }
 
-func (reff *ReferralHandler) coreTrx(echTx echo.Context) error {
+func (ref *ReferralHandler) coreTrx(echTx echo.Context) error {
 	var referralCore models.CoreTrxPayload
 	var responseData []models.CoreTrxResponse
 	response = models.Response{}
@@ -46,7 +46,7 @@ func (reff *ReferralHandler) coreTrx(echTx echo.Context) error {
 		return echTx.JSON(http.StatusBadRequest, response)
 	}
 
-	responseData, err = reff.ReferralUseCase.PostCoreTrx(echTx, referralCore)
+	responseData, err = ref.ReferralUseCase.PostCoreTrx(echTx, referralCore)
 
 	if err != nil {
 		respErrors.SetTitle(err.Error())

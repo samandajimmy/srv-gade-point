@@ -1,2 +1,2 @@
 ALTER TABLE campaigns
-ADD COLUMN metadata jsonb NOT NULL default '{}'::jsonb;
+ADD COLUMN metadata jsonb DEFAULT NULL;

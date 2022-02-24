@@ -23,10 +23,10 @@ func NewReferralsHandler(echoGroup models.EchoGroup, rus referrals.UseCase) {
 		ReferralUseCase: rus,
 	}
 
-	echoGroup.API.POST("/referral/generate", handler.CreateReferralCodes)
+	echoGroup.API.POST("/referral/generate", handler.GenerateReferralCodes)
 }
 
-func (rc *ReferralHandler) CreateReferralCodes(c echo.Context) error {
+func (rc *ReferralHandler) GenerateReferralCodes(c echo.Context) error {
 	var referralcodes models.ReferralCodes
 
 	respErrors := &models.ResponseErrors{}
@@ -54,6 +54,7 @@ func (rc *ReferralHandler) CreateReferralCodes(c echo.Context) error {
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
+		response.Data = data
 		return c.JSON(getStatusCode(err), response)
 	}
 

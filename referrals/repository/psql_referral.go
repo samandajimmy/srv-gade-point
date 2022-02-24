@@ -21,7 +21,7 @@ func NewPsqlReferralRepository(Conn *sql.DB, Bun *bun.DB) referrals.Repository {
 	return &psqlReferralsRepository{Conn, Bun}
 }
 
-func (m *psqlReferralsRepository) CreateReferralCodes(c echo.Context, refcodes models.ReferralCodes) (models.ReferralCodes, error) {
+func (m *psqlReferralsRepository) CreateReferral(c echo.Context, refcodes models.ReferralCodes) (models.ReferralCodes, error) {
 
 	now := time.Now()
 	refcodes.CreatedAt = now
@@ -40,7 +40,7 @@ func (m *psqlReferralsRepository) CreateReferralCodes(c echo.Context, refcodes m
 	return refcodes, nil
 }
 
-func (m *psqlReferralsRepository) GetReferralCodesByCif(c echo.Context, refCodes models.ReferralCodes) (models.ReferralCodes, error) {
+func (m *psqlReferralsRepository) GetReferralByCif(c echo.Context, refCodes models.ReferralCodes) (models.ReferralCodes, error) {
 
 	var result models.ReferralCodes
 
@@ -65,7 +65,7 @@ func (m *psqlReferralsRepository) GetReferralCodesByCif(c echo.Context, refCodes
 	return result, nil
 }
 
-func (m *psqlReferralsRepository) GetCampaignByPrefix(c echo.Context, prefix string) (int64, error) {
+func (m *psqlReferralsRepository) GetCampaignId(c echo.Context, prefix string) (int64, error) {
 
 	var code int64
 	now := time.Now()
@@ -86,12 +86,6 @@ func (m *psqlReferralsRepository) GetCampaignByPrefix(c echo.Context, prefix str
 		logger.Make(c, nil).Debug(err)
 
 		return 0, err
-	}
-
-	if code == 0 {
-		logger.Make(c, nil).Debug(models.ErrCampaignNotReferral)
-
-		return 0, models.ErrCampaignNotReferral
 	}
 
 	return code, nil

@@ -28,21 +28,26 @@ func NewReferralUseCase(refRepo referrals.Repository) referrals.UseCase {
 func (rcUc *referralUseCase) CreateReferralCodes(c echo.Context, referralCodes models.ReferralCodes) (models.ReferralCodes, error) {
 
 	var payload models.ReferralCodes
+
 	payload.CIF = referralCodes.CIF
 	payload.Prefix = referralCodes.Prefix
 
 	// Check if a cif already had a referral code
-	referral, _ := rcUc.referralRepo.GetReferralCodesByCif(c, payload)
+	referral, err := rcUc.referralRepo.GetReferralByCif(c, payload)
+
+	if err != nil {
+		return models.ReferralCodes{}, err
+	}
 
 	// if exist, return existing referral code
 	if referral.ReferralCode != "" {
-		logger.Make(c, nil).Info(models.DynamicErr(models.AlreadyHadRefCodes, referralCodes.CIF))
+		logger.Make(c, nil).Info(models.DynamicErr(models.CifRefCodeExisted, referralCodes.CIF))
 
-		return referral, nil
+		return referral, models.DynamicErr(models.CifRefCodeExisted, referralCodes.CIF)
 	}
 
 	// if not, generate referral code, getting campaign id first
-	campaignId, err := rcUc.GetCampaignByPrefix(c, referralCodes.Prefix)
+	campaignId, err := rcUc.GetCampaignIdByPrefix(c, referralCodes.Prefix)
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)
@@ -52,35 +57,37 @@ func (rcUc *referralUseCase) CreateReferralCodes(c echo.Context, referralCodes m
 
 	// map campaign id, generate referral code according to requirements (with prefix)
 	payload.CampaignId = campaignId
-	payload.ReferralCode = GenerateReferalCode(payload.Prefix)
+	payload.ReferralCode = rcUc.generateRefCode(payload.Prefix)
 
 	// create referral code data
-	result, err := rcUc.referralRepo.CreateReferralCodes(c, payload)
+	result, err := rcUc.referralRepo.CreateReferral(c, payload)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(models.ErrReferralCodeFailed)
-
-		return models.ReferralCodes{}, models.ErrReferralCodeFailed
+		return models.ReferralCodes{}, models.ErrGenerateRefCodeFailed
 	}
 
 	return result, nil
 }
 
-func (rcUc *referralUseCase) GetCampaignByPrefix(c echo.Context, prefix string) (int64, error) {
+func (rcUc *referralUseCase) GetCampaignIdByPrefix(c echo.Context, prefix string) (int64, error) {
 
 	// get campaign id by prefix
-	campaignId, err := rcUc.referralRepo.GetCampaignByPrefix(c, prefix)
+	campaignId, err := rcUc.referralRepo.GetCampaignId(c, prefix)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
-
 		return 0, err
+	}
+
+	if campaignId == 0 {
+		logger.Make(c, nil).Debug(models.ErrRefCampaginNF)
+
+		return 0, models.ErrRefCampaginNF
 	}
 
 	return campaignId, nil
 }
 
-func GenerateReferalCode(prefix string) string {
+func (rcUc *referralUseCase) generateRefCode(prefix string) string {
 
 	lettersUsed := []rune(letters)
 	prefixLength := len(prefix)

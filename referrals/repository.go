@@ -8,7 +8,7 @@ import (
 
 // Repository represent the referrals repository contract
 type Repository interface {
-	CreateReferralCodes(echo.Context, models.ReferralCodes) (models.ReferralCodes, error)
-	GetCampaignByPrefix(echo.Context, string) (int64, error)
-	GetReferralCodesByCif(echo.Context, models.ReferralCodes) (models.ReferralCodes, error)
+	CreateReferral(echo.Context, models.ReferralCodes) (models.ReferralCodes, error)
+	GetCampaignId(echo.Context, string) (int64, error)
+	GetReferralByCif(echo.Context, models.ReferralCodes) (models.ReferralCodes, error)
 }

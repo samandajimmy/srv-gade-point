@@ -41,13 +41,6 @@ func (ref *ReferralHandler) coreTrx(echTx echo.Context) error {
 		return echTx.JSON(http.StatusUnprocessableEntity, response)
 	}
 
-	// if err := echTx.Validate(referralCore); err != nil {
-	// 	respErrors.SetTitle(err.Error())
-	// 	response.SetResponse("", respErrors)
-
-	// 	return echTx.JSON(http.StatusBadRequest, response)
-	// }
-
 	responseData, err = ref.ReferralUseCase.PostCoreTrx(echTx, referralCore)
 
 	if err != nil {

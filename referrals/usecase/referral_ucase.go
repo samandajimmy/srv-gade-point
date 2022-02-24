@@ -44,7 +44,7 @@ func (rcUc *referralUseCase) CreateReferralCodes(c echo.Context, requestReferral
 	}
 
 	// if not, generate referral code, getting campaign id first
-	campaignId, err := rcUc.GetCampaignIdByPrefix(c, requestReferralCodes.Prefix)
+	campaignId, err := rcUc.getCampaignIdByPrefix(c, requestReferralCodes.Prefix)
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)
@@ -67,7 +67,7 @@ func (rcUc *referralUseCase) CreateReferralCodes(c echo.Context, requestReferral
 	return result, nil
 }
 
-func (rcUc *referralUseCase) GetCampaignIdByPrefix(c echo.Context, prefix string) (int64, error) {
+func (rcUc *referralUseCase) getCampaignIdByPrefix(c echo.Context, prefix string) (int64, error) {
 
 	// get campaign id by prefix
 	campaignId, err := rcUc.referralRepo.GetCampaignId(c, prefix)

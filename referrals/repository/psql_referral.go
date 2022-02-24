@@ -25,7 +25,7 @@ func (m *psqlReferralsRepository) CreateReferral(c echo.Context, refcodes models
 
 	now := time.Now()
 
-	query := `INSERT INTO referral_codes (cif, referral_code, campaign_id, created_at, updated_at) VALUES (?0, ?1, ?2, ?3, ?3) RETURNING id`
+	query := `INSERT INTO referral_codes (cif, referral_code, campaign_id, created_at) VALUES (?0, ?1, ?2, ?3) RETURNING id`
 
 	_, err := m.Bun.QueryContext(c.Request().Context(), query, refcodes.CIF, refcodes.ReferralCode, refcodes.CampaignId, now)
 

@@ -1,7 +1,6 @@
 package http
 
 import (
-	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referrals"
 	"net/http"
@@ -33,8 +32,6 @@ func (rc *ReferralHandler) GenerateReferralCodes(c echo.Context) error {
 	response = models.Response{}
 	err := c.Bind(&payload)
 
-	logger.Make(c, nil).Debug("Start to create referral code for client")
-
 	if err != nil {
 		response.Status = models.StatusError
 		response.Message = err.Error()
@@ -44,7 +41,6 @@ func (rc *ReferralHandler) GenerateReferralCodes(c echo.Context) error {
 	if err = c.Validate(payload); err != nil {
 		respErrors.SetTitle(err.Error())
 		response.SetResponse("", respErrors)
-		logger.Make(c, nil).Debug("End to creater referral code for client")
 
 		return c.JSON(http.StatusBadRequest, response)
 	}
@@ -61,8 +57,6 @@ func (rc *ReferralHandler) GenerateReferralCodes(c echo.Context) error {
 	response.Status = models.StatusSuccess
 	response.Message = models.MessageSaveSuccess
 	response.Data = data
-
-	logger.Make(c, nil).Info("End of create a referral code.")
 
 	return c.JSON(http.StatusCreated, response)
 }

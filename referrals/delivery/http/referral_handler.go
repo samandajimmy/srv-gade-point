@@ -27,11 +27,11 @@ func NewReferralsHandler(echoGroup models.EchoGroup, rus referrals.UseCase) {
 }
 
 func (rc *ReferralHandler) GenerateReferralCodes(c echo.Context) error {
-	var referralcodes models.ReferralCodes
+	var payload models.RequestCreateReferral
 
 	respErrors := &models.ResponseErrors{}
 	response = models.Response{}
-	err := c.Bind(&referralcodes)
+	err := c.Bind(&payload)
 
 	logger.Make(c, nil).Debug("Start to create referral code for client")
 
@@ -41,7 +41,7 @@ func (rc *ReferralHandler) GenerateReferralCodes(c echo.Context) error {
 		return c.JSON(getStatusCode(err), response)
 	}
 
-	if err = c.Validate(referralcodes); err != nil {
+	if err = c.Validate(payload); err != nil {
 		respErrors.SetTitle(err.Error())
 		response.SetResponse("", respErrors)
 		logger.Make(c, nil).Debug("End to creater referral code for client")
@@ -49,7 +49,7 @@ func (rc *ReferralHandler) GenerateReferralCodes(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, response)
 	}
 
-	data, err := rc.ReferralUseCase.CreateReferralCodes(c, referralcodes)
+	data, err := rc.ReferralUseCase.CreateReferralCodes(c, payload)
 
 	if err != nil {
 		response.Status = models.StatusError

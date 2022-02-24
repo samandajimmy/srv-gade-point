@@ -25,15 +25,12 @@ func NewReferralUseCase(refRepo referrals.Repository) referrals.UseCase {
 	}
 }
 
-func (rcUc *referralUseCase) CreateReferralCodes(c echo.Context, referralCodes models.ReferralCodes) (models.ReferralCodes, error) {
+func (rcUc *referralUseCase) CreateReferralCodes(c echo.Context, requestReferralCodes models.RequestCreateReferral) (models.ReferralCodes, error) {
 
 	var payload models.ReferralCodes
 
-	payload.CIF = referralCodes.CIF
-	payload.Prefix = referralCodes.Prefix
-
 	// Check if a cif already had a referral code
-	referral, err := rcUc.referralRepo.GetReferralByCif(c, payload)
+	referral, err := rcUc.referralRepo.GetReferralByCif(c, requestReferralCodes.CIF)
 
 	if err != nil {
 		return models.ReferralCodes{}, err
@@ -41,13 +38,13 @@ func (rcUc *referralUseCase) CreateReferralCodes(c echo.Context, referralCodes m
 
 	// if exist, return existing referral code
 	if referral.ReferralCode != "" {
-		logger.Make(c, nil).Info(models.DynamicErr(models.CifRefCodeExisted, referralCodes.CIF))
+		logger.Make(c, nil).Info(models.DynamicErr(models.CifRefCodeExisted, requestReferralCodes.CIF))
 
-		return referral, models.DynamicErr(models.CifRefCodeExisted, referralCodes.CIF)
+		return referral, models.DynamicErr(models.CifRefCodeExisted, requestReferralCodes.CIF)
 	}
 
 	// if not, generate referral code, getting campaign id first
-	campaignId, err := rcUc.GetCampaignIdByPrefix(c, referralCodes.Prefix)
+	campaignId, err := rcUc.GetCampaignIdByPrefix(c, requestReferralCodes.Prefix)
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)
@@ -57,7 +54,8 @@ func (rcUc *referralUseCase) CreateReferralCodes(c echo.Context, referralCodes m
 
 	// map campaign id, generate referral code according to requirements (with prefix)
 	payload.CampaignId = campaignId
-	payload.ReferralCode = rcUc.generateRefCode(payload.Prefix)
+	payload.ReferralCode = rcUc.generateRefCode(requestReferralCodes.Prefix)
+	payload.CIF = requestReferralCodes.CIF
 
 	// create referral code data
 	result, err := rcUc.referralRepo.CreateReferral(c, payload)

@@ -24,12 +24,10 @@ func NewPsqlReferralRepository(Conn *sql.DB, Bun *bun.DB) referrals.Repository {
 func (m *psqlReferralsRepository) CreateReferral(c echo.Context, refcodes models.ReferralCodes) (models.ReferralCodes, error) {
 
 	now := time.Now()
-	refcodes.CreatedAt = now
-	refcodes.UpdatedAt = now
 
-	query := `INSERT INTO referral_codes (cif, referral_code, campaign_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?) RETURNING id`
+	query := `INSERT INTO referral_codes (cif, referral_code, campaign_id, created_at, updated_at) VALUES (?0, ?1, ?2, ?3, ?3) RETURNING id`
 
-	_, err := m.Bun.QueryContext(c.Request().Context(), query, refcodes.CIF, refcodes.ReferralCode, refcodes.CampaignId, refcodes.CreatedAt, refcodes.UpdatedAt)
+	_, err := m.Bun.QueryContext(c.Request().Context(), query, refcodes.CIF, refcodes.ReferralCode, refcodes.CampaignId, now)
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)
@@ -37,16 +35,19 @@ func (m *psqlReferralsRepository) CreateReferral(c echo.Context, refcodes models
 		return models.ReferralCodes{}, err
 	}
 
+	refcodes.CreatedAt = now
+	refcodes.UpdatedAt = now
+
 	return refcodes, nil
 }
 
-func (m *psqlReferralsRepository) GetReferralByCif(c echo.Context, refCodes models.ReferralCodes) (models.ReferralCodes, error) {
+func (m *psqlReferralsRepository) GetReferralByCif(c echo.Context, cif string) (models.ReferralCodes, error) {
 
 	var result models.ReferralCodes
 
 	query := `select cif, referral_code, campaign_id, created_at, updated_at from referral_codes rc where cif = ? order by created_at desc limit 1;`
 
-	rows, err := m.Bun.QueryContext(c.Request().Context(), query, refCodes.CIF)
+	rows, err := m.Bun.QueryContext(c.Request().Context(), query, cif)
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)
@@ -70,9 +71,9 @@ func (m *psqlReferralsRepository) GetCampaignId(c echo.Context, prefix string) (
 	var code int64
 	now := time.Now()
 
-	query := `select id from campaigns c where metadata->>'prefix' = ? and start_date <= ? and end_date >= ?;`
+	query := `select id from campaigns c where metadata->>'prefix' = ?0 and start_date <= ?1 and end_date >= ?1 order by created_at desc limit 1;`
 
-	rows, err := m.Bun.QueryContext(c.Request().Context(), query, prefix, &now, &now)
+	rows, err := m.Bun.QueryContext(c.Request().Context(), query, prefix, now)
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)

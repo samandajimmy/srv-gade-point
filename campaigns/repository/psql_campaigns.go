@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gade/srv-gade-point/campaigns"
+	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewards"
 	"strings"
@@ -13,16 +14,18 @@ import (
 	"github.com/labstack/echo"
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
+	"github.com/uptrace/bun"
 )
 
 type psqlCampaignRepository struct {
 	Conn    *sql.DB
+	dbBun   *bun.DB
 	rwdRepo rewards.Repository
 }
 
 // NewPsqlCampaignRepository will create an object that represent the campaigns.Repository interface
-func NewPsqlCampaignRepository(Conn *sql.DB, rwdRepo rewards.Repository) campaigns.Repository {
-	return &psqlCampaignRepository{Conn, rwdRepo}
+func NewPsqlCampaignRepository(Conn *sql.DB, dbBun *bun.DB, rwdRepo rewards.Repository) campaigns.Repository {
+	return &psqlCampaignRepository{Conn, dbBun, rwdRepo}
 }
 
 func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models.Campaign) error {
@@ -263,31 +266,72 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 	return result, nil
 }
 
+func (m *psqlCampaignRepository) GetReferralCampaign(c echo.Context, pv models.PayloadValidator) *[]*models.Campaign {
+	query := `SELECT distinct c.id, c.name, c.description, c.start_date, c.end_date, c.status,
+		c.updated_at, c.created_at
+		FROM campaigns c
+		LEFT JOIN rewards r ON c.id = r.campaign_id
+		left join referral_codes rc on c.id = rc.campaign_id
+		WHERE c.status = ?0 AND c.metadata->>'isReferral' = 'true' AND r.is_promo_code = ?1
+		AND c.start_date::date <= ?2 AND (c.end_date::date >= ?2 OR c.end_date IS null)
+		AND lower(rc.referral_code) = ?3
+		order by c.created_at desc limit 1`
+
+	rows, err := m.dbBun.QueryContext(c.Request().Context(), query, models.CampaignActive,
+		models.IsPromoCodeFalse, pv.TransactionDate, strings.ToLower(pv.PromoCode))
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return nil
+	}
+
+	var campaigns []*models.Campaign
+	err = m.dbBun.ScanRows(c.Request().Context(), rows, &campaigns)
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return nil
+	}
+
+	if campaigns == nil {
+		return nil
+	}
+
+	rewards, err := m.rwdRepo.GetRewardByCampaign(c, campaigns[0].ID)
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return nil
+	}
+
+	campaigns[0].Rewards = &rewards
+
+	return &campaigns
+}
+
 func (m *psqlCampaignRepository) GetCampaignAvailable(c echo.Context, pv models.PayloadValidator) ([]*models.Campaign, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	promoCode := strings.ToLower(pv.PromoCode)
 
-	query := fmt.Sprintf(`SELECT c.id, c.name, c.description, c.start_date,
+	query := fmt.Sprintf(`SELECT distinct c.id, c.name, c.description, c.start_date,
 		c.end_date, c.status, c.updated_at, c.created_at,
 		DATE_PART('day', c.end_date::timestamp - now()::timestamp) as days_remaining
 		FROM campaigns c
 		LEFT JOIN rewards r ON c.id = r.campaign_id
 		LEFT JOIN reward_tags rt ON r.id = rt.reward_id
 		LEFT JOIN tags t ON rt.tag_id = t.id
-		WHERE c.status = 1 and r.is_promo_code = 1
-		AND (LOWER(r.promo_code) = '%s' OR lower(t.name) = '%s')
+		WHERE c.metadata is null and c.status = 1
+		AND (
+			(r.is_promo_code = 1 and (LOWER(r.promo_code) = '%s' OR lower(t.name) = '%s'))
+			or (r.is_promo_code = 0)
+		)
 		AND c.start_date::date <= '%s'
-		AND (c.end_date::date >= '%s' OR c.end_date IS null)
-		union
-		SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.status, c.updated_at,
-		c.created_at, DATE_PART('day', c.end_date::timestamp - now()::timestamp) as days_remaining
-		FROM campaigns c
-		LEFT JOIN rewards r ON c.id = r.campaign_id
-		WHERE c.status = 1 and r.is_promo_code = 0 AND c.start_date::date <= '%s'
 		AND (c.end_date::date >= '%s' OR c.end_date IS null)`,
-		promoCode, promoCode, pv.TransactionDate, pv.TransactionDate, pv.TransactionDate,
-		pv.TransactionDate)
+		promoCode, promoCode, pv.TransactionDate, pv.TransactionDate)
 
 	res, err := m.getCampaign(c, query)
 

@@ -22,6 +22,12 @@ var (
 	IsPromoCodeFalse int64
 	// IsPromoCodeTrue to store is promo code true
 	IsPromoCodeTrue int64 = 1
+
+	CodeTypePromo string = "promo"
+
+	CodeTypeReferral string = "referral"
+
+	CodeTypeVoucher string = "voucher"
 )
 
 var rewardType = map[int64]string{

@@ -17,5 +17,6 @@ type Repository interface {
 	UpdateExpiryDate(echo.Context) error
 	UpdateStatusBasedOnStartDate() error
 	GetCampaignAvailable(echo.Context, models.PayloadValidator) ([]*models.Campaign, error)
+	GetReferralCampaign(c echo.Context, pv models.PayloadValidator) *[]*models.Campaign
 	Delete(echo.Context, int64) error
 }

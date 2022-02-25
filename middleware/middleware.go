@@ -109,12 +109,17 @@ func (cv *customValidator) isRequiredWith(fl validator.FieldLevel) bool {
 
 func (cv *customValidator) dateString(fl validator.FieldLevel) bool {
 	field := fl.Field()
+	vValue := fl.Param()
+
+	if vValue == "" {
+		vValue = models.DateFormat
+	}
 
 	if field.Interface() == reflect.Zero(field.Type()).Interface() {
 		return true
 	}
 
-	date, err := time.Parse(models.DateFormat, field.Interface().(string))
+	date, err := time.Parse(vValue, field.Interface().(string))
 
 	if err != nil || (date == time.Time{}) {
 		return false

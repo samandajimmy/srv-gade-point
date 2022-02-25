@@ -132,7 +132,7 @@ func (rwd *rewardUseCase) DeleteByCampaign(c echo.Context, campaignID int64) err
 	return nil
 }
 
-func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
+func (rwd *rewardUseCase) responseInquiry(c echo.Context, reward models.Reward,
 	plValidator *models.PayloadValidator) (*models.RewardResponse, error) {
 	var rwdResp models.RewardResponse
 	var voucherCode *models.VoucherCode
@@ -505,74 +505,6 @@ func randRefID(n int) string {
 	}
 
 	return string(b)
-}
-
-func (rwd *rewardUseCase) validateReferralInq(c echo.Context, payload *models.PayloadValidator, respErrors *models.ResponseErrors) (bool, error) {
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-
-	// check the campaign code, referral or not
-	// if not then go through
-	if payload.Validators.CampaignCode != models.CampaignCodeReferral {
-		return true, nil
-	}
-
-	modelsRefTrx := models.ReferralTrx{
-		CIF:              payload.CIF,
-		CifReferrer:      payload.Referrer,
-		RefID:            payload.RefTrx,
-		UsedReferralCode: payload.PromoCode,
-		Type:             models.ReferralTrxTypeReferral,
-		PhoneNumber:      payload.Phone,
-	}
-
-	// Value Reward CGC From GETENV
-	rewardValue, err := strconv.Atoi(os.Getenv(`STAGE`))
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return false, err
-	}
-
-	// Limit Reward Counter Milestone From GETENV
-	limitRewardCounter, err := strconv.Atoi(os.Getenv(`LIMIT_REWARD_COUNTER`))
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return false, err
-	}
-
-	// get amount of trx that used referral code from the referral/user
-	// to make sure one user only use one referral code
-	countReftrx, err := rwd.referralTrxRepo.IsReferralTrxExist(c, modelsRefTrx)
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return false, err
-	}
-
-	if countReftrx > 0 {
-		return false, models.ErrValidateGetReferral
-	}
-
-	// get total goldback from the referrer based on the referral code
-	// if totalGoldback beyond the limit then its not valid
-	totalGoldback, err := rwd.referralTrxRepo.GetTotalGoldbackReferrer(c, modelsRefTrx)
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return false, err
-	}
-
-	if int(totalGoldback) >= (rewardValue * limitRewardCounter) {
-		return false, models.ErrValidateGetReferralMaxReward
-	}
-
-	return true, nil
 }
 
 func (rwd *rewardUseCase) GetRewardPromotions(c echo.Context, rplValidator models.RewardPromotionLists) ([]*models.RewardPromotions, *models.ResponseErrors, error) {

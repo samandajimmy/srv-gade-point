@@ -274,6 +274,12 @@ var (
 
 	// ErrCoreFailed to store create core Transaction failed error message
 	ErrCoreTrxFailed = errors.New("Gagal untuk menyimpan transaksi cicil emas schedule")
+
+	// ErrGenerateRefCodeFailed to store create reward failed error message
+	ErrGenerateRefCodeFailed = errors.New("Gagal untuk membuat referral code")
+
+	// ErrRefCampaginNF to store create reward failed error message
+	ErrRefCampaginNF = errors.New("Campaign tidak tersedia untuk referral")
 )
 
 // DynamicErr to return parameterize errors

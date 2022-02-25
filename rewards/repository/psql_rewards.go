@@ -12,17 +12,19 @@ import (
 
 	"github.com/labstack/echo"
 	"github.com/lib/pq"
+	"github.com/uptrace/bun"
 )
 
 type psqlRewardRepository struct {
 	Conn     *sql.DB
+	dbBun    *bun.DB
 	quotRepo quotas.Repository
 	tagRepo  tags.Repository
 }
 
 // NewPsqlRewardRepository will create an object that represent the rewards.Repository interface
-func NewPsqlRewardRepository(Conn *sql.DB, quotRepo quotas.Repository, tagRepo tags.Repository) rewards.Repository {
-	return &psqlRewardRepository{Conn, quotRepo, tagRepo}
+func NewPsqlRewardRepository(Conn *sql.DB, dbBun *bun.DB, quotRepo quotas.Repository, tagRepo tags.Repository) rewards.Repository {
+	return &psqlRewardRepository{Conn, dbBun, quotRepo, tagRepo}
 }
 
 func (rwdRepo *psqlRewardRepository) CreateReward(c echo.Context, reward *models.Reward, campaignID int64) error {
@@ -316,6 +318,45 @@ func (rwdRepo *psqlRewardRepository) GetRewards(c echo.Context, rewardPayload *m
 	return data, nil
 }
 
+func (rwdRepo *psqlRewardRepository) GetRewardPromotions(c echo.Context, pv models.RewardPromotionLists) ([]*models.RewardPromotions, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	where := ""
+
+	query := `SELECT r.id, r.name, r.description, r.terms_and_conditions, r.how_to_use, 
+		r.promo_code, r.validators->>'product', r.validators->>'transactionType', 
+		r.validators->>'minTransactionAmount', COALESCE(r.validators->>'isPrivate','0')
+		FROM rewards r
+		LEFT JOIN campaigns c on r.campaign_id = c.id
+		WHERE c.status = 1
+  		AND r.is_promo_code = 1
+  		AND c.start_date::date <= now()::date
+		AND (c.end_date::date >= now()::date OR c.end_date IS null)`
+
+	if pv.Product != "" {
+		where += " AND r.validators->>'product' LIKE '%" + pv.Product + "%'"
+	}
+
+	if pv.TransactionType != "" {
+		where += " AND r.validators->>'transactionType' LIKE '%" + pv.TransactionType + "%'"
+	}
+
+	if pv.Channel != "" {
+		where += " AND r.validators->>'channel' LIKE '%" + pv.Channel + "%'"
+	}
+
+	query += where
+	res, err := rwdRepo.getRewardPromotions(c, query)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	return res, err
+}
+
 func (rwdRepo *psqlRewardRepository) getRewardPromotions(c echo.Context, query string) ([]*models.RewardPromotions, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
@@ -356,43 +397,4 @@ func (rwdRepo *psqlRewardRepository) getRewardPromotions(c echo.Context, query s
 	}
 
 	return result, nil
-}
-
-func (rwdRepo *psqlRewardRepository) GetRewardPromotions(c echo.Context, pv models.RewardPromotionLists) ([]*models.RewardPromotions, error) {
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-	where := ""
-
-	query := `SELECT r.id, r.name, r.description, r.terms_and_conditions, r.how_to_use, 
-		r.promo_code, r.validators->>'product', r.validators->>'transactionType', 
-		r.validators->>'minTransactionAmount', COALESCE(r.validators->>'isPrivate','0')
-		FROM rewards r
-		LEFT JOIN campaigns c on r.campaign_id = c.id
-		WHERE c.status = 1
-  		AND r.is_promo_code = 1
-  		AND c.start_date::date <= now()::date
-		AND (c.end_date::date >= now()::date OR c.end_date IS null)`
-
-	if pv.Product != "" {
-		where += " AND r.validators->>'product' LIKE '%" + pv.Product + "%'"
-	}
-
-	if pv.TransactionType != "" {
-		where += " AND r.validators->>'transactionType' LIKE '%" + pv.TransactionType + "%'"
-	}
-
-	if pv.Channel != "" {
-		where += " AND r.validators->>'channel' LIKE '%" + pv.Channel + "%'"
-	}
-
-	query += where
-	res, err := rwdRepo.getRewardPromotions(c, query)
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return nil, err
-	}
-
-	return res, err
 }

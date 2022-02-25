@@ -21,7 +21,7 @@ func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.UseCase) {
 	handler := &ReferralHandler{
 		ReferralUseCase: us,
 	}
-
+	echoGroup.API.POST("/referral/generate", handler.GenerateReferralCodes)
 	echoGroup.API.POST("/referral/core-trx", handler.coreTrx)
 }
 
@@ -51,6 +51,42 @@ func (ref *ReferralHandler) coreTrx(echTx echo.Context) error {
 	response.SetResponse(responseData, respErrors)
 
 	return echTx.JSON(getStatusCode(err), response)
+}
+
+func (rc *ReferralHandler) GenerateReferralCodes(c echo.Context) error {
+	var payload models.RequestCreateReferral
+
+	respErrors := &models.ResponseErrors{}
+	response = models.Response{}
+	err := c.Bind(&payload)
+
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	if err = c.Validate(payload); err != nil {
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	data, err := rc.ReferralUseCase.CreateReferralCodes(c, payload)
+
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		response.Data = data
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MessageSaveSuccess
+	response.Data = data
+
+	return c.JSON(http.StatusCreated, response)
 }
 
 func getStatusCode(err error) int {

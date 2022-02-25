@@ -2,8 +2,10 @@ package repository
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"gade/srv-gade-point/campaigns"
+	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewards"
 	"strings"
@@ -12,16 +14,18 @@ import (
 	"github.com/labstack/echo"
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
+	"github.com/uptrace/bun"
 )
 
 type psqlCampaignRepository struct {
 	Conn    *sql.DB
+	dbBun   *bun.DB
 	rwdRepo rewards.Repository
 }
 
 // NewPsqlCampaignRepository will create an object that represent the campaigns.Repository interface
-func NewPsqlCampaignRepository(Conn *sql.DB, rwdRepo rewards.Repository) campaigns.Repository {
-	return &psqlCampaignRepository{Conn, rwdRepo}
+func NewPsqlCampaignRepository(Conn *sql.DB, dbBun *bun.DB, rwdRepo rewards.Repository) campaigns.Repository {
+	return &psqlCampaignRepository{Conn, dbBun, rwdRepo}
 }
 
 func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models.Campaign) error {
@@ -29,8 +33,8 @@ func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
-	query := `INSERT INTO campaigns (name, description, start_date, end_date, status, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
+	query := `INSERT INTO campaigns (name, description, start_date, end_date, status, created_at, metadata)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
@@ -51,8 +55,16 @@ func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models
 		endDate = &campaign.EndDate
 	}
 
+	metadata, err := json.Marshal(campaign.Metadata)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return err
+	}
+
 	err = stmt.QueryRow(campaign.Name, campaign.Description, campaign.StartDate, endDate,
-		campaign.Status, &now).Scan(&lastID)
+		campaign.Status, &now, string(metadata)).Scan(&lastID)
 
 	if err != nil {
 		requestLogger.Debug(err)
@@ -148,7 +160,7 @@ func (m *psqlCampaignRepository) GetCampaign(c echo.Context, payload map[string]
 	paging := ""
 	where := ""
 	query := `SELECT id, name, description, start_date, end_date, status, updated_at, created_at,
-		DATE_PART('day', end_date::timestamp - now()::timestamp) as days_remaining
+		DATE_PART('day', end_date::timestamp - now()::timestamp) as days_remaining, metadata
 		FROM campaigns WHERE id IS NOT NULL`
 
 	if payload["page"].(int) > 0 || payload["limit"].(int) > 0 {
@@ -204,6 +216,7 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 		t := new(models.Campaign)
 		var createDate, updateDate, endDate pq.NullTime
 		var daysRemaining *int64
+		var metadata json.RawMessage
 
 		err = rows.Scan(
 			&t.ID,
@@ -215,7 +228,16 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 			&updateDate,
 			&createDate,
 			&daysRemaining,
+			&metadata,
 		)
+
+		if err != nil {
+			requestLogger.Debug(err)
+
+			return nil, err
+		}
+
+		err = json.Unmarshal([]byte(metadata), &t.Metadata)
 
 		if err != nil {
 			requestLogger.Debug(err)
@@ -244,31 +266,72 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 	return result, nil
 }
 
+func (m *psqlCampaignRepository) GetReferralCampaign(c echo.Context, pv models.PayloadValidator) *[]*models.Campaign {
+	query := `SELECT distinct c.id, c.name, c.description, c.start_date, c.end_date, c.status,
+		c.updated_at, c.created_at
+		FROM campaigns c
+		LEFT JOIN rewards r ON c.id = r.campaign_id
+		left join referral_codes rc on c.id = rc.campaign_id
+		WHERE c.status = ?0 AND c.metadata->>'isReferral' = 'true' AND r.is_promo_code = ?1
+		AND c.start_date::date <= ?2 AND (c.end_date::date >= ?2 OR c.end_date IS null)
+		AND lower(rc.referral_code) = ?3
+		order by c.created_at desc limit 1`
+
+	rows, err := m.dbBun.QueryContext(c.Request().Context(), query, models.CampaignActive,
+		models.IsPromoCodeFalse, pv.TransactionDate, strings.ToLower(pv.PromoCode))
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return nil
+	}
+
+	var campaigns []*models.Campaign
+	err = m.dbBun.ScanRows(c.Request().Context(), rows, &campaigns)
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return nil
+	}
+
+	if campaigns == nil {
+		return nil
+	}
+
+	rewards, err := m.rwdRepo.GetRewardByCampaign(c, campaigns[0].ID)
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return nil
+	}
+
+	campaigns[0].Rewards = &rewards
+
+	return &campaigns
+}
+
 func (m *psqlCampaignRepository) GetCampaignAvailable(c echo.Context, pv models.PayloadValidator) ([]*models.Campaign, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	promoCode := strings.ToLower(pv.PromoCode)
 
-	query := fmt.Sprintf(`SELECT c.id, c.name, c.description, c.start_date,
+	query := fmt.Sprintf(`SELECT distinct c.id, c.name, c.description, c.start_date,
 		c.end_date, c.status, c.updated_at, c.created_at,
 		DATE_PART('day', c.end_date::timestamp - now()::timestamp) as days_remaining
 		FROM campaigns c
 		LEFT JOIN rewards r ON c.id = r.campaign_id
 		LEFT JOIN reward_tags rt ON r.id = rt.reward_id
 		LEFT JOIN tags t ON rt.tag_id = t.id
-		WHERE c.status = 1 and r.is_promo_code = 1
-		AND (LOWER(r.promo_code) = '%s' OR lower(t.name) = '%s')
+		WHERE c.metadata is null and c.status = 1
+		AND (
+			(r.is_promo_code = 1 and (LOWER(r.promo_code) = '%s' OR lower(t.name) = '%s'))
+			or (r.is_promo_code = 0)
+		)
 		AND c.start_date::date <= '%s'
-		AND (c.end_date::date >= '%s' OR c.end_date IS null)
-		union
-		SELECT c.id, c.name, c.description, c.start_date, c.end_date, c.status, c.updated_at,
-		c.created_at, DATE_PART('day', c.end_date::timestamp - now()::timestamp) as days_remaining
-		FROM campaigns c
-		LEFT JOIN rewards r ON c.id = r.campaign_id
-		WHERE c.status = 1 and r.is_promo_code = 0 AND c.start_date::date <= '%s'
 		AND (c.end_date::date >= '%s' OR c.end_date IS null)`,
-		promoCode, promoCode, pv.TransactionDate, pv.TransactionDate, pv.TransactionDate,
-		pv.TransactionDate)
+		promoCode, promoCode, pv.TransactionDate, pv.TransactionDate)
 
 	res, err := m.getCampaign(c, query)
 
@@ -361,9 +424,10 @@ func (m *psqlCampaignRepository) GetCampaignDetail(c echo.Context, id int64) (*m
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	var createDate, updateDate pq.NullTime
+	var metadata json.RawMessage
 	result := new(models.Campaign)
 
-	query := `SELECT id, name, description, start_date, end_date, status, updated_at, created_at FROM campaigns WHERE id = $1`
+	query := `SELECT id, name, description, start_date, end_date, status, updated_at, created_at, metadata FROM campaigns WHERE id = $1`
 
 	err := m.Conn.QueryRow(query, id).Scan(
 		&result.ID,
@@ -374,7 +438,16 @@ func (m *psqlCampaignRepository) GetCampaignDetail(c echo.Context, id int64) (*m
 		&result.Status,
 		&createDate,
 		&updateDate,
+		&metadata,
 	)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return nil, err
+	}
+
+	err = json.Unmarshal([]byte(metadata), &result.Metadata)
 
 	if err != nil {
 		requestLogger.Debug(err)

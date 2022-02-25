@@ -67,6 +67,30 @@ func (rcUc *referralUseCase) CreateReferralCodes(c echo.Context, requestReferral
 	return result, nil
 }
 
+func (rcUc *referralUseCase) GetReferralCodes(c echo.Context, requestGetReferral models.RequestReferralCodeUser) (models.ReferralCodeUser, error) {
+
+	var result models.ReferralCodeUser
+
+	// get referral codes data by cif
+	referral, err := rcUc.referralRepo.GetReferralByCif(c, requestGetReferral.CIF)
+
+	// throw empty data if referral codes not found
+	if err != nil {
+		return models.ReferralCodeUser{}, err
+	}
+
+	if referral.ReferralCode == "" {
+		logger.Make(c, nil).Debug(models.ErrRefCodesNF)
+
+		return models.ReferralCodeUser{}, models.ErrRefCodesNF
+	}
+
+	// if data referral codes found send result
+	result.ReferralCode = referral.ReferralCode
+
+	return result, nil
+}
+
 func (rcUc *referralUseCase) getCampaignIdByPrefix(c echo.Context, prefix string) (int64, error) {
 
 	// get campaign id by prefix

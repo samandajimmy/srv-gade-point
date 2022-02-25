@@ -23,6 +23,7 @@ func NewReferralsHandler(echoGroup models.EchoGroup, rus referrals.UseCase) {
 	}
 
 	echoGroup.API.POST("/referral/generate", handler.GenerateReferralCodes)
+	echoGroup.API.GET("/referral/get", handler.GetReferralCodes)
 }
 
 func (rc *ReferralHandler) GenerateReferralCodes(c echo.Context) error {
@@ -59,6 +60,42 @@ func (rc *ReferralHandler) GenerateReferralCodes(c echo.Context) error {
 	response.Data = data
 
 	return c.JSON(http.StatusCreated, response)
+}
+
+func (rc *ReferralHandler) GetReferralCodes(c echo.Context) error {
+	var payload models.RequestReferralCodeUser
+
+	respErrors := &models.ResponseErrors{}
+	response = models.Response{}
+	err := c.Bind(&payload)
+
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	if err = c.Validate(payload); err != nil {
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	data, err := rc.ReferralUseCase.GetReferralCodes(c, payload)
+
+	if err != nil {
+		response.Status = models.StatusError
+		response.Message = err.Error()
+		response.Data = data
+		return c.JSON(getStatusCode(err), response)
+	}
+
+	response.Status = models.StatusSuccess
+	response.Message = models.MessageDataFound
+	response.Data = data
+
+	return c.JSON(http.StatusFound, response)
 }
 
 func getStatusCode(err error) int {

@@ -78,6 +78,9 @@ var (
 
 	// CifRefCodeExisted to notice if a cif already had referral codes
 	CifRefCodeExisted = "Cif %s sudah memiliki Kode Referral"
+
+	// MessageDataFound to store a message response of data found
+	MessageDataFound = "Data ditemukan"
 )
 
 // EchoGroup to store routes group

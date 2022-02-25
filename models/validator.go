@@ -46,17 +46,18 @@ type PayloadValidator struct {
 	IsMulti           bool       `json:"isMulti,omitempty"`
 	CampaignID        string     `json:"campaignId,omitempty"`
 	CIF               string     `json:"cif,omitempty"`
-	Referrer          string     `json:"referrer,omitempty" validate:"isRequiredWith=Validators.CampaignCode"`
+	Referrer          string     `json:"referrer,omitempty" validate:"isRequiredWith=Validators.CampaignCode,necsfield=CIF"`
 	CustomerName      string     `json:"customerName,omitempty"`
 	LoanAmount        *float64   `json:"loanAmount,omitempty"`
 	Phone             string     `json:"phone,omitempty"`
 	PromoCode         string     `json:"promoCode,omitempty" validate:"required"`
 	RedeemedDate      string     `json:"redeemedDate,omitempty"`
 	RefTrx            string     `json:"refTrx,omitempty"`
-	TransactionDate   string     `json:"transactionDate,omitempty" validate:"required"`
+	TransactionDate   string     `json:"transactionDate,omitempty" validate:"required,dateString=2006-01-02 15:04:05.000"`
 	TransactionAmount *float64   `json:"transactionAmount,omitempty" validate:"required"`
 	VoucherID         string     `json:"voucherId,omitempty"`
 	Validators        *Validator `json:"validators,omitempty"`
+	CodeType          string     `json:"codeType,omitempty"`
 }
 
 var skippedValidator = []string{"multiplier", "value", "formula", "maxValue", "unit", "isPrivate"}

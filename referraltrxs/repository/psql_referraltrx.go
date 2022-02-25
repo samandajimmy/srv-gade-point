@@ -19,42 +19,6 @@ func NewPsqlReferralTrxRepository(Conn *sql.DB) referraltrxs.Repository {
 	return &psqlReferralTrxRepository{Conn}
 }
 
-func (refTrxRepo *psqlReferralTrxRepository) IsReferralTrxExist(c echo.Context, refTrx models.ReferralTrx) (int64, error) {
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-	var count int64
-	query := `SELECT COUNT(ref.id) as Count FROM referral_transactions ref where 
-		 ref.type = $1 AND ref.phone_number = $2`
-	err := refTrxRepo.Conn.QueryRow(query, models.ReferralTrxTypeReferral,
-		refTrx.PhoneNumber).Scan(&count)
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return 0, err
-	}
-
-	return count, nil
-}
-
-func (refTrxRepo *psqlReferralTrxRepository) GetTotalGoldbackReferrer(c echo.Context, refTrx models.ReferralTrx) (float64, error) {
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-	var total float64
-	query := `SELECT COALESCE(SUM(ref.reward_referral), 0) FROM referral_transactions ref
-			where ref.cif = $1 and type = $2 and reward_type = $3`
-	err := refTrxRepo.Conn.QueryRow(query, refTrx.CifReferrer, models.ReferralTrxTypeReferrer,
-		models.ReferralGoldback).Scan(&total)
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return 0, err
-	}
-
-	return total, nil
-}
-
 func (refTrxRepo *psqlReferralTrxRepository) PostReferralTrx(c echo.Context, refTrx models.ReferralTrx) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)

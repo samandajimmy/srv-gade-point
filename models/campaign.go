@@ -42,3 +42,8 @@ type GetCampaignValue struct {
 	Source            string  `json:"source,omitempty"` // device name that user used
 	RefCore           string  `json:"refCore,omitempty"`
 }
+
+type CampaignPack struct {
+	VoucherPack  *VoucherCode
+	ReferralPack *[]*Campaign
+}

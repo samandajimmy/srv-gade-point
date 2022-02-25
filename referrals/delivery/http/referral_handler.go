@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referrals"
 	"net/http"
@@ -27,7 +26,6 @@ func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.UseCase) {
 }
 
 func (ref *ReferralHandler) coreTrx(echTx echo.Context) error {
-	fmt.Println("Multiple handler")
 	var referralCore []models.CoreTrxPayload
 	var responseData []models.CoreTrxResponse
 	response = models.Response{}

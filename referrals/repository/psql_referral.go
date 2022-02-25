@@ -25,7 +25,6 @@ func NewPsqlReferralRepository(Conn *sql.DB, Bun *bun.DB) referrals.Repository {
 
 func (refRepo *psqlReferralsRepository) PostCoreTrx(c echo.Context, coreTrx []models.CoreTrxPayload) error {
 	const fInsertTrx = 15
-	var count = []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
 	now := time.Now()
 	createdAt := now
 	trxType := 1
@@ -34,22 +33,20 @@ func (refRepo *psqlReferralsRepository) PostCoreTrx(c echo.Context, coreTrx []mo
 	valueStrings := []string{}
 
 	for _, trx := range coreTrx {
-		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
-			i*fInsertTrx+count[0],
-			i*fInsertTrx+count[1],
-			i*fInsertTrx+count[2],
-			i*fInsertTrx+count[3],
-			i*fInsertTrx+count[4],
-			i*fInsertTrx+count[5],
-			i*fInsertTrx+count[6],
-			i*fInsertTrx+count[7],
-			i*fInsertTrx+count[8],
-			i*fInsertTrx+count[9],
-			i*fInsertTrx+count[10],
-			i*fInsertTrx+count[11],
-			i*fInsertTrx+count[12],
-			i*fInsertTrx+count[13],
-			i*fInsertTrx+count[14]))
+		genIndex := "("
+		genStartNumber := i * fInsertTrx
+		genLastNumber := genStartNumber + fInsertTrx
+
+		for x := genStartNumber; x < genLastNumber; x++ {
+			genIndex += fmt.Sprintf("$%d", x+1)
+			if x != (genLastNumber - 1) {
+				genIndex += ", "
+			}
+		}
+
+		genIndex += ")"
+		valueStrings = append(valueStrings, genIndex)
+
 		valueArgs = append(valueArgs, trx.CIF)
 		valueArgs = append(valueArgs, trx.RefID)
 		valueArgs = append(valueArgs, trx.UsedReferralCode)
@@ -77,6 +74,8 @@ func (refRepo *psqlReferralsRepository) PostCoreTrx(c echo.Context, coreTrx []mo
 		logger.Make(c, nil).Error(err)
 		return err
 	}
+
+	fmt.Println(valueArgs)
 
 	rows, err := stmt.Query(valueArgs...)
 

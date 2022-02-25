@@ -75,8 +75,6 @@ func (refRepo *psqlReferralsRepository) PostCoreTrx(c echo.Context, coreTrx []mo
 		return err
 	}
 
-	fmt.Println(valueArgs)
-
 	rows, err := stmt.Query(valueArgs...)
 
 	if err != nil {

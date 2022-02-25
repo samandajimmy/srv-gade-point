@@ -1,7 +1,7 @@
 ALTER TABLE referral_transactions
-ADD COLUMN trx_amount INTEGER,
-ADD COLUMN loan_amount INTEGER,
-ADD COLUMN interest_amount INTEGER,
+ADD COLUMN trx_amount DECIMAL,
+ADD COLUMN loan_amount DECIMAL,
+ADD COLUMN interest_amount DECIMAL,
 ADD COLUMN trx_id VARCHAR(20),
 ADD COLUMN trx_date TIMESTAMP,
 ADD COLUMN product_code VARCHAR(2),

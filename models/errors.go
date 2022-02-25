@@ -273,7 +273,7 @@ var (
 	ErrFormulaNotValid = errors.New("formula is not valid")
 
 	// ErrCoreFailed to store create core Transaction failed error message
-	ErrCoreTrxFailed = errors.New("Gagal untuk menyimpan transaksi")
+	ErrCoreTrxFailed = errors.New("Gagal untuk menyimpan transaksi cicil emas schedule")
 )
 
 // DynamicErr to return parameterize errors

@@ -280,6 +280,9 @@ var (
 
 	// ErrRefCampaginNF to store create reward failed error message
 	ErrRefCampaginNF = errors.New("Campaign tidak tersedia untuk referral")
+
+	// ErrRefCodesNF to store get referral codes error
+	ErrRefCodesNF = errors.New("Referral codes tidak ditemukan")
 )
 
 // DynamicErr to return parameterize errors

@@ -69,7 +69,7 @@ type RankingPayload struct {
 }
 
 type CoreTrxPayload struct {
-	CIF              string  `bun:"cif,omitempty"`
+	CIF              string  `json:"cif,omitempty"`
 	RefID            string  `json:"refId,omitempty"`
 	UsedReferralCode string  `json:"usedReferralCode,omitempty"`
 	Type             int64   `json:"type,omitempty"`

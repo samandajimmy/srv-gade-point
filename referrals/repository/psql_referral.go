@@ -31,12 +31,12 @@ func (refRepo *psqlReferralsRepository) PostCoreTrx(c echo.Context, coreTrx []mo
 
 		stmts = append(stmts, gcdb.NewPipelineStmt(`INSERT INTO referral_transactions 
 		(cif, ref_id, used_referral_code, type, reward_referral, reward_type, created_at, 
-		phone_number, trx_amount, loan_amount, interest_amount, trx_id, product_code, 
+		phone_number, trx_amount, loan_amount, interest_amount, product_code, 
 		trx_date, trx_type) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
 			nilFilters, trx.CIF, trx.RefID, trx.UsedReferralCode, trx.Type, trx.RewardReferral,
 			trx.RewardType, createdAt, trx.PhoneNumber, trx.TrxAmount, trx.LoanAmount,
-			trx.InterestAmount, trx.TrxID, trx.ProductCode, trx.TrxDate, trxType))
+			trx.InterestAmount, trx.ProductCode, trx.TrxDate, trxType))
 	}
 
 	err := gcdb.WithTransaction(refRepo.Conn, func(tx gcdb.Transaction) error {

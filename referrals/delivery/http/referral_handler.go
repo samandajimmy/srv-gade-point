@@ -16,14 +16,42 @@ type ReferralHandler struct {
 	ReferralUseCase referrals.UseCase
 }
 
-// NewReferralsHandler represent to register referrals endpoint
-func NewReferralsHandler(echoGroup models.EchoGroup, rus referrals.UseCase) {
+// NewReferralsHandler represent to register referrals  endpoint
+func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.UseCase) {
 	handler := &ReferralHandler{
-		ReferralUseCase: rus,
+		ReferralUseCase: us,
 	}
-
 	echoGroup.API.POST("/referral/generate", handler.GenerateReferralCodes)
 	echoGroup.API.GET("/referral/get", handler.GetReferralCodes)
+	echoGroup.API.POST("/referral/core-trx", handler.hcoreTrx)
+}
+
+func (ref *ReferralHandler) hcoreTrx(echTx echo.Context) error {
+	var referralCore []models.CoreTrxPayload
+	var responseData []models.CoreTrxResponse
+	response = models.Response{}
+	respErrors := &models.ResponseErrors{}
+	err := echTx.Bind(&referralCore)
+
+	if err != nil {
+		respErrors.SetTitle(models.MessageUnprocessableEntity)
+		response.SetResponse("", respErrors)
+
+		return echTx.JSON(http.StatusUnprocessableEntity, response)
+	}
+
+	responseData, err = ref.ReferralUseCase.UPostCoreTrx(echTx, referralCore)
+
+	if err != nil {
+		respErrors.SetTitle(err.Error())
+		response.SetResponse("", respErrors)
+
+		return echTx.JSON(getStatusCode(err), response)
+	}
+
+	response.SetResponse(responseData, respErrors)
+
+	return echTx.JSON(getStatusCode(err), response)
 }
 
 func (rc *ReferralHandler) GenerateReferralCodes(c echo.Context) error {

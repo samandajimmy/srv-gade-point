@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 var (
 	// ReferralTrxTypeReferral to store referral_trx type referral
@@ -64,4 +66,24 @@ type RankingPayload struct {
 	ReferralCode string `json:"referralCode,omitempty"`
 	StartDate    string `json:"startDate,omitempty" validate:"required"`
 	EndDate      string `json:"endDate,omitempty" validate:"required"`
+}
+
+type CoreTrxPayload struct {
+	CIF              string  `json:"cif,omitempty"`
+	RefID            string  `json:"refId,omitempty"`
+	UsedReferralCode string  `json:"usedReferralCode,omitempty"`
+	Type             int64   `json:"type,omitempty"`
+	RewardReferral   int64   `json:"rewardReferral,omitempty"`
+	RewardType       string  `json:"rewardType,omitempty"`
+	PhoneNumber      string  `json:"phoneNumber,omitempty"`
+	TrxAmount        float64 `json:"trxAmount,omitempty"`
+	LoanAmount       float64 `json:"loanAmount,omitempty"`
+	InterestAmount   float64 `json:"interestAmount,omitempty"`
+	TrxDate          string  `json:"trxDate,omitempty"`
+	ProductCode      int64   `json:"productCode,omitempty"`
+}
+
+type CoreTrxResponse struct {
+	StatusCode int64  `json:"statusCode,omitempty"`
+	Status     string `json:"status,omitempty"`
 }

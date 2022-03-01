@@ -272,6 +272,9 @@ var (
 
 	ErrFormulaNotValid = errors.New("formula is not valid")
 
+	// ErrCoreFailed to store create core Transaction failed error message
+	ErrCoreTrxFailed = errors.New("Gagal untuk menyimpan transaksi cicil emas schedule")
+
 	// ErrGenerateRefCodeFailed to store create reward failed error message
 	ErrGenerateRefCodeFailed = errors.New("Gagal untuk membuat referral code")
 

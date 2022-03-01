@@ -8,6 +8,7 @@ import (
 
 // Repository represent the referrals repository contract
 type Repository interface {
+	RPostCoreTrx(echo.Context, []models.CoreTrxPayload) error
 	CreateReferral(echo.Context, models.ReferralCodes) (models.ReferralCodes, error)
 	GetCampaignId(echo.Context, string) (int64, error)
 	GetReferralByCif(echo.Context, string) (models.ReferralCodes, error)

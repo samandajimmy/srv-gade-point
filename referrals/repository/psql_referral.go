@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	gcdb "gade/srv-gade-point/database"
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referrals"
@@ -21,6 +22,34 @@ func NewPsqlReferralRepository(Conn *sql.DB, Bun *bun.DB) referrals.Repository {
 	return &psqlReferralsRepository{Conn, Bun}
 }
 
+func (refRepo *psqlReferralsRepository) RPostCoreTrx(c echo.Context, coreTrx []models.CoreTrxPayload) error {
+	var nilFilters []string
+	createdAt := time.Now()
+	trxType := 1
+	stmts := []*gcdb.PipelineStmt{}
+	for _, trx := range coreTrx {
+
+		stmts = append(stmts, gcdb.NewPipelineStmt(`INSERT INTO referral_transactions 
+		(cif, ref_id, used_referral_code, type, reward_referral, reward_type, created_at, 
+		phone_number, trx_amount, loan_amount, interest_amount, product_code, 
+		trx_date, trx_type) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+			nilFilters, trx.CIF, trx.RefID, trx.UsedReferralCode, trx.Type, trx.RewardReferral,
+			trx.RewardType, createdAt, trx.PhoneNumber, trx.TrxAmount, trx.LoanAmount,
+			trx.InterestAmount, trx.ProductCode, trx.TrxDate, trxType))
+	}
+
+	err := gcdb.WithTransaction(refRepo.Conn, func(tx gcdb.Transaction) error {
+		return gcdb.RunPipelineQueryRow(tx, stmts...)
+	})
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+		return err
+	}
+
+	return nil
+}
 func (m *psqlReferralsRepository) CreateReferral(c echo.Context, refcodes models.ReferralCodes) (models.ReferralCodes, error) {
 
 	now := time.Now()

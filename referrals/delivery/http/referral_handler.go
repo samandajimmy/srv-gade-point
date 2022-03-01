@@ -23,10 +23,10 @@ func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.UseCase) {
 	}
 	echoGroup.API.POST("/referral/generate", handler.GenerateReferralCodes)
 	echoGroup.API.GET("/referral/get", handler.GetReferralCodes)
-	echoGroup.API.POST("/referral/core-trx", handler.coreTrx)
+	echoGroup.API.POST("/referral/core-trx", handler.hcoreTrx)
 }
 
-func (ref *ReferralHandler) coreTrx(echTx echo.Context) error {
+func (ref *ReferralHandler) hcoreTrx(echTx echo.Context) error {
 	var referralCore []models.CoreTrxPayload
 	var responseData []models.CoreTrxResponse
 	response = models.Response{}

@@ -18,7 +18,7 @@ type referralUseCase struct {
 	referralRepo referrals.Repository
 }
 
-// NewReferralUseCase will create new an rewardtrxUseCase  object representation of referrals.UseCase interface
+// NewReferralUseCase will create new an rewardtrxUseCase object representation of referrals.UseCase interface
 func NewReferralUseCase(refRepo referrals.Repository) referrals.UseCase {
 	return &referralUseCase{
 		referralRepo: refRepo,

@@ -17,7 +17,7 @@ type psqlReferralsRepository struct {
 	Bun  *bun.DB
 }
 
-// NewPsqlReferralRepository will create an object  that represent the referrals.Repository interface
+// NewPsqlReferralRepository will create an object that represent the referrals.Repository interface
 func NewPsqlReferralRepository(Conn *sql.DB, Bun *bun.DB) referrals.Repository {
 	return &psqlReferralsRepository{Conn, Bun}
 }

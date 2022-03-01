@@ -16,7 +16,7 @@ type ReferralHandler struct {
 	ReferralUseCase referrals.UseCase
 }
 
-// NewReferralsHandler represent to register referrals endpoint
+// NewReferralsHandler represent to register referrals  endpoint
 func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.UseCase) {
 	handler := &ReferralHandler{
 		ReferralUseCase: us,

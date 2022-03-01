@@ -4,4 +4,4 @@ DROP COLUMN loan_amount,
 DROP COLUMN interest_amount,
 DROP COLUMN trx_date,
 DROP COLUMN product_code,
-DROP COLUMN trx_type; 
+DROP COLUMN trx_type;

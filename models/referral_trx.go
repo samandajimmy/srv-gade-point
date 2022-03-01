@@ -79,7 +79,6 @@ type CoreTrxPayload struct {
 	TrxAmount        float64 `json:"trxAmount,omitempty"`
 	LoanAmount       float64 `json:"loanAmount,omitempty"`
 	InterestAmount   float64 `json:"interestAmount,omitempty"`
-	TrxID            int64   `json:"trxId,omitempty"`
 	TrxDate          string  `json:"trxDate,omitempty"`
 	ProductCode      int64   `json:"productCode,omitempty"`
 }

@@ -69,19 +69,19 @@ type RankingPayload struct {
 }
 
 type CoreTrxPayload struct {
-	CIF              string  `bun:"cif,omitempty"`
-	RefID            string  `json:"refId,omitempty"`
-	UsedReferralCode string  `json:"usedReferralCode,omitempty"`
-	Type             int64   `json:"type,omitempty"`
-	RewardReferral   int64   `json:"rewardReferral,omitempty"`
-	RewardType       string  `json:"rewardType,omitempty"`
-	PhoneNumber      string  `json:"phoneNumber,omitempty"`
-	TrxAmount        float64 `json:"trxAmount,omitempty"`
-	LoanAmount       float64 `json:"loanAmount,omitempty"`
-	InterestAmount   float64 `json:"interestAmount,omitempty"`
-	TrxID            int64   `json:"trxId,omitempty"`
-	TrxDate          string  `json:"trxDate,omitempty"`
-	ProductCode      int64   `json:"productCode,omitempty"`
+	CIF              string     `bun:"cif,omitempty"`
+	RefID            string     `json:"refId,omitempty"`
+	UsedReferralCode string     `json:"usedReferralCode,omitempty"`
+	Type             int64      `json:"type,omitempty"`
+	RewardReferral   int64      `json:"rewardReferral,omitempty"`
+	RewardType       string     `json:"rewardType,omitempty"`
+	PhoneNumber      string     `json:"phoneNumber,omitempty"`
+	TrxAmount        float64    `json:"trxAmount,omitempty"`
+	LoanAmount       float64    `json:"loanAmount,omitempty"`
+	InterestAmount   float64    `json:"interestAmount,omitempty"`
+	TrxID            int64      `json:"trxId,omitempty"`
+	TrxDate          *time.Time `json:"trxDate,omitempty"`
+	ProductCode      int64      `json:"productCode,omitempty"`
 }
 
 type CoreTrxResponse struct {

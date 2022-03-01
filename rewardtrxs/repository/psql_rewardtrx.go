@@ -191,7 +191,7 @@ func (rwdTrxRepo *psqlRewardTrxRepository) CheckTrx(c echo.Context, refID string
 
 func (rwdTrxRepo *psqlRewardTrxRepository) CheckRefID(c echo.Context, refID string) (*models.RewardTrx, error) {
 	var result models.RewardTrx
-	var rewardTrxReqData models.RewardTrxReqData
+	var rewardTrxReqData models.PayloadValidator
 	var rewardTrxRespData models.RewardsInquiry
 	var reward models.Reward
 	var reqData json.RawMessage

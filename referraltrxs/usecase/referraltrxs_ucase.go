@@ -3,9 +3,10 @@ package usecase
 import (
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referraltrxs"
-	"github.com/labstack/echo"
 	"os"
 	"strconv"
+
+	"github.com/labstack/echo"
 )
 
 type referralTrxUseCase struct {
@@ -19,10 +20,10 @@ func NewReferralTrxUseCase(referralTrxRepo referraltrxs.Repository) referraltrxs
 	}
 }
 
-func (rfr *referralTrxUseCase) GetMilestone(c echo.Context, pl models.MilestonePayload) (*models.Milestone, error) {
-	logger 		   := models.RequestLogger{}
-	requestLogger  := logger.GetRequestLogger(c, nil)
-	milestone, err := rfr.referralTrxRepo.GetMilestone(c, pl)
+func (rfr *referralTrxUseCase) UGetMilestone(c echo.Context, pl models.MilestonePayload) (*models.Milestone, error) {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	milestone, err := rfr.referralTrxRepo.RGetMilestone(c, pl)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrMilestone)
@@ -30,7 +31,7 @@ func (rfr *referralTrxUseCase) GetMilestone(c echo.Context, pl models.MilestoneP
 		return nil, models.ErrMilestone
 	}
 
-	ranking, err := rfr.referralTrxRepo.GetRankingByReferralCode(c, pl.ReferralCode)
+	ranking, err := rfr.referralTrxRepo.RGetRankingByReferralCode(c, pl.ReferralCode)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrMilestone)
@@ -53,12 +54,12 @@ func (rfr *referralTrxUseCase) GetMilestone(c echo.Context, pl models.MilestoneP
 	return milestone, nil
 }
 
-func (rfr *referralTrxUseCase) GetRanking(c echo.Context, payload models.RankingPayload) ([]*models.Ranking, error) {
+func (rfr *referralTrxUseCase) UGetRanking(c echo.Context, payload models.RankingPayload) ([]*models.Ranking, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
 	// get data
-	data, err :=  rfr.referralTrxRepo.GetRanking(c, payload)
+	data, err := rfr.referralTrxRepo.RGetRanking(c, payload)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrRanking)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"gade/srv-gade-point/campaigns"
+	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/quotas"
 	"gade/srv-gade-point/referraltrxs"
@@ -194,8 +195,6 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 	var rwdTrx *models.RewardTrx
 	var err error
 	var zero int64
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
 	trimmedString := strings.Replace(rwdPayment.RefTrx, " ", "", -1)
 	refIDs := strings.Split(trimmedString, ";")
 
@@ -204,20 +203,19 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 	}
 
 	if err != nil {
-		requestLogger.Debug(models.ErrRefTrxNotFound)
-
 		return responseData, models.ErrRefTrxNotFound
 	}
 
+	responseDataOriginal := models.RewardTrxResponse{}
 	for _, refID := range refIDs {
-		responseDataOriginal := models.RewardTrxResponse{}
+		responseDataOriginal = models.RewardTrxResponse{}
 		rwdPayment.RefTrx = refID
 
 		// check available reward transaction based in ref_id
 		rwdTrx, err = rwd.rwdTrxRepo.CheckRefID(c, rwdPayment.RefTrx)
 
 		if err != nil {
-			requestLogger.Debug(models.ErrRefTrxNotFound)
+			logger.Make(c, nil).Debug(err)
 			errorAppend = append(errorAppend, models.ErrRefTrxNotFound)
 			continue
 		}
@@ -277,11 +275,12 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 		}
 
 		// check if a referral trx
-		if rwdTrx.RequestData.IsReferral() {
+		rewards := *rwdTrx.ResponseData.Rewards
+		if rewards[0].Reference == models.RefTargetReferrer {
 			referralTrx := rwdTrx.GetReferralTrx()
 			referralTrx.CIF = rwdPayment.CIF
 
-			_ = rwd.referralTrxRepo.PostReferralTrx(c, referralTrx)
+			_ = rwd.referralTrxRepo.RPostReferralTrx(c, referralTrx)
 		}
 
 		if rwdTrx.Reward.Type == nil {

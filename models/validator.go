@@ -14,12 +14,6 @@ import (
 	govaluate "gopkg.in/Knetic/govaluate.v2"
 )
 
-// CampaignCodeReferral is constant for a referral campaign code
-const CampaignCodeReferral = "referral"
-
-// CampaignCodeReferrer is constant for a referrer campaign code
-const CampaignCodeReferrer = "referrer"
-
 // Validator to store all validator data
 type Validator struct {
 	CampaignCode         string   `json:"campaignCode,omitempty"`
@@ -280,15 +274,6 @@ func (v *Validator) CalculateMaximumValue(value *float64) (float64, error) {
 	}
 
 	return *maxValue, nil
-}
-
-// ReferralTarget to get the referral target key value
-func (v *Validator) ReferralTarget(pv PayloadValidator) string {
-	if pv.Validators.CampaignCode != CampaignCodeReferral {
-		return ""
-	}
-
-	return v.Target
 }
 
 func (v *Validator) getField(field string) (interface{}, error) {

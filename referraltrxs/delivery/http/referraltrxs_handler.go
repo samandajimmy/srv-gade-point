@@ -55,7 +55,7 @@ func (rfr *ReferralTrxHandler) getMilestone(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, response)
 	}
 
-	responseData, err := rfr.ReferralTrxUseCase.GetMilestone(c, pl)
+	responseData, err := rfr.ReferralTrxUseCase.UGetMilestone(c, pl)
 
 	if err != nil {
 		respErrors.SetTitle(err.Error())
@@ -96,7 +96,7 @@ func (rfr *ReferralTrxHandler) getRanking(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, response)
 	}
 
-	responseData, err := rfr.ReferralTrxUseCase.GetRanking(c, pl)
+	responseData, err := rfr.ReferralTrxUseCase.UGetRanking(c, pl)
 
 	if err != nil {
 		respErrors.SetTitle(err.Error())

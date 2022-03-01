@@ -17,8 +17,8 @@ var (
 
 // ReferralType to map referral type string to int64
 var ReferralType = map[string]int64{
-	CampaignCodeReferral: ReferralTrxTypeReferral,
-	CampaignCodeReferrer: ReferralTrxTypeReferrer,
+	RefTargetReferral: ReferralTrxTypeReferral,
+	RefTargetReferrer: ReferralTrxTypeReferrer,
 }
 
 // ReferralTrx is represent a referral_transactions model

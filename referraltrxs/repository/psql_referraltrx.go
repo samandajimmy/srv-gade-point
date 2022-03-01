@@ -19,7 +19,7 @@ func NewPsqlReferralTrxRepository(Conn *sql.DB) referraltrxs.Repository {
 	return &psqlReferralTrxRepository{Conn}
 }
 
-func (refTrxRepo *psqlReferralTrxRepository) PostReferralTrx(c echo.Context, refTrx models.ReferralTrx) error {
+func (refTrxRepo *psqlReferralTrxRepository) RPostReferralTrx(c echo.Context, refTrx models.ReferralTrx) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
@@ -49,7 +49,7 @@ func (refTrxRepo *psqlReferralTrxRepository) PostReferralTrx(c echo.Context, ref
 	return nil
 }
 
-func (refTrxRepo *psqlReferralTrxRepository) GetMilestone(c echo.Context, payload models.MilestonePayload) (*models.Milestone, error) {
+func (refTrxRepo *psqlReferralTrxRepository) RGetMilestone(c echo.Context, payload models.MilestonePayload) (*models.Milestone, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	result := new(models.Milestone)
@@ -57,7 +57,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetMilestone(c echo.Context, payloa
 	query := fmt.Sprintf(`SELECT count(r.id) as totalRewardCounter, sum(r.reward_referral) AS totalReward
 			  FROM referral_transactions r
 			  WHERE used_referral_code = '%s' and type = '%d'`,
-		payload.ReferralCode, models.ReferralType[models.CampaignCodeReferrer])
+		payload.ReferralCode, models.ReferralType[models.RefTargetReferrer])
 
 	err := refTrxRepo.Conn.QueryRow(query).Scan(
 		&result.TotalRewardCounter,
@@ -73,7 +73,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetMilestone(c echo.Context, payloa
 	return result, nil
 }
 
-func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, rp models.RankingPayload) ([]*models.Ranking, error) {
+func (refTrxRepo *psqlReferralTrxRepository) RGetRanking(c echo.Context, rp models.RankingPayload) ([]*models.Ranking, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	var prefixReferral = "PDS%"
@@ -138,7 +138,7 @@ func (refTrxRepo *psqlReferralTrxRepository) GetRanking(c echo.Context, rp model
 	return result, nil
 }
 
-func (refTrxRepo *psqlReferralTrxRepository) GetRankingByReferralCode(c echo.Context, referralCode string) (*models.Ranking, error) {
+func (refTrxRepo *psqlReferralTrxRepository) RGetRankingByReferralCode(c echo.Context, referralCode string) (*models.Ranking, error) {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	result := new(models.Ranking)

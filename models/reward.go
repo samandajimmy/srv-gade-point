@@ -28,6 +28,10 @@ var (
 	CodeTypeReferral string = "referral"
 
 	CodeTypeVoucher string = "voucher"
+
+	RefTargetReferral string = CodeTypeReferral
+
+	RefTargetReferrer string = "referrer"
 )
 
 var rewardType = map[int64]string{
@@ -135,14 +139,16 @@ func (rwdResp *RewardResponse) Populate(reward Reward, rwdValue float64, pv Payl
 	tempJSON, _ := json.Marshal(pv)
 	_ = json.Unmarshal(tempJSON, &pvMap)
 
-	if pv.Validators.CampaignCode == CampaignCodeReferral {
-		rwdResp.Reference = CampaignCodeReferral
+	if pv.CodeType != CodeTypeReferral {
+		return
 	}
 
+	rwdResp.Reference = RefTargetReferral
+
 	// validate referral reward
-	if referrer := reward.Validators.ReferralTarget(pv); referrer != "" {
-		rwdResp.CIF = pvMap[referrer].(string)
-		rwdResp.Reference = CampaignCodeReferrer
+	if reward.Validators.Target == RefTargetReferrer {
+		rwdResp.Reference = RefTargetReferrer
+		rwdResp.CIF = pvMap[RefTargetReferrer].(string)
 	}
 }
 

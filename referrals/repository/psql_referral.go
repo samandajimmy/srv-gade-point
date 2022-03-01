@@ -74,7 +74,8 @@ func (m *psqlReferralsRepository) GetReferralByCif(c echo.Context, cif string) (
 
 	var result models.ReferralCodes
 
-	query := `select cif, referral_code, campaign_id, created_at, updated_at from referral_codes rc where cif = ? order by created_at desc limit 1;`
+	query := `select cif, referral_code, campaign_id, created_at, updated_at from referral_codes rc 
+		where cif = ? order by created_at desc limit 1;`
 
 	rows, err := m.Bun.QueryContext(c.Request().Context(), query, cif)
 
@@ -100,7 +101,8 @@ func (m *psqlReferralsRepository) GetCampaignId(c echo.Context, prefix string) (
 	var code int64
 	now := time.Now()
 
-	query := `select id from campaigns c where metadata->>'prefix' = ?0 and start_date <= ?1 and end_date >= ?1 order by created_at desc limit 1;`
+	query := `select id from campaigns c where metadata->>'prefix' = ?0 and start_date <= ?1 
+		and end_date >= ?1 order by created_at desc limit 1;`
 
 	rows, err := m.Bun.QueryContext(c.Request().Context(), query, prefix, now)
 

@@ -41,18 +41,11 @@ type RewardTrx struct {
 	SucceededDate   *time.Time        `json:"succeededDate,omitempty"`
 	RejectedDate    *time.Time        `json:"rejectedDate,omitempty"`
 	TimeoutDate     *time.Time        `json:"timeoutDate,omitempty"`
-	RequestData     *RewardTrxReqData `json:"requestData,omitempty"`
+	RequestData     *PayloadValidator `json:"requestData,omitempty"`
 	ResponseData    *RewardsInquiry   `json:"responseData,omitempty"`
 	CreatedAt       *time.Time        `json:"createdAt,omitempty"`
 	UpdatedAt       *time.Time        `json:"updatedAt,omitempty"`
 	Reward          *Reward           `json:"reward,omitempty"`
-}
-
-// RewardTrxReqData is represent a reward_transactions request data model
-type RewardTrxReqData struct {
-	Phone        string     `json:"phone,omitempty"`
-	CustomerName string     `json:"customerName,omitempty"`
-	Validators   *Validator `json:"validators,omitempty"`
 }
 
 // RewardTrxResponse is represent a reward transaction response model
@@ -80,17 +73,4 @@ func (rwdTrx RewardTrx) GetReferralTrx() ReferralTrx {
 	refTrx.PhoneNumber = rwdTrx.RequestData.Phone
 
 	return refTrx
-}
-
-// IsReferral to get is referral or not from request data
-func (rtReq *RewardTrxReqData) IsReferral() bool {
-	if rtReq.Validators == nil {
-		return false
-	}
-
-	if rtReq.Validators.CampaignCode != CampaignCodeReferral {
-		return false
-	}
-
-	return true
 }

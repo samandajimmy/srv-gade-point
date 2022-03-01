@@ -25,9 +25,9 @@ func NewReferralUseCase(refRepo referrals.Repository) referrals.UseCase {
 	}
 }
 
-func (ref *referralUseCase) PostCoreTrx(c echo.Context, coreTrx []models.CoreTrxPayload) ([]models.CoreTrxResponse, error) {
+func (ref *referralUseCase) UPostCoreTrx(c echo.Context, coreTrx []models.CoreTrxPayload) ([]models.CoreTrxResponse, error) {
 	var responseData []models.CoreTrxResponse
-	err := ref.referralRepo.PostCoreTrx(c, coreTrx)
+	err := ref.referralRepo.RPostCoreTrx(c, coreTrx)
 
 	if err != nil {
 		return nil, models.ErrCoreTrxFailed

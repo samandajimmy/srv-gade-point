@@ -40,7 +40,7 @@ func (ref *ReferralHandler) coreTrx(echTx echo.Context) error {
 		return echTx.JSON(http.StatusUnprocessableEntity, response)
 	}
 
-	responseData, err = ref.ReferralUseCase.PostCoreTrx(echTx, referralCore)
+	responseData, err = ref.ReferralUseCase.UPostCoreTrx(echTx, referralCore)
 
 	if err != nil {
 		respErrors.SetTitle(err.Error())

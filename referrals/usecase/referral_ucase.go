@@ -20,9 +20,7 @@ type referralUseCase struct {
 
 // NewReferralUseCase will create new an rewardtrxUseCase object representation of referrals.UseCase interface
 func NewReferralUseCase(refRepo referrals.Repository) referrals.UseCase {
-	return &referralUseCase{
-		referralRepo: refRepo,
-	}
+	return &referralUseCase{referralRepo: refRepo}
 }
 
 func (ref *referralUseCase) UPostCoreTrx(c echo.Context, coreTrx []models.CoreTrxPayload) ([]models.CoreTrxResponse, error) {
@@ -100,6 +98,29 @@ func (rcUc *referralUseCase) GetReferralCodes(c echo.Context, requestGetReferral
 	result.ReferralCode = referral.ReferralCode
 
 	return result, nil
+}
+
+func (ref *referralUseCase) UMaxIncentiveValidation(c echo.Context, refCode string) (models.SumIncentive, error) {
+	var sumIncentive models.SumIncentive
+	// get ref trx based on the active ref campaign
+	// and reward data with used ref code
+	campaignReward, err := ref.referralRepo.RGetRefCampaignReward(c, refCode)
+
+	if err != nil {
+		return sumIncentive, err
+	}
+
+	// sum the incentive based on the ref trx (per day and per month)
+	sumIncentive, err = ref.referralRepo.RSumRefIncentive(c, campaignReward)
+
+	if err != nil {
+		return sumIncentive, err
+	}
+
+	// validate the max per day and per month
+	campaignReward.Validators.Incentive.ValidateMaxIncentive(&sumIncentive)
+
+	return sumIncentive, nil
 }
 
 func (rcUc *referralUseCase) getCampaignIdByPrefix(c echo.Context, prefix string) (int64, error) {

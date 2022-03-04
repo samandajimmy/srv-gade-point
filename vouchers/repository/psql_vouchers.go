@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"gade/srv-gade-point/database"
 	log "gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/vouchers"
@@ -27,11 +28,11 @@ var (
 
 type psqlVoucherRepository struct {
 	Conn *sql.DB
-	bun  *bun.DB
+	bun  *database.DbBun
 }
 
 // NewPsqlVoucherRepository will create an object that represent the vouchers. Repository interface
-func NewPsqlVoucherRepository(Conn *sql.DB, bun *bun.DB) vouchers.Repository {
+func NewPsqlVoucherRepository(Conn *sql.DB, bun *database.DbBun) vouchers.Repository {
 	return &psqlVoucherRepository{Conn, bun}
 }
 

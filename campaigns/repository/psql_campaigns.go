@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gade/srv-gade-point/campaigns"
+	"gade/srv-gade-point/database"
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewards"
@@ -14,17 +15,16 @@ import (
 	"github.com/labstack/echo"
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
-	"github.com/uptrace/bun"
 )
 
 type psqlCampaignRepository struct {
 	Conn    *sql.DB
-	dbBun   *bun.DB
+	dbBun   *database.DbBun
 	rwdRepo rewards.Repository
 }
 
 // NewPsqlCampaignRepository will create an object that represent the campaigns.Repository interface
-func NewPsqlCampaignRepository(Conn *sql.DB, dbBun *bun.DB, rwdRepo rewards.Repository) campaigns.Repository {
+func NewPsqlCampaignRepository(Conn *sql.DB, dbBun *database.DbBun, rwdRepo rewards.Repository) campaigns.Repository {
 	return &psqlCampaignRepository{Conn, dbBun, rwdRepo}
 }
 

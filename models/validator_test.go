@@ -1,142 +1,145 @@
 package models_test
 
 import (
-	"errors"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	"gade/srv-gade-point/models"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
+	"gade/srv-gade-point/models/helper"
 )
 
-var (
-	disc      float64 = 10
-	maxValue  float64 = 15000
-	minTrx    float64 = 100000
-	trx       float64 = 1000000
-	mltplr    float64 = 1
-	val       float64 = 5000
-	frml              = "(transactionAmount/multiplier)*value"
-	voucherID int64   = 5
-)
+var _ = Describe("Validator", func() {
 
-var validator = models.Validator{
-	Channel:              "pds",
-	Discount:             &disc,
-	Formula:              frml,
-	MaxValue:             &maxValue,
-	MinTransactionAmount: &minTrx,
-	Product:              "TE",
-	TransactionType:      "OP",
-	Multiplier:           &mltplr,
-	Value:                &val,
-	ValueVoucherID:       &voucherID,
-}
+	Describe("GetRewardValue", func() {
+		Context("minimum direct discount reward", func() {
+			validator := models.Validator{
+				Channel: "9997", Product: "62", TransactionType: "OP",
+				Value: helper.CreateFloat64(50000)}
 
-var plValidator = models.PayloadValidator{
-	CIF:               "1122334455",
-	PromoCode:         "EMASMERDEKA",
-	TransactionDate:   "2019-05-20",
-	TransactionAmount: &trx,
-	Validators: &models.Validator{
-		Channel:         "pds",
-		Product:         "TE",
-		TransactionType: "OP",
-	},
-}
+			plValidator := models.PayloadValidator{
+				TransactionAmount: helper.CreateFloat64(100000),
+				Validators: &models.Validator{
+					Channel: "9997", Product: "62", TransactionType: "OP"}}
 
-func TestValidate(t *testing.T) {
-	// when its valid
-	assert.Equal(t, nil, validator.Validate(&plValidator))
+			value, err := validator.GetRewardValue(&plValidator)
 
-	// when its not valid
-	plValidator.Validators.Channel = "passion"
-	err := errors.New("channel on this transaction is not valid to use the benefit")
-	assert.Equal(t, err, validator.Validate(&plValidator))
-}
+			It("happy test", func() {
+				Expect(value).To(Equal(float64(50000)))
+				Expect(err).To(BeNil())
+			})
+		})
 
-func TestGetFormulaResult(t *testing.T) {
-	// when its valid
-	goldTrx := float64(5)
-	plValidator.TransactionAmount = &goldTrx
-	assert.Equal(t, mltplFunc(float64(25000), nil), mltplFunc(validator.GetFormulaResult(&plValidator)))
+		Context("minimum percentage discount reward", func() {
+			validator := models.Validator{
+				Channel: "9997", Product: "62", TransactionType: "OP",
+				Discount: helper.CreateFloat64(20)}
 
-	// when formula is not available
-	validator.Formula = ""
-	assert.Equal(t, mltplFunc(float64(0), nil), mltplFunc(validator.GetFormulaResult(&plValidator)))
-}
+			plValidator := models.PayloadValidator{
+				TransactionAmount: helper.CreateFloat64(400000),
+				Validators: &models.Validator{
+					Channel: "9997", Product: "62", TransactionType: "OP"}}
 
-func TestCalculateDiscount(t *testing.T) {
-	// when its valid
-	hundredK := float64(100000)
-	assert.Equal(t, mltplFunc(hundredK, nil), mltplFunc(validator.CalculateDiscount(plValidator.TransactionAmount)))
+			value, err := validator.GetRewardValue(&plValidator)
 
-	// when discount is not available
-	zero := float64(0)
-	validator.Discount = &zero
-	assert.Equal(t, mltplFunc(float64(0), nil), mltplFunc(validator.CalculateDiscount(plValidator.TransactionAmount)))
-}
+			It("happy test", func() {
+				Expect(value).To(Equal(float64(80000)))
+				Expect(err).To(BeNil())
+			})
+		})
 
-func TestGetVoucherResult(t *testing.T) {
-	// when its valid
-	assert.Equal(t, mltplFunc(int64(5), nil), mltplFunc(validator.GetVoucherResult()))
+		Context("minimum goldback reward", func() {
+			validator := models.Validator{
+				Channel: "9997", Product: "62", TransactionType: "OP",
+				Multiplier: helper.CreateFloat64(10000),
+				Value:      helper.CreateFloat64(2),
+				Formula:    "(transactionAmount/multiplier)*value"}
 
-	// when value voucher ID is not available
-	zero := int64(0)
-	validator.ValueVoucherID = &zero
-	assert.Equal(t, mltplFunc(int64(0), nil), mltplFunc(validator.GetVoucherResult()))
-}
+			plValidator := models.PayloadValidator{
+				TransactionAmount: helper.CreateFloat64(50000),
+				Validators: &models.Validator{
+					Channel: "9997", Product: "62", TransactionType: "OP"}}
 
-func TestCalculateMaximumValue(t *testing.T) {
-	// when its valid
-	assert.Equal(t, mltplFunc(float64(5000), nil), mltplFunc(validator.CalculateMaximumValue(&val)))
+			value, err := validator.GetRewardValue(&plValidator)
 
-	// when maximum value is not available
-	zero := float64(0)
-	validator.MaxValue = &zero
-	assert.Equal(t, mltplFunc(zero, nil), mltplFunc(validator.CalculateMaximumValue(&val)))
-}
+			It("happy test", func() {
+				Expect(value).To(Equal(float64(10)))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
 
-func TestGetRewardValue(t *testing.T) {
-	// when its a direct discount reward
-	zero := float64(0)
-	validator.Formula = ""
-	validator.Multiplier = &zero
-	validator.MaxValue = &zero
-	validator.Discount = &zero
-	assert.Equal(t, mltplFunc(float64(5000), nil), mltplFunc(validator.GetRewardValue(&plValidator)))
+	Describe("Validate", func() {
+		validator := models.Validator{
+			Channel: "9997", Product: "62", TransactionType: "OP",
+			MinTransactionAmount: helper.CreateFloat64(100000),
+			Value:                helper.CreateFloat64(50000)}
 
-	// when its a discount percentage reward
-	validator.Discount = &disc
-	validator.Value = &zero
-	assert.Equal(t, mltplFunc(float64(100000), nil), mltplFunc(validator.GetRewardValue(&plValidator)))
+		plValidator := models.PayloadValidator{
+			TransactionAmount: helper.CreateFloat64(100000),
+			Validators: &models.Validator{
+				Channel: "9997", Product: "62", TransactionType: "OP"}}
 
-	// when its a discount percentage reward with nil value
-	validator.Discount = &disc
-	validator.Value = nil
-	assert.Equal(t, mltplFunc(float64(100000), nil), mltplFunc(validator.GetRewardValue(&plValidator)))
+		err := validator.Validate(&plValidator)
 
-	// when its a discount percentage with max value reward
-	validator.MaxValue = &maxValue
-	assert.Equal(t, mltplFunc(float64(15000), nil), mltplFunc(validator.GetRewardValue(&plValidator)))
+		It("happy test", func() {
+			Expect(err).To(BeNil())
+		})
+	})
 
-	// when its a direct discount and discount percentage reward
-	validator.MaxValue = &zero
-	validator.Discount = &disc
-	validator.Value = &val
-	assert.Equal(t, mltplFunc(float64(105000), nil), mltplFunc(validator.GetRewardValue(&plValidator)))
+	Describe("GetFormulaResult", func() {
+		validator := models.Validator{
+			Multiplier: helper.CreateFloat64(10000),
+			Value:      helper.CreateFloat64(100),
+			Formula:    "(transactionAmount/multiplier)*value",
+		}
 
-	// when its a multiplied discount reward
-	five := float64(5)
-	one := float64(1)
-	validator.MaxValue = &zero
-	validator.Discount = &zero
-	validator.Formula = frml
-	validator.Multiplier = &mltplr
-	validator.MinTransactionAmount = &one
-	plValidator.TransactionAmount = &five
-	assert.Equal(t, mltplFunc(float64(25000), nil), mltplFunc(validator.GetRewardValue(&plValidator)))
-}
+		plValidator := models.PayloadValidator{TransactionAmount: helper.CreateFloat64(500000)}
 
-func mltplFunc(a, b interface{}) []interface{} {
-	return []interface{}{a, b}
-}
+		value, err := validator.GetFormulaResult(&plValidator)
+
+		It("happy test", func() {
+			Expect(value).To(Equal(float64(5000)))
+			Expect(err).To(BeNil())
+		})
+	})
+
+	Describe("GetVoucherResult", func() {
+		validator := models.Validator{
+			ValueVoucherID: helper.CreateInt64(2),
+		}
+
+		value, err := validator.GetVoucherResult()
+
+		It("happy test", func() {
+			Expect(value).To(Equal(int64(2)))
+			Expect(err).To(BeNil())
+		})
+	})
+
+	Describe("CalculateDiscount", func() {
+		validator := models.Validator{
+			Discount: helper.CreateFloat64(10),
+		}
+
+		value, err := validator.CalculateDiscount(helper.CreateFloat64(50000))
+
+		It("happy test", func() {
+			Expect(value).To(Equal(float64(5000)))
+			Expect(err).To(BeNil())
+		})
+	})
+
+	Describe("CalculateMaximumValue", func() {
+		validator := models.Validator{
+			MaxValue: helper.CreateFloat64(40000),
+		}
+
+		value, err := validator.CalculateMaximumValue(helper.CreateFloat64(50000))
+
+		It("happy test", func() {
+			Expect(value).To(Equal(float64(40000)))
+			Expect(err).To(BeNil())
+		})
+	})
+
+})

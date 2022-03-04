@@ -1,37 +1,37 @@
 package models
 
 import (
-	"encoding/json"
 	"fmt"
+	"gade/srv-gade-point/logger"
 	"math"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/sirupsen/logrus"
 	govaluate "gopkg.in/Knetic/govaluate.v2"
 )
 
 // Validator to store all validator data
 type Validator struct {
-	CampaignCode         string   `json:"campaignCode,omitempty"`
-	Channel              string   `json:"channel,omitempty" validate:"required"`
-	Discount             *float64 `json:"discount,omitempty"`
-	Formula              string   `json:"formula,omitempty"`
-	MaxLoanAmount        *float64 `json:"maxLoanAmount,omitempty"`
-	MaxValue             *float64 `json:"maxValue,omitempty"`
-	MinLoanAmount        *float64 `json:"minLoanAmount,omitempty"`
-	MinTransactionAmount *float64 `json:"minTransactionAmount,omitempty"`
-	Multiplier           *float64 `json:"multiplier,omitempty"`
-	Product              string   `json:"product,omitempty" validate:"required"`
-	Source               string   `json:"source,omitempty"` // device name that user used
-	TransactionType      string   `json:"transactionType,omitempty" validate:"required"`
-	Unit                 string   `json:"unit,omitempty"`
-	Target               string   `json:"target,omitempty"`
-	Value                *float64 `json:"value,omitempty"`
-	ValueVoucherID       *int64   `json:"valueVoucherId,omitempty"`
+	CampaignCode         string    `json:"campaignCode,omitempty"`
+	Channel              string    `json:"channel,omitempty" validate:"required"`
+	Discount             *float64  `json:"discount,omitempty"`
+	Formula              string    `json:"formula,omitempty"`
+	MaxLoanAmount        *float64  `json:"maxLoanAmount,omitempty"`
+	MaxValue             *float64  `json:"maxValue,omitempty"`
+	MinLoanAmount        *float64  `json:"minLoanAmount,omitempty"`
+	MinTransactionAmount *float64  `json:"minTransactionAmount,omitempty"`
+	Multiplier           *float64  `json:"multiplier,omitempty"`
+	Product              string    `json:"product,omitempty" validate:"required"`
+	Source               string    `json:"source,omitempty"` // device name that user used
+	TransactionType      string    `json:"transactionType,omitempty" validate:"required"`
+	Unit                 string    `json:"unit,omitempty"`
+	Target               string    `json:"target,omitempty"`
+	Value                *float64  `json:"value,omitempty"`
+	ValueVoucherID       *int64    `json:"valueVoucherId,omitempty"`
+	Incentive            Incentive `json:"incentive,omitempty"`
 }
 
 // PayloadValidator to store a payload to validate a request
@@ -54,7 +54,7 @@ type PayloadValidator struct {
 	CodeType          string     `json:"codeType,omitempty"`
 }
 
-var skippedValidator = []string{"multiplier", "value", "formula", "maxValue", "unit", "isPrivate"}
+var skippedValidator = []string{"multiplier", "value", "formula", "maxValue", "unit", "isPrivate", "incentive"}
 var compareEqual = []string{"channel", "product", "transactionType", "source", "campaignCode"}
 var evalFunc = []string{"floor"}
 var tightenValidator = map[string]string{
@@ -114,61 +114,18 @@ func (v *Validator) GetRewardValue(payloadValidator *PayloadValidator) (float64,
 
 // Validate to validate client input with admin input
 func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
-	var reqValidator map[string]interface{}
-	var payloadVal map[string]interface{}
-
-	if v == nil {
-		logrus.Debug(ErrValidatorUnavailable)
-
-		return ErrValidatorUnavailable
+	ov := ObjectValidator{
+		SkippedValidator: skippedValidator,
+		CompareEqual:     compareEqual,
+		TightenValidator: tightenValidator,
 	}
 
-	vReflector := reflect.ValueOf(v).Elem()
-	tempJSON, _ := json.Marshal(payloadValidator.Validators)
-	_ = json.Unmarshal(tempJSON, &reqValidator)
-	tempJSON, _ = json.Marshal(payloadValidator)
-	_ = json.Unmarshal(tempJSON, &payloadVal)
+	err := ov.autoValidating(v, payloadValidator, payloadValidator.Validators)
 
-	for i := 0; i < vReflector.NumField(); i++ {
-		interfaceValue := vReflector.Field(i).Interface()
+	if err != nil {
+		logger.Make(nil, nil).Debug(err)
 
-		fieldName := strcase.ToLowerCamel(vReflector.Type().Field(i).Name)
-		fieldValue := getInterfaceValue(interfaceValue)
-
-		if contains(skippedValidator, fieldName) {
-			continue
-		}
-
-		if fieldValue == "" {
-			continue
-		}
-
-		switch {
-		case contains(compareEqual, fieldName):
-			reqValidatorVal := fmt.Sprintf("%v", reqValidator[fieldName])
-
-			if !strings.Contains(fieldValue, reqValidatorVal) {
-				logrus.Debug(fmt.Errorf(customErrMsg, fieldName))
-
-				return fmt.Errorf(customErrMsg, fieldName)
-			}
-		case strings.Contains(fieldName, "min"):
-			minTrx, _ := strconv.ParseFloat(fieldValue, 64)
-
-			if minTrx > payloadVal[tightenValidator[fieldName]].(float64) {
-				logrus.Debug(fmt.Errorf(customErrMsg, fieldName))
-
-				return fmt.Errorf(customErrMsg, tightenValidator[fieldName])
-			}
-		case strings.Contains(fieldName, "max"):
-			maxTrx, _ := strconv.ParseFloat(fieldValue, 64)
-
-			if maxTrx < payloadVal[tightenValidator[fieldName]].(float64) {
-				logrus.Debug(fmt.Errorf(customErrMsg, fieldName))
-
-				return fmt.Errorf(customErrMsg, tightenValidator[fieldName])
-			}
-		}
+		return err
 	}
 
 	return nil

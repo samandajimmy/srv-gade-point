@@ -22,7 +22,7 @@ func (i *Incentive) ValidateMaxIncentive(sumIncentive *SumIncentive) {
 		},
 	}
 
-	ov.autoValidating(i, sumIncentive)
+	_ = ov.autoValidating(i, sumIncentive)
 	sumIncentive.ValidPerMonth = ov.StatusField["maxPerMonth"]
 	sumIncentive.ValidPerDay = ov.StatusField["maxPerDay"]
 

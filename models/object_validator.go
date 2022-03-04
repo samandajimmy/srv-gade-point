@@ -34,7 +34,7 @@ func (ov *ObjectValidator) autoValidating(validator interface{}, objects ...inte
 		tmpMappedObj = map[string]interface{}{}
 
 		tempJSON, _ = json.Marshal(obj)
-		json.Unmarshal(tempJSON, &tmpMappedObj)
+		_ = json.Unmarshal(tempJSON, &tmpMappedObj)
 
 		for key, value := range tmpMappedObj {
 			mappedObj[key] = value

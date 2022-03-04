@@ -3,8 +3,9 @@ package main
 import (
 	"bufio"
 	"database/sql"
-	"fmt"
 	"gade/srv-gade-point/campaigns"
+	"gade/srv-gade-point/config"
+	"gade/srv-gade-point/database"
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/middleware"
 	"gade/srv-gade-point/models"
@@ -56,13 +57,8 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/joho/godotenv"
 	"github.com/labstack/echo"
 	_ "github.com/lib/pq"
-	"github.com/uptrace/bun"
-	"github.com/uptrace/bun/dialect/pgdialect"
-	"github.com/uptrace/bun/driver/pgdriver"
-	"github.com/uptrace/bun/extra/bundebug"
 )
 
 var ech *echo.Echo
@@ -70,12 +66,12 @@ var ech *echo.Echo
 func init() {
 	ech = echo.New()
 	ech.Debug = true
-	loadEnv()
+	config.LoadEnv()
 	logger.Init()
 }
 
 func main() {
-	dbConn, dbBun := getDBConn()
+	dbConn, dbBun := database.GetDBConn()
 	migrate := dataMigrations(dbConn)
 
 	defer dbConn.Close()
@@ -217,40 +213,6 @@ func ping(echTx echo.Context) error {
 	return echTx.JSON(http.StatusOK, response)
 }
 
-func getDBConn() (*sql.DB, *bun.DB) {
-	dbHost := os.Getenv(`DB_HOST`)
-	dbPort := os.Getenv(`DB_PORT`)
-	dbUser := os.Getenv(`DB_USER`)
-	dbPass := os.Getenv(`DB_PASS`)
-	dbName := os.Getenv(`DB_NAME`)
-
-	connection := fmt.Sprintf("postgres://%s%s@%s%s/%s?sslmode=disable",
-		dbUser, dbPass, dbHost, dbPort, dbName)
-
-	dbConn, err := sql.Open(`postgres`, connection)
-
-	if err != nil {
-		logger.Make(nil, nil).Debug(err)
-	}
-
-	err = dbConn.Ping()
-
-	if err != nil {
-		logger.Make(nil, nil).Debug(err)
-		os.Exit(1)
-	}
-
-	// bun connection init
-	sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(connection)))
-	dbBun := bun.NewDB(sqldb, pgdialect.New())
-
-	if os.Getenv(`DB_LOGGER`) == "true" {
-		dbBun.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
-	}
-
-	return dbConn, dbBun
-}
-
 func dataMigrations(dbConn *sql.DB) *migrate.Migrate {
 	driver, _ := postgres.WithInstance(dbConn, &postgres.Config{})
 
@@ -267,17 +229,4 @@ func dataMigrations(dbConn *sql.DB) *migrate.Migrate {
 	}
 
 	return migrations
-}
-
-func loadEnv() {
-	// check .env file existence
-	if _, err := os.Stat(".env"); os.IsNotExist(err) {
-		return
-	}
-
-	err := godotenv.Load()
-
-	if err != nil {
-		logger.Make(nil, nil).Fatal("Error loading .env file")
-	}
 }

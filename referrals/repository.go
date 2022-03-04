@@ -12,4 +12,6 @@ type Repository interface {
 	CreateReferral(echo.Context, models.ReferralCodes) (models.ReferralCodes, error)
 	GetCampaignId(echo.Context, string) (int64, error)
 	GetReferralByCif(echo.Context, string) (models.ReferralCodes, error)
+	RGetRefCampaignReward(c echo.Context, refCode string) (models.RefCampaignReward, error)
+	RSumRefIncentive(c echo.Context, rcr models.RefCampaignReward) (models.SumIncentive, error)
 }

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"gade/srv-gade-point/database"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/quotas"
 	"gade/srv-gade-point/rewards"
@@ -12,18 +13,17 @@ import (
 
 	"github.com/labstack/echo"
 	"github.com/lib/pq"
-	"github.com/uptrace/bun"
 )
 
 type psqlRewardRepository struct {
 	Conn     *sql.DB
-	dbBun    *bun.DB
+	dbBun    *database.DbBun
 	quotRepo quotas.Repository
 	tagRepo  tags.Repository
 }
 
 // NewPsqlRewardRepository will create an object that represent the rewards.Repository interface
-func NewPsqlRewardRepository(Conn *sql.DB, dbBun *bun.DB, quotRepo quotas.Repository, tagRepo tags.Repository) rewards.Repository {
+func NewPsqlRewardRepository(Conn *sql.DB, dbBun *database.DbBun, quotRepo quotas.Repository, tagRepo tags.Repository) rewards.Repository {
 	return &psqlRewardRepository{Conn, dbBun, quotRepo, tagRepo}
 }
 

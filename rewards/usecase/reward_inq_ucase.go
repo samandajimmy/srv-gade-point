@@ -30,6 +30,16 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		return rwd.getVoucherReward(c, plValidator, cp.VoucherPack)
 	}
 
+	// check if promoCode type is a referral code. if yes,
+	// we need to validate the referral promo campaign
+	err := rwd.validatePromoReferral(c, *plValidator, cp.ReferralPack)
+
+	if err != nil {
+		respErrors.SetTitle(err.Error())
+
+		return rwdInquiry, &respErrors
+	}
+
 	// fresh or new reward trx start from here
 	// get rewards availables
 	packRewards, err := rwd.getAvailableRewards(c, *plValidator, &cp)
@@ -42,6 +52,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 	for _, reward := range packRewards {
 		// validate promo code
+
 		if err = rwd.validatePromoCode(*reward.Tags, reward, plValidator.PromoCode); err != nil {
 			logger.Make(c, nil).Debug(err)
 
@@ -91,7 +102,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 	// if reward greater then one
 	if len(*rwdInquiry.Rewards) > 1 {
-		rwdInquiry.RefTrx = randRefID(20)
+		rwdInquiry.RefTrx = rwd.rewardRepo.RGetRandomId(20)
 	}
 
 	// insert data to reward transaction
@@ -110,7 +121,32 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		rwdResponse[0].RefTrx = ""
 	}
 
-	return rwdInquiry, nil
+	return rwdInquiry, &respErrors
+}
+
+func (rwd *rewardUseCase) validatePromoReferral(c echo.Context, pl models.PayloadValidator,
+	campaigns *[]*models.Campaign) error {
+
+	if pl.CodeType != models.CodeTypeReferral {
+		return nil
+	}
+
+	// validate referral codes
+	camps := *campaigns
+	campaign := *camps[0]
+	// get data incentive of used referral code
+	incentive, err := rwd.referralUs.UValidateReferrer(c, pl, &campaign)
+
+	if err != nil {
+		return err
+	}
+
+	// check incentive data valid or not
+	if !incentive.IsValid {
+		return models.ErrRefTrxExceeded
+	}
+
+	return nil
 }
 
 func (rwd *rewardUseCase) getVoucherReward(c echo.Context, plValidator *models.PayloadValidator,

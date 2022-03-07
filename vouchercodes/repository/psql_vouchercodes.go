@@ -15,7 +15,7 @@ type psqlVoucherCodeRepository struct {
 }
 
 // NewPsqlVoucherCodeRepository will create an object that represent the vouchercode.Repository interface
-func NewPsqlVoucherCodeRepository(Conn *sql.DB) vouchercodes.Repository {
+func NewPsqlVoucherCodeRepository(Conn *sql.DB) vouchercodes.VcRepository {
 	return &psqlVoucherCodeRepository{Conn}
 }
 

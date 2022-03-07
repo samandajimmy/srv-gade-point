@@ -15,7 +15,7 @@ type psqlReferralTrxRepository struct {
 }
 
 // NewPsqlReferralTrxRepository will create an object that represent the referraltrxs.Repository interface
-func NewPsqlReferralTrxRepository(Conn *sql.DB) referraltrxs.Repository {
+func NewPsqlReferralTrxRepository(Conn *sql.DB) referraltrxs.RefTRepository {
 	return &psqlReferralTrxRepository{Conn}
 }
 

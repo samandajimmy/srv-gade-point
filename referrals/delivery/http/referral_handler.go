@@ -13,11 +13,11 @@ var response models.Response
 
 // ReferralHandler represent the httphandler for referrals
 type ReferralHandler struct {
-	ReferralUseCase referrals.UseCase
+	ReferralUseCase referrals.RefUseCase
 }
 
 // NewReferralsHandler represent to register referrals  endpoint
-func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.UseCase) {
+func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.RefUseCase) {
 	handler := &ReferralHandler{
 		ReferralUseCase: us,
 	}

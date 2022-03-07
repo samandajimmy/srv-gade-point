@@ -20,11 +20,11 @@ import (
 type psqlCampaignRepository struct {
 	Conn    *sql.DB
 	dbBun   *database.DbBun
-	rwdRepo rewards.Repository
+	rwdRepo rewards.RRepository
 }
 
 // NewPsqlCampaignRepository will create an object that represent the campaigns.Repository interface
-func NewPsqlCampaignRepository(Conn *sql.DB, dbBun *database.DbBun, rwdRepo rewards.Repository) campaigns.Repository {
+func NewPsqlCampaignRepository(Conn *sql.DB, dbBun *database.DbBun, rwdRepo rewards.RRepository) campaigns.CRepository {
 	return &psqlCampaignRepository{Conn, dbBun, rwdRepo}
 }
 

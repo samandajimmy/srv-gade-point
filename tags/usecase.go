@@ -7,7 +7,7 @@ import (
 )
 
 // UseCase represent the tags usecases
-type UseCase interface {
+type TUseCase interface {
 	CreateTag(echo.Context, *models.Tag, int64) error
 	Delete(echo.Context, int64) error
 }

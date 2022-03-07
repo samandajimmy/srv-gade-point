@@ -8,6 +8,7 @@ import (
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/quotas"
+	"gade/srv-gade-point/referrals"
 	"gade/srv-gade-point/referraltrxs"
 	"gade/srv-gade-point/rewards"
 	"gade/srv-gade-point/rewardtrxs"
@@ -16,7 +17,6 @@ import (
 	"gade/srv-gade-point/vouchers"
 
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -29,26 +29,28 @@ import (
 )
 
 type rewardUseCase struct {
-	rewardRepo      rewards.Repository
-	campaignRepo    campaigns.Repository
-	tagUC           tags.UseCase
-	quotaUC         quotas.UseCase
-	voucherUC       vouchers.UseCase
-	voucherCodeRepo vouchercodes.Repository
-	rwdTrxRepo      rewardtrxs.Repository
-	referralTrxRepo referraltrxs.Repository
+	rewardRepo      rewards.RRepository
+	campaignRepo    campaigns.CRepository
+	tagUC           tags.TUseCase
+	quotaUC         quotas.QUseCase
+	voucherUC       vouchers.VUsecase
+	voucherCodeRepo vouchercodes.VcRepository
+	rwdTrxRepo      rewardtrxs.RtRepository
+	referralTrxRepo referraltrxs.RefTRepository
+	referralUs      referrals.RefUseCase
 }
 
 // NewRewardUseCase will create new an rewardUseCase object representation of rewards.UseCase interface
 func NewRewardUseCase(
-	rwdRepo rewards.Repository,
-	campaignRepo campaigns.Repository,
-	tagUC tags.UseCase,
-	quotaUC quotas.UseCase,
-	voucherUC vouchers.UseCase,
-	voucherCodeRepo vouchercodes.Repository,
-	rwdTrxRepo rewardtrxs.Repository,
-	referralTrxRepo referraltrxs.Repository,
+	rwdRepo rewards.RRepository,
+	campaignRepo campaigns.CRepository,
+	tagUC tags.TUseCase,
+	quotaUC quotas.QUseCase,
+	voucherUC vouchers.VUsecase,
+	voucherCodeRepo vouchercodes.VcRepository,
+	rwdTrxRepo rewardtrxs.RtRepository,
+	referralTrxRepo referraltrxs.RefTRepository,
+	referralUs referrals.RefUseCase,
 ) rewards.UseCase {
 	return &rewardUseCase{
 		rewardRepo:      rwdRepo,
@@ -59,6 +61,7 @@ func NewRewardUseCase(
 		voucherCodeRepo: voucherCodeRepo,
 		rwdTrxRepo:      rwdTrxRepo,
 		referralTrxRepo: referralTrxRepo,
+		referralUs:      referralUs,
 	}
 }
 
@@ -150,7 +153,7 @@ func (rwd *rewardUseCase) responseInquiry(c echo.Context, reward models.Reward,
 	rwdVoucher, _ := reward.Validators.GetVoucherResult()
 
 	if reward.RefID == "" {
-		reward.RefID = randRefID(20)
+		reward.RefID = rwd.rewardRepo.RGetRandomId(20)
 	}
 
 	if rwdVoucher != 0 {
@@ -493,17 +496,6 @@ func (rwd *rewardUseCase) GetRewards(c echo.Context, rewardPayload *models.Rewar
 	}
 
 	return data, strconv.FormatInt(counter, 10), err
-}
-
-func randRefID(n int) string {
-	rand.Seed(time.Now().UnixNano())
-	b := make([]byte, n)
-
-	for i := range b {
-		b[i] = models.LetterBytes[rand.Int63()%int64(len(models.LetterBytes))]
-	}
-
-	return string(b)
 }
 
 func (rwd *rewardUseCase) GetRewardPromotions(c echo.Context, rplValidator models.RewardPromotionLists) ([]*models.RewardPromotions, *models.ResponseErrors, error) {

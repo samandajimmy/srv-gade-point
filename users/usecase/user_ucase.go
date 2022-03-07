@@ -4,21 +4,18 @@ import (
 	"context"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/users"
-	"time"
 
 	"github.com/labstack/gommon/log"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type userUseCase struct {
-	userRepo       users.Repository
-	contextTimeout time.Duration
+	userRepo users.Repository
 }
 
-func NewUserUseCase(usr users.Repository, timeout time.Duration) users.UseCase {
+func NewUserUseCase(usr users.Repository) users.UseCase {
 	return &userUseCase{
-		userRepo:       usr,
-		contextTimeout: timeout,
+		userRepo: usr,
 	}
 }
 

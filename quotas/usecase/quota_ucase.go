@@ -17,7 +17,7 @@ type quotaUseCase struct {
 func NewQuotaUseCase(
 	quotRepo quotas.Repository,
 	rwdTrxUC rewardtrxs.UseCase,
-) quotas.UseCase {
+) quotas.QUseCase {
 	return &quotaUseCase{
 		quotaRepo: quotRepo,
 		rwdTrxUC:  rwdTrxUC,

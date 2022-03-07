@@ -1,26 +1,23 @@
 package main
 
 import (
-	"net/http"
-	"net/http/httptest"
-	"testing"
+	"gade/srv-gade-point/config"
+	"gade/srv-gade-point/helper"
 
-	"github.com/labstack/echo"
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestPing(t *testing.T) {
-	// Setup
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	pingJSON := "{\"status\":\"Success\",\"message\":\"PONG!!\",\"data\":null}\n"
+var _ = Describe("Main", func() {
+	Describe("Ping", func() {
+		config.LoadEnv()
+		e := helper.NewDummyEcho("GET", "/")
+		result := `{"status":"Success","message":"PONG!!","data":null}` + "\n"
+		err := ping(e.Context)
 
-	// Assertions
-	if assert.NoError(t, ping(c)) {
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, pingJSON, rec.Body.String())
-	}
-}
+		It("happy test", func() {
+			Expect(err).To(BeNil())
+			Expect(e.Response.Body.String()).To(Equal(result))
+		})
+	})
+})

@@ -10,11 +10,11 @@ import (
 )
 
 type referralTrxUseCase struct {
-	referralTrxRepo referraltrxs.Repository
+	referralTrxRepo referraltrxs.RefTRepository
 }
 
 // NewReferralTrxUseCase will create new an referralTrxUseCase object representation of referraltrxs.UseCase interface
-func NewReferralTrxUseCase(referralTrxRepo referraltrxs.Repository) referraltrxs.UseCase {
+func NewReferralTrxUseCase(referralTrxRepo referraltrxs.RefTRepository) referraltrxs.UseCase {
 	return &referralTrxUseCase{
 		referralTrxRepo: referralTrxRepo,
 	}

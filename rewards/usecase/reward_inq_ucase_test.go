@@ -2,7 +2,6 @@ package usecase_test
 
 import (
 	"gade/srv-gade-point/config"
-	"gade/srv-gade-point/database"
 	. "gade/srv-gade-point/helper"
 	"gade/srv-gade-point/mocks"
 	"gade/srv-gade-point/models"
@@ -22,7 +21,6 @@ var _ = Describe("RewardInqUcase", func() {
 	var mockCtrl *gomock.Controller
 	var mockUsecases mocks.MockUsecases
 	var mockRepos mocks.MockRepositories
-	var rp config.Repositories
 	var mockCampaigns []*models.Campaign
 	var mockRespInquiry models.RewardsInquiry
 	var mockSumIncentive models.SumIncentive
@@ -46,9 +44,6 @@ var _ = Describe("RewardInqUcase", func() {
 
 	config.LoadEnv()
 	config.LoadTestData()
-	sqldb, dbBun := database.GetDBConn()
-	rp = config.NewRepositories(sqldb, dbBun)
-	_ = config.NewUsecases(rp)
 
 	BeforeEach(func() {
 		e = NewDummyEcho(http.MethodPost, "/")
@@ -58,43 +53,72 @@ var _ = Describe("RewardInqUcase", func() {
 	})
 
 	Describe("Inquiry", func() {
-		BeforeEach(func() {
-		})
+		var campaign models.Campaign
+		var rewards []models.Reward
+		var respData models.RewardsInquiry
+		var errs *models.ResponseErrors
 
-		Context("promo referral code", func() {
+		BeforeEach(func() {
 			_ = viper.UnmarshalKey("campaign.referralcampaign", &mockCampaigns)
 			_ = viper.UnmarshalKey("reward.responseinquiry", &mockRespInquiry)
 			_ = viper.UnmarshalKey("incentive.sumincentive", &mockSumIncentive)
 
-			campaign := *mockCampaigns[0]
-			rewards := *campaign.Rewards
+			campaign = *mockCampaigns[0]
+			rewards = *campaign.Rewards
 			rewards[0].Campaign = &campaign
 			rewards[1].Campaign = &campaign
+		})
 
-			BeforeEach(func() {
-				mockUsecases.MockVUs.EXPECT().GetVoucherCode(e.Context, &pl, false).Return(nil, "", nil)
-				mockRepos.MockCRp.EXPECT().GetReferralCampaign(e.Context, pl).Return(&mockCampaigns)
-				mockRepos.MockRtRp.EXPECT().GetRewardByPayload(e.Context, pl, nil).Return([]*models.Reward{}, nil)
-				mockUsecases.MockRefUs.EXPECT().UValidateReferrer(e.Context, pl, &campaign).Return(mockSumIncentive, nil)
-				mockRepos.MockRRp.EXPECT().GetRewardTags(e.Context, &rewards[0]).Return(nil, nil)
-				mockRepos.MockRRp.EXPECT().GetRewardTags(e.Context, &rewards[1]).Return(nil, nil)
-				mockUsecases.MockQUs.EXPECT().CheckQuota(e.Context, rewards[0], &pl).Return(true, nil)
-				mockUsecases.MockQUs.EXPECT().CheckQuota(e.Context, rewards[1], &pl).Return(true, nil)
-				mockUsecases.MockQUs.EXPECT().UpdateReduceQuota(e.Context, rewards[0].ID).Return(nil)
-				mockUsecases.MockQUs.EXPECT().UpdateReduceQuota(e.Context, rewards[1].ID).Return(nil)
-				mockRepos.MockRRp.EXPECT().RGetRandomId(20).Return("someIDs").Times(3)
-				mockRepos.MockRtRp.EXPECT().Create(e.Context, pl, mockRespInquiry).Return(nil, nil)
+		JustBeforeEach(func() {
+			rUS = usecase.NewRewardUseCase(mockRepos.MockRRp, mockRepos.MockCRp, mockUsecases.MockTUs,
+				mockUsecases.MockQUs, mockUsecases.MockVUs, mockRepos.MockVcRp, mockRepos.MockRtRp,
+				mockRepos.MockRefTRp, mockUsecases.MockRefUs)
+
+			respData, errs = rUS.Inquiry(e.Context, &pl)
+		})
+
+		Context("promo referral code", func() {
+			Context("succeeded", func() {
+				BeforeEach(func() {
+					mockUsecases.MockVUs.EXPECT().GetVoucherCode(e.Context, &pl, false).Return(nil, "", nil)
+					mockRepos.MockCRp.EXPECT().GetReferralCampaign(e.Context, pl).Return(&mockCampaigns)
+					mockRepos.MockRtRp.EXPECT().GetRewardByPayload(e.Context, pl, nil).Return([]*models.Reward{}, nil)
+					mockUsecases.MockRefUs.EXPECT().UValidateReferrer(e.Context, pl, &campaign).Return(mockSumIncentive, nil)
+					mockRepos.MockRRp.EXPECT().GetRewardTags(e.Context, &rewards[0]).Return(nil, nil)
+					mockRepos.MockRRp.EXPECT().GetRewardTags(e.Context, &rewards[1]).Return(nil, nil)
+					mockUsecases.MockQUs.EXPECT().CheckQuota(e.Context, rewards[0], &pl).Return(true, nil)
+					mockUsecases.MockQUs.EXPECT().CheckQuota(e.Context, rewards[1], &pl).Return(true, nil)
+					mockUsecases.MockQUs.EXPECT().UpdateReduceQuota(e.Context, rewards[0].ID).Return(nil)
+					mockUsecases.MockQUs.EXPECT().UpdateReduceQuota(e.Context, rewards[1].ID).Return(nil)
+					mockRepos.MockRRp.EXPECT().RGetRandomId(20).Return("someIDs").Times(3)
+					mockRepos.MockRtRp.EXPECT().Create(e.Context, pl, mockRespInquiry).Return(nil, nil)
+				})
+
+				It("expect to return reward inquiry response", func() {
+					Expect(respData).To(Equal(mockRespInquiry))
+				})
+
+				It("expect to return nil response errors", func() {
+					Expect(errs).To(Equal(&models.ResponseErrors{}))
+				})
 			})
 
-			Context("succeeded inquiry", func() {
-				It("expect to return reward inquiry response and nil response errors", func() {
-					rUS = usecase.NewRewardUseCase(mockRepos.MockRRp, mockRepos.MockCRp, mockUsecases.MockTUs,
-						mockUsecases.MockQUs, mockUsecases.MockVUs, mockRepos.MockVcRp, mockRepos.MockRtRp,
-						mockRepos.MockRefTRp, mockUsecases.MockRefUs)
+			Context("exceeded incentive", func() {
+				BeforeEach(func() {
+					mockSumIncentive.IsValid = false
 
-					data, errs := rUS.Inquiry(e.Context, &pl)
-					Expect(ToJson(data)).To(Equal(ToJson(mockRespInquiry)))
-					Expect(errs).To(Equal(&models.ResponseErrors{}))
+					mockUsecases.MockVUs.EXPECT().GetVoucherCode(e.Context, &pl, false).Return(nil, "", nil)
+					mockRepos.MockCRp.EXPECT().GetReferralCampaign(e.Context, pl).Return(&mockCampaigns)
+					mockRepos.MockRtRp.EXPECT().GetRewardByPayload(e.Context, pl, nil).Return([]*models.Reward{}, nil)
+					mockUsecases.MockRefUs.EXPECT().UValidateReferrer(e.Context, pl, &campaign).Return(mockSumIncentive, nil)
+				})
+
+				It("expect to return string `Kode referral telah mencapai batas maksimal`", func() {
+					Expect(errs.Title).To(Equal(models.ErrRefTrxExceeded.Error()))
+				})
+
+				It("expect to return response data nil", func() {
+					Expect(respData).To(Equal(models.RewardsInquiry{}))
 				})
 			})
 		})

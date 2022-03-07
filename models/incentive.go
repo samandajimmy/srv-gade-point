@@ -40,8 +40,25 @@ func (i *Incentive) ValidateMaxIncentive(sumIncentive *SumIncentive) {
 }
 
 func (i *Incentive) ValidateMaxTransaction(amount float64) float64 {
-	if amount > i.MaxTransaction {
-		amount = i.MaxTransaction
+	ov := ObjectValidator{
+		SkippedValidator: []string{"validator", "maxPerDay", "maxPerMonth"},
+		SkippedError:     []string{"maxTransaction"},
+		TightenValidator: map[string]string{
+			"maxTransaction": "transactionAmount",
+		},
+		StatusField: map[string]bool{
+			"maxTransaction": true,
+		},
+	}
+
+	obj := PayloadValidator{
+		TransactionAmount: &amount,
+	}
+
+	_ = ov.autoValidating(i, &obj)
+
+	if !ov.StatusField["maxTransaction"] {
+		return i.MaxTransaction
 	}
 
 	return amount

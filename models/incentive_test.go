@@ -30,4 +30,43 @@ var _ = Describe("Incentive", func() {
 			}))
 		})
 	})
+
+	Describe("ValidateMaxTransaction", func() {
+		var output, amount float64
+		incentive := models.Incentive{MaxTransaction: 1000}
+
+		JustBeforeEach(func() {
+			output = incentive.ValidateMaxTransaction(amount)
+		})
+
+		Context("when below the MaxTransaction", func() {
+			BeforeEach(func() {
+				amount = float64(200)
+			})
+
+			It("expect to return 200", func() {
+				Expect(output).To(Equal(float64(200)))
+			})
+		})
+
+		Context("when meet the MaxTransaction", func() {
+			BeforeEach(func() {
+				amount = float64(1000)
+			})
+
+			It("expect to return 1000", func() {
+				Expect(output).To(Equal(float64(1000)))
+			})
+		})
+
+		Context("when above the MaxTransaction", func() {
+			BeforeEach(func() {
+				amount = float64(2000)
+			})
+
+			It("expect to return 1000", func() {
+				Expect(output).To(Equal(float64(1000)))
+			})
+		})
+	})
 })

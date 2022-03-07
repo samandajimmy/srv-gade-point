@@ -37,7 +37,6 @@ import (
 var ech *echo.Echo
 
 func init() {
-	// helper.NewHelper()
 	ech = echo.New()
 	ech.Debug = true
 	config.LoadEnv()
@@ -106,11 +105,7 @@ func updateStatusBasedOnStartDate(cmp campaigns.UseCase, vcr vouchers.VUsecase) 
 }
 
 func ping(echTx echo.Context) error {
-	file, err := os.Open("latest_commit_hash")
-
-	if err != nil {
-		logger.Make(nil, nil).Debug("failed to open")
-	}
+	file, _ := os.Open("latest_commit_hash")
 
 	defer file.Close()
 	scanner := bufio.NewScanner(file)

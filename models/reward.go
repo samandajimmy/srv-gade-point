@@ -17,6 +17,8 @@ var (
 	RewardTypeGoldback int64 = 3
 	// RewardTypeVoucher to store reward type voucher
 	RewardTypeVoucher int64 = 4
+	// RewardTypeIncentive to store reward type incentives
+	RewardTypeIncentive int64 = 5
 
 	// IsPromoCodeFalse to store is promo code false
 	IsPromoCodeFalse int64
@@ -40,6 +42,7 @@ var rewardType = map[int64]string{
 	RewardTypePercentageDiscount: "discount",
 	RewardTypeGoldback:           "goldback",
 	RewardTypeVoucher:            "voucher",
+	RewardTypeIncentive:          "incentive",
 }
 
 // Reward is represent a reward model

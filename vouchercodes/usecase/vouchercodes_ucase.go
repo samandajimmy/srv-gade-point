@@ -18,12 +18,12 @@ import (
 var acceptedExtFiles = []string{".csv", ".json"}
 
 type voucherCodeUseCase struct {
-	voucherCodeRepo vouchercodes.Repository
+	voucherCodeRepo vouchercodes.VcRepository
 	voucherRepo     vouchers.Repository
 }
 
 // NewVoucherCodeUseCase will create new an NewVoucherCodeUseCase object representation of vouchercode.UseCase interface
-func NewVoucherCodeUseCase(vchrCodesRepo vouchercodes.Repository, vchrsRepo vouchers.Repository) vouchercodes.UseCase {
+func NewVoucherCodeUseCase(vchrCodesRepo vouchercodes.VcRepository, vchrsRepo vouchers.Repository) vouchercodes.UseCase {
 	return &voucherCodeUseCase{
 		voucherCodeRepo: vchrCodesRepo,
 		voucherRepo:     vchrsRepo,

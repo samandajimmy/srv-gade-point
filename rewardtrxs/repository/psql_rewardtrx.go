@@ -20,7 +20,7 @@ type psqlRewardTrxRepository struct {
 }
 
 // NewPsqlRewardTrxRepository will create an object that represent the rewardtrxs.Repository interface
-func NewPsqlRewardTrxRepository(Conn *sql.DB) rewardtrxs.Repository {
+func NewPsqlRewardTrxRepository(Conn *sql.DB) rewardtrxs.RtRepository {
 	return &psqlRewardTrxRepository{Conn}
 }
 

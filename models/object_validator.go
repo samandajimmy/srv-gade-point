@@ -1,7 +1,6 @@
 package models
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -19,7 +18,10 @@ type ObjectValidator struct {
 }
 
 func (ov *ObjectValidator) autoValidating(validator interface{}, objects ...interface{}) error {
-	var tempJSON []byte
+	var interfaceValue interface{}
+	var fieldName string
+	var fieldValue string
+	var rObject reflect.Value
 
 	if validator == nil {
 		return ErrValidatorUnavailable
@@ -28,24 +30,32 @@ func (ov *ObjectValidator) autoValidating(validator interface{}, objects ...inte
 	tv := ov.TightenValidator
 	vReflector := reflect.ValueOf(validator).Elem()
 	mappedObj := map[string]interface{}{}
-	tmpMappedObj := map[string]interface{}{}
 
 	for _, obj := range objects {
-		tmpMappedObj = map[string]interface{}{}
+		rObject = reflect.ValueOf(obj).Elem()
 
-		tempJSON, _ = json.Marshal(obj)
-		_ = json.Unmarshal(tempJSON, &tmpMappedObj)
+		for i := 0; i < rObject.NumField(); i++ {
+			interfaceValue = rObject.Field(i).Interface()
+			fieldName = strcase.ToLowerCamel(rObject.Type().Field(i).Name)
+			hasElement := rObject.Field(i)
 
-		for key, value := range tmpMappedObj {
-			mappedObj[key] = value
+			if hasElement.Kind() == reflect.Ptr && !hasElement.IsNil() {
+				hasElement = hasElement.Elem()
+				interfaceValue = hasElement.Interface()
+			}
+
+			if hasElement.Kind() == reflect.Struct {
+				continue
+			}
+
+			mappedObj[fieldName] = interfaceValue
 		}
 	}
 
 	for i := 0; i < vReflector.NumField(); i++ {
-		interfaceValue := vReflector.Field(i).Interface()
-
-		fieldName := strcase.ToLowerCamel(vReflector.Type().Field(i).Name)
-		fieldValue := getInterfaceValue(interfaceValue)
+		interfaceValue = vReflector.Field(i).Interface()
+		fieldName = strcase.ToLowerCamel(vReflector.Type().Field(i).Name)
+		fieldValue = getInterfaceValue(interfaceValue)
 
 		if contains(ov.SkippedValidator, fieldName) {
 			continue

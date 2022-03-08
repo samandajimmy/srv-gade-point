@@ -36,13 +36,13 @@ var (
 
 type voucherUseCase struct {
 	voucherRepo    vouchers.Repository
-	vcRepo         vouchercodes.Repository
-	campaignRepo   campaigns.Repository
+	vcRepo         vouchercodes.VcRepository
+	campaignRepo   campaigns.CRepository
 	pHistoriesRepo pointhistories.Repository
 }
 
 // NewVoucherUseCase will create new an voucherUseCase object representation of vouchers.UseCase interface
-func NewVoucherUseCase(vchrRepo vouchers.Repository, campgnRepo campaigns.Repository, pHistoriesRepo pointhistories.Repository, vcRepo vouchercodes.Repository) vouchers.UseCase {
+func NewVoucherUseCase(vchrRepo vouchers.Repository, campgnRepo campaigns.CRepository, pHistoriesRepo pointhistories.Repository, vcRepo vouchercodes.VcRepository) vouchers.VUsecase {
 	return &voucherUseCase{
 		voucherRepo:    vchrRepo,
 		campaignRepo:   campgnRepo,

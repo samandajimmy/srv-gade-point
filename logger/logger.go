@@ -101,6 +101,25 @@ func Dump(strct ...interface{}) {
 	fmt.Println("DEBUGGING ONLY")
 }
 
+func DumpJson(args ...interface{}) {
+	var b []byte
+	var err error
+
+	for idx, data := range args {
+		b, err = json.Marshal(data)
+
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		args[idx] = string(b)
+	}
+
+	fmt.Println("DEBUGGING ONLY")
+	spew.Dump(args)
+	fmt.Println("DEBUGGING ONLY")
+}
+
 func reExcludePayload(pl interface{}) (map[string]interface{}, bool) {
 	var vBytes []byte
 	vMap, ok := pl.(map[string]interface{})

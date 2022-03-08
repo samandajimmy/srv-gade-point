@@ -9,11 +9,11 @@ import (
 )
 
 type rewardTrxUseCase struct {
-	rewardTrxRepo rewardtrxs.Repository
+	rewardTrxRepo rewardtrxs.RtRepository
 }
 
 // NewRewardtrxUseCase will create new an rewardtrxUseCase object representation of rewardtrxs.UseCase interface
-func NewRewardtrxUseCase(rwdTrxRepo rewardtrxs.Repository) rewardtrxs.UseCase {
+func NewRewardtrxUseCase(rwdTrxRepo rewardtrxs.RtRepository) rewardtrxs.UseCase {
 	return &rewardTrxUseCase{
 		rewardTrxRepo: rwdTrxRepo,
 	}

@@ -13,12 +13,12 @@ import (
 )
 
 type campaignUseCase struct {
-	campaignRepo campaigns.Repository
+	campaignRepo campaigns.CRepository
 	rewardUC     rewards.UseCase
 }
 
 // NewCampaignUseCase will create new an campaignUseCase object representation of campaigns.UseCase interface
-func NewCampaignUseCase(cmpgn campaigns.Repository, rwd rewards.UseCase) campaigns.UseCase {
+func NewCampaignUseCase(cmpgn campaigns.CRepository, rwd rewards.UseCase) campaigns.UseCase {
 	return &campaignUseCase{
 		campaignRepo: cmpgn,
 		rewardUC:     rwd,

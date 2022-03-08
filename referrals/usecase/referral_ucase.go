@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referrals"
@@ -15,12 +16,19 @@ const (
 )
 
 type referralUseCase struct {
-	referralRepo referrals.Repository
+	referralRepo referrals.RefRepository
+	campaignRepo campaigns.CRepository
 }
 
-// NewReferralUseCase will create new an rewardtrxUseCase object representation of referrals.UseCase interface
-func NewReferralUseCase(refRepo referrals.Repository) referrals.UseCase {
-	return &referralUseCase{referralRepo: refRepo}
+// NewReferralUseCase will create new an rewardtrxUseCase object representation of referrals.RefUseCase interface
+func NewReferralUseCase(
+	refRepo referrals.RefRepository,
+	campaignRepo campaigns.CRepository,
+) referrals.RefUseCase {
+	return &referralUseCase{
+		referralRepo: refRepo,
+		campaignRepo: campaignRepo,
+	}
 }
 
 func (ref *referralUseCase) UPostCoreTrx(c echo.Context, coreTrx []models.CoreTrxPayload) ([]models.CoreTrxResponse, error) {
@@ -100,25 +108,40 @@ func (rcUc *referralUseCase) GetReferralCodes(c echo.Context, requestGetReferral
 	return result, nil
 }
 
-func (ref *referralUseCase) UMaxIncentiveValidation(c echo.Context, refCode string) (models.SumIncentive, error) {
+func (ref *referralUseCase) UValidateReferrer(c echo.Context, pl models.PayloadValidator, campaign *models.Campaign) (models.SumIncentive, error) {
 	var sumIncentive models.SumIncentive
+	var err error
+
+	sumIncentive.IsValid = true
 	// get ref trx based on the active ref campaign
 	// and reward data with used ref code
-	campaignReward, err := ref.referralRepo.RGetRefCampaignReward(c, refCode)
-
-	if err != nil {
-		return sumIncentive, err
+	if campaign == nil {
+		camps := ref.campaignRepo.GetReferralCampaign(c, pl)
+		c := *camps
+		campaign = c[0]
 	}
 
-	// sum the incentive based on the ref trx (per day and per month)
-	sumIncentive, err = ref.referralRepo.RSumRefIncentive(c, campaignReward)
+	for _, reward := range *campaign.Rewards {
+		if reward.Validators.Target != models.RefTargetReferrer {
+			continue
+		}
 
-	if err != nil {
-		return sumIncentive, err
+		// sum the incentive based on the ref trx (per day and per month)
+		sumIncentive, err = ref.referralRepo.RSumRefIncentive(c, pl.PromoCode, reward)
+
+		if err != nil {
+			continue
+		}
+
+		if (sumIncentive.Reward != models.Reward{}) {
+			break
+		}
+
 	}
 
 	// validate the max per day and per month
-	campaignReward.Validators.Incentive.ValidateMaxIncentive(&sumIncentive)
+	validator := sumIncentive.Reward.Validators
+	validator.Incentive.ValidateMaxIncentive(&sumIncentive)
 
 	return sumIncentive, nil
 }

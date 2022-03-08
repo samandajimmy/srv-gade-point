@@ -9,7 +9,7 @@ type Incentive struct {
 
 func (i *Incentive) ValidateMaxIncentive(sumIncentive *SumIncentive) {
 	ov := ObjectValidator{
-		SkippedValidator: []string{"validator", "maxTransaction"},
+		SkippedValidator: []string{"validator", "maxTransaction", "reward", "isValid"},
 		SkippedError:     []string{"maxPerDay", "maxPerMonth"},
 		CompareEqual:     []string{},
 		TightenValidator: map[string]string{
@@ -33,11 +33,32 @@ func (i *Incentive) ValidateMaxIncentive(sumIncentive *SumIncentive) {
 	if !ov.StatusField["maxPerDay"] {
 		sumIncentive.PerDay = i.MaxPerDay
 	}
+
+	if !sumIncentive.ValidPerDay || !sumIncentive.ValidPerMonth {
+		sumIncentive.IsValid = false
+	}
 }
 
 func (i *Incentive) ValidateMaxTransaction(amount float64) float64 {
-	if amount > i.MaxTransaction {
-		amount = i.MaxTransaction
+	ov := ObjectValidator{
+		SkippedValidator: []string{"validator", "maxPerDay", "maxPerMonth"},
+		SkippedError:     []string{"maxTransaction"},
+		TightenValidator: map[string]string{
+			"maxTransaction": "transactionAmount",
+		},
+		StatusField: map[string]bool{
+			"maxTransaction": true,
+		},
+	}
+
+	obj := PayloadValidator{
+		TransactionAmount: &amount,
+	}
+
+	_ = ov.autoValidating(i, &obj)
+
+	if !ov.StatusField["maxTransaction"] {
+		return i.MaxTransaction
 	}
 
 	return amount

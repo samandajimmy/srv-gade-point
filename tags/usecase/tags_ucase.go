@@ -12,7 +12,7 @@ type tagUseCase struct {
 }
 
 // NewTagUseCase will create new an tagUseCase object representation of tags.UseCase interface
-func NewTagUseCase(tgRepo tags.Repository) tags.UseCase {
+func NewTagUseCase(tgRepo tags.Repository) tags.TUseCase {
 	return &tagUseCase{
 		tagRepo: tgRepo,
 	}

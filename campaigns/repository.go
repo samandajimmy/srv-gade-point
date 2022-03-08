@@ -7,7 +7,7 @@ import (
 )
 
 // Repository represent the campaign's repository contract
-type Repository interface {
+type CRepository interface {
 	CreateCampaign(echo.Context, *models.Campaign) error
 	UpdateCampaign(echo.Context, int64, *models.Campaign) error
 	GetCampaignDetail(echo.Context, int64) (*models.Campaign, error)

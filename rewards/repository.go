@@ -7,7 +7,7 @@ import (
 )
 
 // Repository represent the rewards repository contract
-type Repository interface {
+type RRepository interface {
 	CreateReward(echo.Context, *models.Reward, int64) error
 	DeleteByCampaign(echo.Context, int64) error
 	CreateRewardTag(echo.Context, *models.Tag, int64) error
@@ -17,4 +17,5 @@ type Repository interface {
 	GetRewards(echo.Context, *models.RewardsPayload) ([]models.Reward, error)
 	CountRewards(echo.Context, *models.RewardsPayload) (int64, error)
 	GetRewardPromotions(echo.Context, models.RewardPromotionLists) ([]*models.RewardPromotions, error)
+	RGetRandomId(length int) string
 }

@@ -1,0 +1,34 @@
+incentive: 
+  sumIncentive: 
+    perDay: 400000
+    perMonth: 1000000
+    total: 0
+    validPerDay: true
+    validPerMonth: true
+    isValid: true
+    reward:
+      id: 2
+      name: Discount referrer
+      description: ini adalah reward discount referrer
+      termsAndConditions: jelaskan bagaimana dan apa saja persyaratannya
+      howToUse: jelaskan bagaimana cara mendapatkan diskon ini
+      journalAccount: '1122334455'
+      isPromoCode: 0
+      type: 1
+      validators:
+        channel: 9997, 9999
+        product: '37'
+        transactionType: OP
+        target: referrer
+        incentive:
+          maxTransaction: 0
+          maxPerDay: 500000
+          maxPerMonth: 1000000
+          validator:
+      campaign:
+        id: 1
+        name: Kampanye referral
+        description: Kampanye referral
+        endDate: '2023-10-19T00:00:00Z'
+        startDate: '2019-05-19T00:00:00Z'
+      tags: []

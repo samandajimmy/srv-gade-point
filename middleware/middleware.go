@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
+	"gade/srv-gade-point/referrals"
+
+	"net/http"
 	"net/url"
 	"os"
 	"reflect"
@@ -79,6 +82,33 @@ func (cm customMiddleware) basicAuth() {
 
 		return false, nil
 	}))
+}
+
+func ReferralAuth(referralsUseCase referrals.UseCase) {
+	echGroup.Referral.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+
+			cif := c.QueryParam("cif")
+			respErrors := &models.ResponseErrors{}
+			response := models.Response{}
+			_ = c.Bind(&cif)
+
+			referralCIF, err := referralsUseCase.UReferralCIFValidate(c, cif)
+
+			if err != nil {
+				respErrors.SetTitle(err.Error())
+				response.SetResponse("", respErrors)
+
+				return c.JSON(http.StatusBadRequest, response)
+			}
+
+			response.Status = models.StatusSuccess
+			response.Message = models.MessageDataFound
+			response.Data = referralCIF
+
+			return c.JSON(http.StatusFound, response)
+		}
+	})
 }
 
 func (cm customMiddleware) jwtAuth() {

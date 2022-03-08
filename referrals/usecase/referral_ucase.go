@@ -155,3 +155,22 @@ func (rcUc *referralUseCase) generateRefCode(prefix string) string {
 
 	return prefix + string(s)
 }
+
+func (rcUc *referralUseCase) UReferralCIFValidate(c echo.Context, cif string) (models.ReferralCodes, error) {
+
+	data, _ := rcUc.referralRepo.GetReferralByCif(c, cif)
+
+	if data.CIF == "" {
+		logger.Make(c, nil).Info(models.ErrCIF)
+
+		return data, models.ErrCIF
+	}
+
+	if data.ReferralCode == "" {
+		logger.Make(c, nil).Info(models.ErrRefCodesNF)
+
+		return data, models.ErrRefCodesNF
+	}
+
+	return data, nil
+}

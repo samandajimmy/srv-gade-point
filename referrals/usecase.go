@@ -12,4 +12,5 @@ type UseCase interface {
 	CreateReferralCodes(echo.Context, models.RequestCreateReferral) (models.ReferralCodes, error)
 	GetReferralCodes(echo.Context, models.RequestReferralCodeUser) (models.ReferralCodeUser, error)
 	UMaxIncentiveValidation(c echo.Context, refCode string) (models.SumIncentive, error)
+	UReferralCIFValidate(echo.Context, string) (models.ReferralCodes, error)
 }

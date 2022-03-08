@@ -89,6 +89,7 @@ func main() {
 		Admin: ech.Group("/admin"),
 		API:   ech.Group("/api"),
 		Token: ech.Group("/token"),
+		Referral: ech.Group("/api/referral"),
 	}
 
 	// load all middlewares
@@ -158,11 +159,15 @@ func main() {
 	// REFERRALS
 	referralsRepository := _referralsRepository.NewPsqlReferralRepository(dbConn, dbBun)
 	referralsUseCase := _referralsUseCase.NewReferralUseCase(referralsRepository)
+
+	// Load Referral Middleware
+	middleware.ReferralAuth(referralsUseCase)
+
+	// Load Referral Handler
 	_referralsHttpDelivery.NewReferralsHandler(echoGroup, referralsUseCase)
 
 	// Run every day.
 	updateStatusBasedOnStartDate(campaignUseCase, voucherUseCase)
-
 	// run refresh reward trx
 	rewardUseCase.RefreshTrx()
 

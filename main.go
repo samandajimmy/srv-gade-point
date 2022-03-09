@@ -54,6 +54,7 @@ func main() {
 		Admin: ech.Group("/admin"),
 		API:   ech.Group("/api"),
 		Token: ech.Group("/token"),
+		Referral: ech.Group("/api/referral"),
 	}
 
 	// load all middlewares
@@ -66,6 +67,9 @@ func main() {
 	repos := config.NewRepositories(dbConn, dbBun)
 	// Load all usecases
 	usecases := config.NewUsecases(repos)
+	
+	// Load Middleware
+	middleware.ReferralAuth(usecases.ReferralsUseCase)
 
 	// load all handlers
 	_tokenHttpDelivery.NewTokensHandler(echoGroup, usecases.TokenUseCase)

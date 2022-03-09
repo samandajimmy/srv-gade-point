@@ -88,6 +88,7 @@ type EchoGroup struct {
 	Admin *echo.Group
 	API   *echo.Group
 	Token *echo.Group
+	Referral *echo.Group
 }
 
 // NowUTC to get real current datetime but UTC format

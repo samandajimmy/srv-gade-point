@@ -84,7 +84,7 @@ func (cm customMiddleware) basicAuth() {
 	}))
 }
 
-func ReferralAuth(referralsUseCase referrals.UseCase) {
+func ReferralAuth(referralsUseCase referrals.RefUseCase) {
 	echGroup.Referral.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 

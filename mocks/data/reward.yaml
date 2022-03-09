@@ -1,0 +1,19 @@
+reward:
+  responseInquiry:
+    refTrx: someIDs
+    rewards:
+    - rewardID: 1
+      cif: '11223344515111'
+      product: '37'
+      reference: referral
+      refTrx: someIDs
+      type: discount
+      journalAccount: '1122334455'
+      value: 50000
+    - rewardID: 2
+      cif: '1122334451522'
+      product: '37'
+      reference: referrer
+      refTrx: someIDs
+      type: incentive
+      journalAccount: '1122334455'

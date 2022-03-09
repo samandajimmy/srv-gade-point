@@ -7,7 +7,7 @@ import (
 )
 
 // Repository represent the reward transactions repository contract
-type Repository interface {
+type RtRepository interface {
 	Create(echo.Context, models.PayloadValidator, models.RewardsInquiry) ([]*models.RewardTrx, error)
 	GetByRefID(echo.Context, string) (models.RewardsInquiry, error)
 	CountByCIF(echo.Context, models.Quota, models.Reward, string) (int64, error)

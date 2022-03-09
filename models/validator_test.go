@@ -4,8 +4,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"gade/srv-gade-point/helper"
 	"gade/srv-gade-point/models"
-	"gade/srv-gade-point/models/helper"
 )
 
 var _ = Describe("Validator", func() {

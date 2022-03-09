@@ -11,15 +11,13 @@ import (
 )
 
 type tokenUseCase struct {
-	tokenRepo      tokens.Repository
-	contextTimeout time.Duration
+	tokenRepo tokens.Repository
 }
 
 // NewTokenUseCase will create new an TokenUseCase object representation of Tokens.UseCase interface
-func NewTokenUseCase(tkn tokens.Repository, timeout time.Duration) tokens.UseCase {
+func NewTokenUseCase(tkn tokens.Repository) tokens.UseCase {
 	return &tokenUseCase{
-		tokenRepo:      tkn,
-		contextTimeout: timeout,
+		tokenRepo: tkn,
 	}
 }
 

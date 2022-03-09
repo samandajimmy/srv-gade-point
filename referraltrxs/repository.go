@@ -7,7 +7,7 @@ import (
 )
 
 // Repository represent the referral transactions repository contract
-type Repository interface {
+type RefTRepository interface {
 	RPostReferralTrx(echo.Context, models.ReferralTrx) error
 	RGetMilestone(echo.Context, models.MilestonePayload) (*models.Milestone, error)
 	RGetRanking(echo.Context, models.RankingPayload) ([]*models.Ranking, error)

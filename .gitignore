@@ -15,3 +15,5 @@ srv-gade-point
 .idea/*
 
 latest_commit_hash
+
+*.out

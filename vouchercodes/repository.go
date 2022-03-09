@@ -7,7 +7,7 @@ import (
 )
 
 // Repository represent the vouchercode's repository contract
-type Repository interface {
+type VcRepository interface {
 	GetVoucherCodeHistory(echo.Context, map[string]interface{}) ([]models.VoucherCode, error)
 	CountVoucherCode(echo.Context, map[string]interface{}) (string, error)
 	GetVoucherCodes(echo.Context, map[string]interface{}) ([]models.VoucherCode, error)

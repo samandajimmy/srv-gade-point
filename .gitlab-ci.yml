@@ -45,7 +45,11 @@ test:
     - *inject-gopath
   script:
     - go mod download
-    - go test
+    - go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.3
+    - touch .env && export APP_PATH=$CI_PROJECT_DIR
+    - ginkgo -r
+  only:
+    - merge_requests
 
 build_dev:
   stage: build

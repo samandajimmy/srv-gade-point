@@ -7,7 +7,7 @@ import (
 )
 
 // UseCase represent the quotas usecases
-type UseCase interface {
+type QUseCase interface {
 	Create(echo.Context, *models.Quota, *models.Reward) error
 	DeleteByReward(echo.Context, int64) error
 	CheckQuota(echo.Context, models.Reward, *models.PayloadValidator) (bool, error)

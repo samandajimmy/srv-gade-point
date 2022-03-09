@@ -9,6 +9,7 @@ import (
 	"gade/srv-gade-point/quotas"
 	"gade/srv-gade-point/rewards"
 	"gade/srv-gade-point/tags"
+	"math/rand"
 	"time"
 
 	"github.com/labstack/echo"
@@ -23,7 +24,7 @@ type psqlRewardRepository struct {
 }
 
 // NewPsqlRewardRepository will create an object that represent the rewards.Repository interface
-func NewPsqlRewardRepository(Conn *sql.DB, dbBun *database.DbBun, quotRepo quotas.Repository, tagRepo tags.Repository) rewards.Repository {
+func NewPsqlRewardRepository(Conn *sql.DB, dbBun *database.DbBun, quotRepo quotas.Repository, tagRepo tags.Repository) rewards.RRepository {
 	return &psqlRewardRepository{Conn, dbBun, quotRepo, tagRepo}
 }
 
@@ -316,6 +317,17 @@ func (rwdRepo *psqlRewardRepository) GetRewards(c echo.Context, rewardPayload *m
 	}
 
 	return data, nil
+}
+
+func (rwdRepo *psqlRewardRepository) RGetRandomId(n int) string {
+	rand.Seed(time.Now().UnixNano())
+	b := make([]byte, n)
+
+	for i := range b {
+		b[i] = models.LetterBytes[rand.Int63()%int64(len(models.LetterBytes))]
+	}
+
+	return string(b)
 }
 
 func (rwdRepo *psqlRewardRepository) GetRewardPromotions(c echo.Context, pv models.RewardPromotionLists) ([]*models.RewardPromotions, error) {

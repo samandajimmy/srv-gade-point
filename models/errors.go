@@ -282,7 +282,10 @@ var (
 	ErrRefCampaginNF = errors.New("Campaign tidak tersedia untuk referral")
 
 	// ErrRefCodesNF to store get referral codes error
-	ErrRefCodesNF = errors.New("Referral codes tidak ditemukan")
+	ErrRefCodesNF = errors.New("Kode referral tidak ditemukan")
+
+	// ErrRefTrxExceeded to store exceeded referral code trx error message
+	ErrRefTrxExceeded = errors.New("Kode referral telah mencapai batas maksimal")
 )
 
 // DynamicErr to return parameterize errors

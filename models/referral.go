@@ -41,4 +41,6 @@ type SumIncentive struct {
 	Total         float64 `json:"total"`
 	ValidPerDay   bool    `json:"validPerDay"`
 	ValidPerMonth bool    `json:"validPerMonth"`
+	IsValid       bool    `json:"isValid"`
+	Reward        Reward  `json:"reward"`
 }

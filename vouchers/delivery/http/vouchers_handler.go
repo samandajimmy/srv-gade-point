@@ -16,11 +16,11 @@ var response = models.Response{} // Response represent the response
 
 // VouchersHandler represent the httphandler for vouchers
 type VouchersHandler struct {
-	VoucherUseCase vouchers.UseCase
+	VoucherUseCase vouchers.VUsecase
 }
 
 // NewVouchersHandler represent to register vouchers endpoint
-func NewVouchersHandler(echoGroup models.EchoGroup, us vouchers.UseCase) {
+func NewVouchersHandler(echoGroup models.EchoGroup, us vouchers.VUsecase) {
 	handler := &VouchersHandler{
 		VoucherUseCase: us,
 	}

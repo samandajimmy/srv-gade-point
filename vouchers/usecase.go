@@ -8,7 +8,7 @@ import (
 )
 
 // UseCase represent the voucher's usecases
-type UseCase interface {
+type VUsecase interface {
 	CreateVoucher(echo.Context, *models.Voucher) error
 	UpdateVoucher(echo.Context, int64, *models.UpdateVoucher) error
 	UploadVoucherImages(echo.Context, *multipart.FileHeader) (string, error)

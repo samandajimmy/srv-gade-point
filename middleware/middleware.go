@@ -88,12 +88,27 @@ func ReferralAuth(referralsUseCase referrals.RefUseCase) {
 	echGroup.Referral.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 
-			cif := c.QueryParam("cif")
+			var requestReferralCodeUser models.RequestReferralCodeUser
+
 			respErrors := &models.ResponseErrors{}
 			response := models.Response{}
-			_ = c.Bind(&cif)
+			err := c.Bind(&requestReferralCodeUser);
 
-			referralCIF, err := referralsUseCase.UReferralCIFValidate(c, cif)
+			if err != nil {
+				respErrors.SetTitle(models.MessageUnprocessableEntity)
+				response.SetResponse("", respErrors)
+
+				return c.JSON(http.StatusUnprocessableEntity, response)
+			}
+
+			if err = c.Validate(requestReferralCodeUser); err != nil {
+				respErrors.SetTitle(err.Error())
+				response.SetResponse("", respErrors)
+
+				return c.JSON(http.StatusBadRequest, response)
+			}
+
+			referralCIF, err := referralsUseCase.UReferralCIFValidate(c, requestReferralCodeUser.CIF)
 
 			if err != nil {
 				respErrors.SetTitle(err.Error())

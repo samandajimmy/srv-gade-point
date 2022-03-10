@@ -79,7 +79,7 @@ func (v *Validator) GetRewardValue(payloadValidator *PayloadValidator) (float64,
 	}
 
 	// calculate formula if any
-	formulaResult, err := v.GetFormulaResult(payloadValidator)
+	formulaResult, err := GetFormulaResult(v, payloadValidator)
 
 	if err != nil {
 		return 0, err
@@ -132,7 +132,10 @@ func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
 }
 
 // GetFormulaResult to proccess the formula then get the result
-func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float64, error) {
+func GetFormulaResult(obj interface{}, payloadValidator *PayloadValidator) (float64, error) {
+
+	v := obj.(*Validator)
+
 	// check formula availability
 	if v.Formula == "" {
 		return float64(0), nil
@@ -159,22 +162,36 @@ func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float6
 	formulaVarStr = strings.TrimLeft(formulaVarStr, " ")
 	formulaVarStr = strings.TrimRight(formulaVarStr, " ")
 	formulaVar := strings.Split(formulaVarStr, " ")
-	remove(formulaVar, "transactionAmount")
 
 	// get formula parameters
 	parameters := make(map[string]interface{}, 8)
-	parameters["transactionAmount"] = *payloadValidator.TransactionAmount
 
 	for _, fVar := range formulaVar {
 		if contains(evalFunc, fVar) {
 			continue
 		}
 
-		parameters[fVar], err = v.getField(fVar)
+		parameters[fVar], err = getField(v, fVar)
 
 		if err != nil {
-			break
+			continue
 		}
+
+		formulaVar = remove(formulaVar, fVar)
+	}
+
+	for _, fVar := range formulaVar {
+		if contains(evalFunc, fVar) {
+			continue
+		}
+
+		parameters[fVar], err = getField(payloadValidator, fVar)
+
+		if err != nil {
+			continue
+		}
+
+		formulaVar = remove(formulaVar, fVar)
 	}
 
 	if err != nil {
@@ -233,8 +250,8 @@ func (v *Validator) CalculateMaximumValue(value *float64) (float64, error) {
 	return *maxValue, nil
 }
 
-func (v *Validator) getField(field string) (interface{}, error) {
-	r := reflect.ValueOf(v)
+func getField(obj interface{}, field string) (interface{}, error) {
+	r := reflect.ValueOf(obj)
 	val := reflect.Indirect(r).FieldByName(strings.Title(field))
 
 	if !val.IsValid() {

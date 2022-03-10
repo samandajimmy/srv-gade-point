@@ -2,10 +2,12 @@ package usecase
 
 import (
 	"gade/srv-gade-point/campaigns"
+	"gade/srv-gade-point/helper"
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referrals"
 	"math/rand"
+	"time"
 
 	"github.com/labstack/echo"
 )
@@ -45,11 +47,25 @@ func (ref *referralUseCase) UPostCoreTrx(c echo.Context, coreTrx []models.CoreTr
 func (rcUc *referralUseCase) CreateReferralCodes(c echo.Context, requestReferralCodes models.RequestCreateReferral) (models.ReferralCodes, error) {
 
 	var payload models.ReferralCodes
+	var pv models.PayloadValidator
 
 	// Check if a cif already had a referral code
 	referral, err := rcUc.referralRepo.GetReferralByCif(c, requestReferralCodes.CIF)
 
 	if err != nil {
+		return models.ReferralCodes{}, err
+	}
+
+	pv.PromoCode = referral.ReferralCode
+	pv.TransactionDate = time.Now().Format(models.DateTimeFormat)
+
+	// check if referralCode has reach max trx day/month
+	cr := rcUc.campaignRepo.GetReferralCampaign(c, pv)
+	_, err = rcUc.validateReferralIncentive(c, cr, pv)
+
+	if err != nil {
+		logger.Make(c, nil).Error(err)
+
 		return models.ReferralCodes{}, err
 	}
 
@@ -196,4 +212,36 @@ func (rcUc *referralUseCase) UReferralCIFValidate(c echo.Context, cif string) (m
 	}
 
 	return data, nil
+}
+
+func (rcUc *referralUseCase) validateReferralIncentive(c echo.Context, cp *[]*models.Campaign, pv models.PayloadValidator) (models.SumIncentive, error) {
+
+	if cp == nil {
+		return models.SumIncentive{}, nil
+	}
+
+	camps := *cp
+	campaign := *camps[0]
+
+	sumIncentive, err := rcUc.UValidateReferrer(c, pv, &campaign)
+
+	if err != nil {
+		logger.Make(c, nil).Error(err)
+
+		return models.SumIncentive{}, err
+	}
+
+	if !sumIncentive.ValidPerDay {
+		logger.Make(c, nil).Error(models.DynamicErr(models.ErrIncDayExceeded, helper.FloatToString(sumIncentive.Reward.Validators.Incentive.MaxPerDay)))
+
+		return models.SumIncentive{}, models.DynamicErr(models.ErrIncDayExceeded, helper.FloatToString(sumIncentive.Reward.Validators.Incentive.MaxPerDay))
+	}
+
+	if !sumIncentive.ValidPerMonth {
+		logger.Make(c, nil).Error(models.DynamicErr(models.ErrIncMonthExceeded, helper.FloatToString(sumIncentive.Reward.Validators.Incentive.MaxPerMonth)))
+
+		return models.SumIncentive{}, models.DynamicErr(models.ErrIncMonthExceeded, helper.FloatToString(sumIncentive.Reward.Validators.Incentive.MaxPerMonth))
+	}
+
+	return sumIncentive, nil
 }

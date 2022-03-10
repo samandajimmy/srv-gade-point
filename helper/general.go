@@ -2,6 +2,7 @@ package helper
 
 import (
 	"encoding/json"
+	"fmt"
 	"gade/srv-gade-point/logger"
 )
 
@@ -21,4 +22,8 @@ func ToJson(obj interface{}) string {
 	}
 
 	return string(b)
+}
+
+func FloatToString(input float64) string {
+	return fmt.Sprintf("%f", input)
 }

@@ -286,6 +286,12 @@ var (
 
 	// ErrRefTrxExceeded to store exceeded referral code trx error message
 	ErrRefTrxExceeded = errors.New("Kode referral telah mencapai batas maksimal")
+
+	// ErrIncDayExceeded to store exceeded incentive per day error message
+	ErrIncDayExceeded = "Saldo insentif per hari maksimal Rp %s"
+
+	// ErrIncMonthExceeded to store exceeded incentive per day error message
+	ErrIncMonthExceeded = "Saldo insentif per bulan maksimal Rp %s"
 )
 
 // DynamicErr to return parameterize errors

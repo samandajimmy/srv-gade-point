@@ -79,7 +79,7 @@ func (v *Validator) GetRewardValue(payloadValidator *PayloadValidator) (float64,
 	}
 
 	// calculate formula if any
-	formulaResult, err := GetFormulaResult(v, payloadValidator)
+	formulaResult, err := v.GetFormulaResult(payloadValidator)
 
 	if err != nil {
 		return 0, err
@@ -132,9 +132,7 @@ func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
 }
 
 // GetFormulaResult to proccess the formula then get the result
-func GetFormulaResult(obj interface{}, payloadValidator *PayloadValidator) (float64, error) {
-
-	v := obj.(*Validator)
+func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float64, error) {
 
 	// check formula availability
 	if v.Formula == "" {

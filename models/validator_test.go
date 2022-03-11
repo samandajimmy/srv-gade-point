@@ -95,7 +95,7 @@ var _ = Describe("Validator", func() {
 
 		plValidator := models.PayloadValidator{TransactionAmount: helper.CreateFloat64(500000)}
 
-		value, err := models.GetFormulaResult(&validator, &plValidator)
+		value, err := validator.GetFormulaResult(&plValidator)
 
 		It("happy test", func() {
 			Expect(value).To(Equal(float64(5000)))

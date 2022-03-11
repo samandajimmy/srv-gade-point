@@ -1,15 +1,17 @@
 package http
 
 import (
+	"gade/srv-gade-point/helper"
+	"gade/srv-gade-point/middleware"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referrals"
-	"net/http"
-	"strings"
 
 	"github.com/labstack/echo"
 )
 
-var response models.Response
+var (
+	hCtrl helper.IHandler
+)
 
 // ReferralHandler represent the httphandler for referrals
 type ReferralHandler struct {
@@ -21,128 +23,66 @@ func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.RefUseCase) {
 	handler := &ReferralHandler{
 		ReferralUseCase: us,
 	}
-	echoGroup.API.POST("/referral/generate", handler.GenerateReferralCodes)
-	echoGroup.API.GET("/referral/get", handler.GetReferralCodes)
-	echoGroup.API.POST("/referral/core-trx", handler.hcoreTrx)
+
+	hCtrl = helper.NewHandler(&helper.Handler{})
+	echoGroup.API.POST("/referral/generate", handler.hGenerateReferralCodes)
+	echoGroup.API.POST("/referral/core-trx", handler.hCoreTrx)
+	middleware.ReferralAuth(handler.checkCif)
+	echoGroup.API.GET("/referral/get", handler.hGetReferralCodes)
 }
 
-func (ref *ReferralHandler) hcoreTrx(echTx echo.Context) error {
-	var referralCore []models.CoreTrxPayload
-	var responseData []models.CoreTrxResponse
-	response = models.Response{}
-	respErrors := &models.ResponseErrors{}
-	err := echTx.Bind(&referralCore)
+func (ref *ReferralHandler) hCoreTrx(c echo.Context) error {
+	var pl []models.CoreTrxPayload
+	var errors models.ResponseErrors
+	err := hCtrl.Validate(c, &pl)
 
 	if err != nil {
-		respErrors.SetTitle(models.MessageUnprocessableEntity)
-		response.SetResponse("", respErrors)
-
-		return echTx.JSON(http.StatusUnprocessableEntity, response)
+		return hCtrl.ShowResponse(c, nil, err, errors)
 	}
 
-	responseData, err = ref.ReferralUseCase.UPostCoreTrx(echTx, referralCore)
+	responseData, err := ref.ReferralUseCase.UPostCoreTrx(c, pl)
 
-	if err != nil {
-		respErrors.SetTitle(err.Error())
-		response.SetResponse("", respErrors)
-
-		return echTx.JSON(getStatusCode(err), response)
-	}
-
-	response.SetResponse(responseData, respErrors)
-
-	return echTx.JSON(getStatusCode(err), response)
+	return hCtrl.ShowResponse(c, responseData, err, errors)
 }
 
-func (rc *ReferralHandler) GenerateReferralCodes(c echo.Context) error {
-	var payload models.RequestCreateReferral
-
-	respErrors := &models.ResponseErrors{}
-	response = models.Response{}
-	err := c.Bind(&payload)
+func (ref *ReferralHandler) hGenerateReferralCodes(c echo.Context) error {
+	var pl models.RequestCreateReferral
+	var errors models.ResponseErrors
+	err := hCtrl.Validate(c, &pl)
 
 	if err != nil {
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		return c.JSON(getStatusCode(err), response)
+		return hCtrl.ShowResponse(c, nil, err, errors)
 	}
 
-	if err = c.Validate(payload); err != nil {
-		respErrors.SetTitle(err.Error())
-		response.SetResponse("", respErrors)
+	responseData, err := ref.ReferralUseCase.CreateReferralCodes(c, pl)
 
-		return c.JSON(http.StatusBadRequest, response)
-	}
-
-	data, err := rc.ReferralUseCase.CreateReferralCodes(c, payload)
-
-	if err != nil {
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		response.Data = data
-		return c.JSON(getStatusCode(err), response)
-	}
-
-	response.Status = models.StatusSuccess
-	response.Message = models.MessageSaveSuccess
-	response.Data = data
-
-	return c.JSON(http.StatusCreated, response)
+	return hCtrl.ShowResponse(c, responseData, err, errors)
 }
 
-func (rc *ReferralHandler) GetReferralCodes(c echo.Context) error {
-	var payload models.RequestReferralCodeUser
-
-	respErrors := &models.ResponseErrors{}
-	response = models.Response{}
-	err := c.Bind(&payload)
+func (ref *ReferralHandler) hGetReferralCodes(c echo.Context) error {
+	var pl models.RequestReferralCodeUser
+	var errors models.ResponseErrors
+	err := hCtrl.Validate(c, &pl)
 
 	if err != nil {
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		return c.JSON(getStatusCode(err), response)
+		return hCtrl.ShowResponse(c, nil, err, errors)
 	}
 
-	if err = c.Validate(payload); err != nil {
-		respErrors.SetTitle(err.Error())
-		response.SetResponse("", respErrors)
+	responseData, err := ref.ReferralUseCase.GetReferralCodes(c, pl)
 
-		return c.JSON(http.StatusBadRequest, response)
-	}
-
-	data, err := rc.ReferralUseCase.GetReferralCodes(c, payload)
-
-	if err != nil {
-		response.Status = models.StatusError
-		response.Message = err.Error()
-		response.Data = data
-		return c.JSON(getStatusCode(err), response)
-	}
-
-	response.Status = models.StatusSuccess
-	response.Message = models.MessageDataFound
-	response.Data = data
-
-	return c.JSON(http.StatusFound, response)
+	return hCtrl.ShowResponse(c, responseData, err, errors)
 }
 
-func getStatusCode(err error) int {
-	if err == nil {
-		return http.StatusOK
+func (ref *ReferralHandler) checkCif(c echo.Context) error {
+	var pl models.RequestReferralCodeUser
+	var errors models.ResponseErrors
+	err := hCtrl.Validate(c, &pl)
+
+	if err != nil {
+		return hCtrl.ShowResponse(c, nil, err, errors)
 	}
 
-	if strings.Contains(err.Error(), "400") {
-		return http.StatusBadRequest
-	}
+	responseData, err := ref.ReferralUseCase.UReferralCIFValidate(c, pl.CIF)
 
-	switch err {
-	case models.ErrInternalServerError:
-		return http.StatusInternalServerError
-	case models.ErrNotFound:
-		return http.StatusNotFound
-	case models.ErrConflict:
-		return http.StatusConflict
-	default:
-		return http.StatusOK
-	}
+	return hCtrl.ShowResponse(c, responseData, err, errors)
 }

@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
-	"gade/srv-gade-point/referrals"
 
-	"net/http"
 	"net/url"
 	"os"
 	"reflect"
@@ -30,10 +28,18 @@ type customMiddleware struct {
 	e *echo.Echo
 }
 
-var echGroup models.EchoGroup
+var (
+	echGroup  models.EchoGroup
+	jwtMiddFn echo.MiddlewareFunc
+)
 
 // InitMiddleware to generate all middleware that app need
 func InitMiddleware(ech *echo.Echo, echoGroup models.EchoGroup) {
+	jwtMiddFn = middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningMethod: "HS512",
+		SigningKey:    []byte(os.Getenv(`JWT_SECRET`)),
+	})
+
 	cm := &customMiddleware{ech}
 	echGroup = echoGroup
 	ech.Use(middleware.RequestIDWithConfig(middleware.DefaultRequestIDConfig))
@@ -84,59 +90,20 @@ func (cm customMiddleware) basicAuth() {
 	}))
 }
 
-func ReferralAuth(referralsUseCase referrals.RefUseCase) {
-	echGroup.Referral.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-
-			var requestReferralCodeUser models.RequestReferralCodeUser
-
-			respErrors := &models.ResponseErrors{}
-			response := models.Response{}
-			err := c.Bind(&requestReferralCodeUser);
-
-			if err != nil {
-				respErrors.SetTitle(models.MessageUnprocessableEntity)
-				response.SetResponse("", respErrors)
-
-				return c.JSON(http.StatusUnprocessableEntity, response)
+func ReferralAuth(handlerFn echo.HandlerFunc) {
+	echGroup.Referral.Use(
+		jwtMiddFn,
+		func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				return handlerFn(c)
 			}
-
-			if err = c.Validate(requestReferralCodeUser); err != nil {
-				respErrors.SetTitle(err.Error())
-				response.SetResponse("", respErrors)
-
-				return c.JSON(http.StatusBadRequest, response)
-			}
-
-			referralCIF, err := referralsUseCase.UReferralCIFValidate(c, requestReferralCodeUser.CIF)
-
-			if err != nil {
-				respErrors.SetTitle(err.Error())
-				response.SetResponse("", respErrors)
-
-				return c.JSON(http.StatusBadRequest, response)
-			}
-
-			response.Status = models.StatusSuccess
-			response.Message = models.MessageDataFound
-			response.Data = referralCIF
-
-			return c.JSON(http.StatusFound, response)
-		}
-	})
+		},
+	)
 }
 
 func (cm customMiddleware) jwtAuth() {
-	echGroup.Admin.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-		SigningMethod: "HS512",
-		SigningKey:    []byte(os.Getenv(`JWT_SECRET`)),
-	}))
-
-	echGroup.API.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-		SigningMethod: "HS512",
-		SigningKey:    []byte(os.Getenv(`JWT_SECRET`)),
-	}))
-
+	echGroup.Admin.Use(jwtMiddFn)
+	echGroup.API.Use(jwtMiddFn)
 }
 
 func (cv *customValidator) isRequiredWith(fl validator.FieldLevel) bool {

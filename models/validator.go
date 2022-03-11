@@ -133,6 +133,7 @@ func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
 
 // GetFormulaResult to proccess the formula then get the result
 func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float64, error) {
+
 	// check formula availability
 	if v.Formula == "" {
 		return float64(0), nil
@@ -159,26 +160,28 @@ func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float6
 	formulaVarStr = strings.TrimLeft(formulaVarStr, " ")
 	formulaVarStr = strings.TrimRight(formulaVarStr, " ")
 	formulaVar := strings.Split(formulaVarStr, " ")
-	remove(formulaVar, "transactionAmount")
 
 	// get formula parameters
 	parameters := make(map[string]interface{}, 8)
-	parameters["transactionAmount"] = *payloadValidator.TransactionAmount
 
 	for _, fVar := range formulaVar {
 		if contains(evalFunc, fVar) {
 			continue
 		}
 
-		parameters[fVar], err = v.getField(fVar)
+		parameters[fVar], err = getField(v, fVar)
 
 		if err != nil {
-			break
+			parameters[fVar], err = getField(payloadValidator, fVar)
+		}
+
+		if err != nil {
+			formulaVar = remove(formulaVar, fVar)
 		}
 	}
 
-	if err != nil {
-		return 0, err
+	if len(parameters) != len(formulaVar) {
+		return 0, ErrFormulaSetup
 	}
 
 	result, err := expression.Evaluate(parameters)
@@ -233,8 +236,8 @@ func (v *Validator) CalculateMaximumValue(value *float64) (float64, error) {
 	return *maxValue, nil
 }
 
-func (v *Validator) getField(field string) (interface{}, error) {
-	r := reflect.ValueOf(v)
+func getField(obj interface{}, field string) (interface{}, error) {
+	r := reflect.ValueOf(obj)
 	val := reflect.Indirect(r).FieldByName(strings.Title(field))
 
 	if !val.IsValid() {

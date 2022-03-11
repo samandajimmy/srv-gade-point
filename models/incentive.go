@@ -8,6 +8,8 @@ type Incentive struct {
 }
 
 func (i *Incentive) ValidateMaxIncentive(sumIncentive *SumIncentive) {
+	sumIncentive.IsValid = true
+
 	ov := ObjectValidator{
 		SkippedValidator: []string{"validator", "maxTransaction", "reward", "isValid"},
 		SkippedError:     []string{"maxPerDay", "maxPerMonth"},

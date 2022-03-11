@@ -87,19 +87,98 @@ var _ = Describe("Validator", func() {
 	})
 
 	Describe("GetFormulaResult", func() {
-		validator := models.Validator{
+		var validator = models.Validator{
 			Multiplier: helper.CreateFloat64(10000),
 			Value:      helper.CreateFloat64(100),
 			Formula:    "(transactionAmount/multiplier)*value",
 		}
 
-		plValidator := models.PayloadValidator{TransactionAmount: helper.CreateFloat64(500000)}
+		var plValidator = models.PayloadValidator{TransactionAmount: helper.CreateFloat64(500000)}
+		var value float64
+		var err error
 
-		value, err := validator.GetFormulaResult(&plValidator)
+		JustBeforeEach(func() {
+			value, err = validator.GetFormulaResult(&plValidator)
+		})
 
-		It("happy test", func() {
-			Expect(value).To(Equal(float64(5000)))
-			Expect(err).To(BeNil())
+		Context("when formula expresion is an empty string", func() {
+
+			BeforeEach(func() {
+				validator.Formula = ""
+			})
+
+			It("expect return value is 0", func() {
+				Expect(value).To(Equal(float64(0)))
+
+			})
+
+			It("expect return error is nil", func() {
+				Expect(err).To(BeNil())
+			})
+		})
+
+		Context("when formula expresion can't be converted", func() {
+
+			BeforeEach(func() {
+				validator.Formula = "Test 1234 ___ !!!"
+			})
+
+			It("expect return value is 0", func() {
+				Expect(value).To(Equal(float64(0)))
+
+			})
+
+			It("expect formula conversion to return error", func() {
+				Expect(err).To(HaveOccurred())
+			})
+		})
+
+		Context("when formula didn't match the payload", func() {
+
+			BeforeEach(func() {
+				validator.Formula = "(transactionAmount/multiplier)*value/divider"
+			})
+
+			It("expect return value is 0", func() {
+				Expect(value).To(Equal(float64(0)))
+
+			})
+
+			It("expect formula conversion to return setup error", func() {
+				Expect(err).To(MatchError(models.ErrFormulaSetup))
+			})
+		})
+
+		Context("when GetFormulaResult return result", func() {
+
+			BeforeEach(func() {
+				validator.Formula = "(transactionAmount/multiplier)*value"
+			})
+
+			It("expect return value is 5000", func() {
+				Expect(value).To(Equal(float64(5000)))
+			})
+
+			It("expect GetFormulaResult return error is nil", func() {
+				Expect(err).To(BeNil())
+			})
+		})
+
+		Context("when parameters are from payload validator", func() {
+
+			BeforeEach(func() {
+				plValidator.TransactionAmount = helper.CreateFloat64(750000)
+				plValidator.LoanAmount = helper.CreateFloat64(250000)
+				validator.Formula = "(transactionAmount/loanAmount)"
+			})
+
+			It("expect return value is 3", func() {
+				Expect(value).To(Equal(float64(3)))
+			})
+
+			It("expect GetFormulaResult return error is nil", func() {
+				Expect(err).To(BeNil())
+			})
 		})
 	})
 

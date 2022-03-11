@@ -172,28 +172,16 @@ func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float6
 		parameters[fVar], err = getField(v, fVar)
 
 		if err != nil {
-			continue
+			parameters[fVar], err = getField(payloadValidator, fVar)
 		}
-
-		formulaVar = remove(formulaVar, fVar)
-	}
-
-	for _, fVar := range formulaVar {
-		if contains(evalFunc, fVar) {
-			continue
-		}
-
-		parameters[fVar], err = getField(payloadValidator, fVar)
 
 		if err != nil {
-			continue
+			formulaVar = remove(formulaVar, fVar)
 		}
-
-		formulaVar = remove(formulaVar, fVar)
 	}
 
-	if err != nil {
-		return 0, err
+	if len(parameters) != len(formulaVar) {
+		return 0, ErrFormulaSetup
 	}
 
 	result, err := expression.Evaluate(parameters)

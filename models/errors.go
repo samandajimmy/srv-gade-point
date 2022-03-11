@@ -288,10 +288,13 @@ var (
 	ErrRefTrxExceeded = errors.New("Kode referral telah mencapai batas maksimal")
 
 	// ErrIncDayExceeded to store exceeded incentive per day error message
-	ErrIncDayExceeded = "Saldo insentif per hari maksimal Rp %s"
+	DynErrIncDayExceeded = "Saldo insentif per hari maksimal Rp %s"
 
 	// ErrIncMonthExceeded to store exceeded incentive per day error message
-	ErrIncMonthExceeded = "Saldo insentif per bulan maksimal Rp %s"
+	DynErrIncMonthExceeded = "Saldo insentif per bulan maksimal Rp %s"
+
+	// ErrFormulaSetup to store formula setup error message
+	ErrFormulaSetup = errors.New("Formula tidak lengkap")
 )
 
 // DynamicErr to return parameterize errors

@@ -228,15 +228,15 @@ func (rcUc *referralUseCase) validateReferralIncentive(c echo.Context, cp *[]*mo
 	}
 
 	if !sumIncentive.ValidPerDay {
-		logger.Make(c, nil).Error(models.DynamicErr(models.ErrIncDayExceeded, helper.FloatToString(sumIncentive.Reward.Validators.Incentive.MaxPerDay)))
+		logger.Make(c, nil).Error(models.DynamicErr(models.DynErrIncDayExceeded, helper.FloatToString(sumIncentive.Reward.Validators.Incentive.MaxPerDay)))
 
-		return models.SumIncentive{}, models.DynamicErr(models.ErrIncDayExceeded, helper.FloatToString(sumIncentive.Reward.Validators.Incentive.MaxPerDay))
+		return models.SumIncentive{}, models.DynamicErr(models.DynErrIncDayExceeded, helper.FloatToString(sumIncentive.Reward.Validators.Incentive.MaxPerDay))
 	}
 
 	if !sumIncentive.ValidPerMonth {
-		logger.Make(c, nil).Error(models.DynamicErr(models.ErrIncMonthExceeded, helper.FloatToString(sumIncentive.Reward.Validators.Incentive.MaxPerMonth)))
+		logger.Make(c, nil).Error(models.DynamicErr(models.DynErrIncMonthExceeded, helper.FloatToString(sumIncentive.Reward.Validators.Incentive.MaxPerMonth)))
 
-		return models.SumIncentive{}, models.DynamicErr(models.ErrIncMonthExceeded, helper.FloatToString(sumIncentive.Reward.Validators.Incentive.MaxPerMonth))
+		return models.SumIncentive{}, models.DynamicErr(models.DynErrIncMonthExceeded, helper.FloatToString(sumIncentive.Reward.Validators.Incentive.MaxPerMonth))
 	}
 
 	return sumIncentive, nil

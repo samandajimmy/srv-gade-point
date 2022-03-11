@@ -64,8 +64,6 @@ func (rcUc *referralUseCase) CreateReferralCodes(c echo.Context, requestReferral
 	_, err = rcUc.validateReferralIncentive(c, cr, pv)
 
 	if err != nil {
-		logger.Make(c, nil).Error(err)
-
 		return models.ReferralCodes{}, err
 	}
 
@@ -226,8 +224,6 @@ func (rcUc *referralUseCase) validateReferralIncentive(c echo.Context, cp *[]*mo
 	sumIncentive, err := rcUc.UValidateReferrer(c, pv, &campaign)
 
 	if err != nil {
-		logger.Make(c, nil).Error(err)
-
 		return models.SumIncentive{}, err
 	}
 

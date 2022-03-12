@@ -1,15 +1,16 @@
 package http
 
 import (
+	"gade/srv-gade-point/helper"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewards"
-	"net/http"
-	"strings"
 
 	"github.com/labstack/echo"
 )
 
-var response models.Response
+var (
+	hCtrl helper.IHandler
+)
 
 // RewardHandler represent the httphandler for reward
 type RewardHandler struct {
@@ -21,6 +22,8 @@ func NewRewardHandler(echoGroup models.EchoGroup, us rewards.UseCase) {
 	handler := &RewardHandler{
 		RewardUseCase: us,
 	}
+
+	hCtrl = helper.NewHandler(&helper.Handler{})
 
 	// End Point For CMS
 	echoGroup.Admin.GET("/rewards", handler.getRewards)
@@ -34,232 +37,90 @@ func NewRewardHandler(echoGroup models.EchoGroup, us rewards.UseCase) {
 	echoGroup.API.GET("/reward/promotions", handler.getRewardPromotions)
 }
 
-func (rwd *RewardHandler) multiRewardInquiry(echTx echo.Context) error {
-	var plValidator models.PayloadValidator
-	respErrors := &models.ResponseErrors{}
-	response = models.Response{}
-	err := echTx.Bind(&plValidator)
+func (rwd *RewardHandler) multiRewardInquiry(c echo.Context) error {
+	var pl models.PayloadValidator
+	var errors *models.ResponseErrors
+	err := hCtrl.Validate(c, &pl)
 
 	if err != nil {
-		respErrors.SetTitle(models.MessageUnprocessableEntity)
-		response.SetResponse("", respErrors)
-
-		return echTx.JSON(http.StatusUnprocessableEntity, response)
+		return hCtrl.ShowResponse(c, nil, err, *errors)
 	}
 
-	if err = echTx.Validate(plValidator); err != nil {
-		respErrors.SetTitle(err.Error())
-		response.SetResponse("", respErrors)
+	pl.IsMulti = true
+	responseData, errors := rwd.RewardUseCase.Inquiry(c, &pl)
 
-		return echTx.JSON(http.StatusBadRequest, response)
-	}
-
-	plValidator.IsMulti = true
-	responseData, respErrors := rwd.RewardUseCase.Inquiry(echTx, &plValidator)
-	response.SetResponse(responseData, respErrors)
-
-	return echTx.JSON(getStatusCode(err), response)
+	return hCtrl.ShowResponse(c, responseData, nil, *errors)
 }
 
-func (rwd *RewardHandler) rewardInquiry(echTx echo.Context) error {
-	var plValidator models.PayloadValidator
-	respErrors := &models.ResponseErrors{}
-	response = models.Response{}
-	err := echTx.Bind(&plValidator)
+func (rwd *RewardHandler) rewardInquiry(c echo.Context) error {
+	var pl models.PayloadValidator
+	var errors *models.ResponseErrors
+	err := hCtrl.Validate(c, &pl)
 
 	if err != nil {
-		respErrors.SetTitle(models.MessageUnprocessableEntity)
-		response.SetResponse("", respErrors)
-
-		return echTx.JSON(http.StatusUnprocessableEntity, response)
+		return hCtrl.ShowResponse(c, nil, err, *errors)
 	}
 
-	if err = echTx.Validate(plValidator); err != nil {
-		respErrors.SetTitle(err.Error())
-		response.SetResponse("", respErrors)
+	responseData, errors := rwd.RewardUseCase.Inquiry(c, &pl)
 
-		return echTx.JSON(http.StatusBadRequest, response)
-	}
-
-	plValidator.IsMulti = false
-	responseData, respErrors := rwd.RewardUseCase.Inquiry(echTx, &plValidator)
-	response.SetResponse(responseData, respErrors)
-
-	return echTx.JSON(getStatusCode(err), response)
+	return hCtrl.ShowResponse(c, responseData, nil, *errors)
 }
 
-func (rwd *RewardHandler) rewardPayment(echTx echo.Context) error {
-	var rwdPayment models.RewardPayment
-	var responseData []models.RewardTrxResponse
-	response = models.Response{}
-	respErrors := &models.ResponseErrors{}
-	err := echTx.Bind(&rwdPayment)
+func (rwd *RewardHandler) rewardPayment(c echo.Context) error {
+	var pl models.RewardPayment
+	var errors models.ResponseErrors
+	err := hCtrl.Validate(c, &pl)
 
 	if err != nil {
-		respErrors.SetTitle(models.MessageUnprocessableEntity)
-		response.SetResponse("", respErrors)
-
-		return echTx.JSON(http.StatusUnprocessableEntity, response)
+		return hCtrl.ShowResponse(c, nil, err, errors)
 	}
 
-	if err := echTx.Validate(rwdPayment); err != nil {
-		respErrors.SetTitle(err.Error())
+	responseData, err := rwd.RewardUseCase.Payment(c, &pl)
 
-		return echTx.JSON(http.StatusBadRequest, response)
-	}
-
-	responseData, err = rwd.RewardUseCase.Payment(echTx, &rwdPayment)
-
-	if err != nil {
-		respErrors.SetTitle(err.Error())
-		response.SetResponse("", respErrors)
-
-		return echTx.JSON(getStatusCode(err), response)
-	}
-
-	response.SetResponse(responseData, respErrors)
-
-	return echTx.JSON(getStatusCode(err), response)
+	return hCtrl.ShowResponse(c, responseData, err, errors)
 }
 
-func (rwd *RewardHandler) checkTransaction(echTx echo.Context) error {
-	var rwdPayment models.RewardPayment
-	var responseData models.RewardTrxResponse
-	response = models.Response{}
-	respErrors := &models.ResponseErrors{}
-	err := echTx.Bind(&rwdPayment)
+func (rwd *RewardHandler) checkTransaction(c echo.Context) error {
+	var pl models.RewardPayment
+	var errors models.ResponseErrors
+	err := hCtrl.Validate(c, &pl)
 
 	if err != nil {
-		respErrors.SetTitle(models.MessageUnprocessableEntity)
-		response.SetResponse("", respErrors)
-
-		return echTx.JSON(http.StatusUnprocessableEntity, response)
+		return hCtrl.ShowResponse(c, nil, err, errors)
 	}
 
-	if err := echTx.Validate(rwdPayment); err != nil {
-		respErrors.SetTitle(err.Error())
+	responseData, err := rwd.RewardUseCase.Payment(c, &pl)
 
-		return echTx.JSON(http.StatusBadRequest, response)
-	}
-
-	responseData, err = rwd.RewardUseCase.CheckTransaction(echTx, &rwdPayment)
-
-	if err != nil {
-		respErrors.SetTitle(err.Error())
-		response.SetResponse("", respErrors)
-
-		return echTx.JSON(getStatusCode(err), response)
-	}
-
-	response.SetResponse(responseData, respErrors)
-
-	return echTx.JSON(getStatusCode(err), response)
+	return hCtrl.ShowResponse(c, responseData, err, errors)
 }
 
 // getRewards a handler to get rewards
-func (rwd *RewardHandler) getRewards(echTx echo.Context) error {
-	var rwdPayload models.RewardsPayload
-	response = models.Response{}
-	respErrors := &models.ResponseErrors{}
-	logger := models.RequestLogger{}
-	err := echTx.Bind(&rwdPayload)
-	logger.DataLog(echTx, rwdPayload).Info("Start to get rewards.")
+func (rwd *RewardHandler) getRewards(c echo.Context) error {
+	var pl models.RewardsPayload
+	var errors models.ResponseErrors
+	err := hCtrl.Validate(c, &pl)
 
 	if err != nil {
-		respErrors.SetTitle(models.MessageUnprocessableEntity)
-		response.SetResponse("", respErrors)
-		logger.DataLog(echTx, response).Info("End of check rewards.")
-
-		return echTx.JSON(http.StatusUnprocessableEntity, response)
+		return hCtrl.ShowResponse(c, nil, err, errors)
 	}
 
-	if err := echTx.Validate(rwdPayload); err != nil {
-		respErrors.SetTitle(err.Error())
-		logger.DataLog(echTx, response).Info("End of check rewards.")
+	responseData, counter, err := rwd.RewardUseCase.GetRewards(c, &pl)
+	hCtrl.SetTotalCount(counter)
 
-		return echTx.JSON(http.StatusBadRequest, response)
-	}
-
-	responseData, counter, err := rwd.RewardUseCase.GetRewards(echTx, &rwdPayload)
-
-	if err != nil {
-		respErrors.SetTitle(err.Error())
-		logger.DataLog(echTx, response).Info("End of check rewards.")
-
-		return echTx.JSON(http.StatusBadRequest, response)
-	}
-
-	if len(responseData) > 0 {
-		response.Data = responseData
-	}
-
-	response.TotalCount = counter
-
-	response.SetResponse(responseData, respErrors)
-	logger.DataLog(echTx, response).Info("End of check rewards.")
-
-	return echTx.JSON(getStatusCode(err), response)
+	return hCtrl.ShowResponse(c, responseData, err, errors)
 }
 
 // getRewardPromotions Get reward promotions by param promoCode, transactionDate and transactionAmount
-func (rwd *RewardHandler) getRewardPromotions(echTx echo.Context) error {
-
-	var rplValidator models.RewardPromotionLists
-	respErrors := &models.ResponseErrors{}
-	response = models.Response{}
-	logger := models.RequestLogger{}
-	logger.DataLog(echTx, rplValidator).Info("Start to get all reward promotions for client")
-	err := echTx.Bind(&rplValidator)
+func (rwd *RewardHandler) getRewardPromotions(c echo.Context) error {
+	var pl models.RewardPromotionLists
+	var errors *models.ResponseErrors
+	err := hCtrl.Validate(c, &pl)
 
 	if err != nil {
-		respErrors.SetTitle(models.MessageUnprocessableEntity)
-		response.SetResponse("", respErrors)
-		logger.DataLog(echTx, response).Info("End to get reward promotions for client")
-
-		return echTx.JSON(http.StatusUnprocessableEntity, response)
+		return hCtrl.ShowResponse(c, nil, err, *errors)
 	}
 
-	if err = echTx.Validate(rplValidator); err != nil {
-		respErrors.SetTitle(err.Error())
-		response.SetResponse("", respErrors)
-		logger.DataLog(echTx, response).Info("End to get reward promotions for client")
+	responseData, errors, err := rwd.RewardUseCase.GetRewardPromotions(c, pl)
 
-		return echTx.JSON(http.StatusBadRequest, response)
-	}
-
-	responseData, respErrors, err := rwd.RewardUseCase.GetRewardPromotions(echTx, rplValidator)
-
-	if err != nil {
-		respErrors.SetTitle(err.Error())
-		response.SetResponse("", respErrors)
-
-		logger.DataLog(echTx, response).Info("End to get reward promotions for client")
-		return echTx.JSON(getStatusCode(err), response)
-	}
-
-	response.SetResponse(responseData, respErrors)
-	logger.DataLog(echTx, response).Info("End to get reward promotions for client")
-
-	return echTx.JSON(getStatusCode(err), response)
-}
-
-func getStatusCode(err error) int {
-	if err == nil {
-		return http.StatusOK
-	}
-
-	if strings.Contains(err.Error(), "400") {
-		return http.StatusBadRequest
-	}
-
-	switch err {
-	case models.ErrInternalServerError:
-		return http.StatusInternalServerError
-	case models.ErrNotFound:
-		return http.StatusNotFound
-	case models.ErrConflict:
-		return http.StatusConflict
-	default:
-		return http.StatusOK
-	}
+	return hCtrl.ShowResponse(c, responseData, err, *errors)
 }

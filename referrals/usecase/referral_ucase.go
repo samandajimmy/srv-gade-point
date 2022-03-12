@@ -126,7 +126,6 @@ func (ref *referralUseCase) UValidateReferrer(c echo.Context, pl models.PayloadV
 	var sumIncentive models.SumIncentive
 	var err error
 
-	sumIncentive.IsValid = true
 	// get ref trx based on the active ref campaign
 	// and reward data with used ref code
 	if campaign == nil {

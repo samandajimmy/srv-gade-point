@@ -51,9 +51,9 @@ func main() {
 	defer migrate.Close()
 
 	echoGroup := models.EchoGroup{
-		Admin: ech.Group("/admin"),
-		API:   ech.Group("/api"),
-		Token: ech.Group("/token"),
+		Admin:    ech.Group("/admin"),
+		API:      ech.Group("/api"),
+		Token:    ech.Group("/token"),
 		Referral: ech.Group("/api/referral"),
 	}
 
@@ -67,10 +67,6 @@ func main() {
 	repos := config.NewRepositories(dbConn, dbBun)
 	// Load all usecases
 	usecases := config.NewUsecases(repos)
-	
-	// Load Middleware
-	middleware.ReferralAuth(usecases.ReferralsUseCase)
-
 	// load all handlers
 	_tokenHttpDelivery.NewTokensHandler(echoGroup, usecases.TokenUseCase)
 	_pHistoryHttpDelivery.NewPointHistoriesHandler(echoGroup, usecases.PHistoryUseCase)

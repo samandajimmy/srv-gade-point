@@ -3,12 +3,12 @@ package models
 type CoreTrxPayload struct {
 	CIF            string  `json:"cif"`
 	PhoneNumber    string  `json:"phoneNumber,omitempty"`
-	TrxID          string  `json:"transactionId"`
-	TrxAmount      float64 `json:"transactionAmount"`
+	TrxID          string  `json:"trxId"`
+	TrxAmount      float64 `json:"trxAmount"`
 	LoanAmount     float64 `json:"loanAmount"`
 	InterestAmount float64 `json:"interestAmount"`
 	MarketingCode  string  `json:"marketingCode"`
-	TrxDate        string  `json:"transactionDate"`
+	TrxDate        string  `json:"trxDate"`
 	ProductCode    int64   `json:"productCode"`
 }
 

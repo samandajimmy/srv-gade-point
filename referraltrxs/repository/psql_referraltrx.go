@@ -24,8 +24,8 @@ func (refTrxRepo *psqlReferralTrxRepository) RPostReferralTrx(c echo.Context, re
 	requestLogger := logger.GetRequestLogger(c, nil)
 	now := time.Now()
 	query := `INSERT INTO referral_transactions (cif, ref_id, used_referral_code, type,
-		reward_referral, reward_type, phone_number, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
+		reward_referral, reward_type, phone_number, created_at, trx_date)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8) RETURNING id`
 
 	lastID := int64(0)
 	stmt, err := refTrxRepo.Conn.Prepare(query)

@@ -283,6 +283,8 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 			referralTrx := rwdTrx.GetReferralTrx()
 			referralTrx.CIF = rwdPayment.CIF
 
+			referralTrx.RewardReferral = rwd.calculateIncentive(c, *rwdTrx.RewardID, rwdTrx.RequestData)
+
 			_ = rwd.referralTrxRepo.RPostReferralTrx(c, referralTrx)
 		}
 
@@ -515,4 +517,33 @@ func (rwd *rewardUseCase) GetRewardPromotions(c echo.Context, rplValidator model
 	}
 
 	return listPromotions, &respErrors, nil
+}
+
+func (rwd *rewardUseCase) calculateIncentive(c echo.Context, rewardID int64, pv *models.PayloadValidator) int64 {
+
+	var result float64
+	reward, err := rwd.rewardRepo.RGetReferralValidator(c, rewardID)
+
+	for _, validator := range reward.Validators.Incentive.Validator {
+
+		value, err := validator.GetRewardValue(pv)
+
+		if err != nil {
+			logger.Make(c, nil).Debug(err)
+
+			continue
+		}
+
+		result = value
+
+		break
+	}
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return 0
+	}
+
+	return int64(result)
 }

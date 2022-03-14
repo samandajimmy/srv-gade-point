@@ -49,6 +49,7 @@ type PayloadValidator struct {
 	RefTrx            string     `json:"refTrx,omitempty"`
 	TransactionDate   string     `json:"transactionDate,omitempty" validate:"required,dateString=2006-01-02 15:04:05.000"`
 	TransactionAmount *float64   `json:"transactionAmount,omitempty" validate:"required"`
+	InterestAmount    *float64   `json:"interestAmount,omitempty"`
 	VoucherID         string     `json:"voucherId,omitempty"`
 	Validators        *Validator `json:"validators,omitempty"`
 	CodeType          string     `json:"codeType,omitempty"`

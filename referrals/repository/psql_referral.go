@@ -25,17 +25,17 @@ func (refRepo *psqlReferralsRepository) RPostCoreTrx(c echo.Context, coreTrx []m
 	var nilFilters []string
 	createdAt := time.Now()
 	trxType := 1
+	totalReward := 0
 	stmts := []*gcdb.PipelineStmt{}
 	for _, trx := range coreTrx {
 
-		stmts = append(stmts, gcdb.NewPipelineStmt(`INSERT INTO referral_transactions 
-		(cif, ref_id, used_referral_code, type, reward_referral, reward_type, created_at, 
-		phone_number, trx_amount, loan_amount, interest_amount, product_code, 
-		trx_date, trx_type) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
-			nilFilters, trx.CIF, trx.RefID, trx.UsedReferralCode, trx.Type, trx.RewardReferral,
-			trx.RewardType, createdAt, trx.PhoneNumber, trx.TrxAmount, trx.LoanAmount,
-			trx.InterestAmount, trx.ProductCode, trx.TrxDate, trxType))
+		stmts = append(stmts, gcdb.NewPipelineStmt(`INSERT INTO core_transactions 
+		(created_at, transaction_amount, loan_amount, interest_amount, product_code, 
+		transaction_date, total_reward, transaction_id, marketing_code, transaction_type) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+			nilFilters, createdAt, trx.TrxAmount, trx.LoanAmount,
+			trx.InterestAmount, trx.ProductCode, trx.TrxDate, totalReward, trx.TrxID,
+			trx.MarketingCode, trxType))
 	}
 
 	err := gcdb.WithTransaction(refRepo.Conn, func(tx gcdb.Transaction) error {

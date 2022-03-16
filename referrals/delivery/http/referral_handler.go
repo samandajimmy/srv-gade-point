@@ -34,9 +34,8 @@ func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.RefUseCase) {
 func (ref *ReferralHandler) hCoreTrx(c echo.Context) error {
 	var pl []models.CoreTrxPayload
 	var errors models.ResponseErrors
-	err := hCtrl.Validate(c, &pl)
 
-	if err != nil {
+	if err := c.Bind(&pl); err != nil {
 		return hCtrl.ShowResponse(c, nil, err, errors)
 	}
 

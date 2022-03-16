@@ -37,6 +37,10 @@ func (ref *referralUseCase) UPostCoreTrx(c echo.Context, coreTrx []models.CoreTr
 	var responseData []models.CoreTrxResponse
 	err := ref.referralRepo.RPostCoreTrx(c, coreTrx)
 
+	if len(coreTrx) == 0 {
+		return nil, models.ErrCoreTrxEmpty
+	}
+
 	if err != nil {
 		return nil, models.ErrCoreTrxFailed
 	}

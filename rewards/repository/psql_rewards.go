@@ -412,10 +412,12 @@ func (rwdRepo *psqlRewardRepository) getRewardPromotions(c echo.Context, query s
 	return result, nil
 }
 
-func (rwdRepo *psqlRewardRepository) RGetReferralValidator(c echo.Context, rewardId int64) (models.Reward, error) {
+func (rwdRepo *psqlRewardRepository) RGetRewardDetail(c echo.Context, rewardId int64) (models.Reward, error) {
 	var result models.Reward
 
-	query := `select validators from rewards r where r.id = ?`
+	query := `select  id, name, description, terms_and_conditions, how_to_use, journal_account, 
+			promo_code, is_promo_code, custom_period, type, validators, campaign_id, 
+			updated_at, created_at from rewards where id = ?`
 
 	err := rwdRepo.dbBun.QueryThenScan(c, &result, query, rewardId)
 

@@ -237,6 +237,32 @@ func (v *Validator) CalculateMaximumValue(value *float64) (float64, error) {
 	return *maxValue, nil
 }
 
+func (v *Validator) CalculateIncentive(pv *PayloadValidator) float64 {
+
+	var rewardResult float64
+	var i Incentive
+
+	// check if incentive is available
+	isIncentiveEmpty := reflect.DeepEqual(i, v.Incentive)
+
+	if isIncentiveEmpty {
+		return 0
+	}
+
+	// check if incentive validator is available
+	if len(v.Incentive.Validator) == 0 {
+		return 0
+	}
+
+	// get reward value by looping reward incentive validator that match payload validator
+	for _, validator := range v.Incentive.Validator {
+		value, _ := validator.GetRewardValue(pv)
+		rewardResult += value
+	}
+
+	return rewardResult
+}
+
 func getField(obj interface{}, field string) (interface{}, error) {
 	r := reflect.ValueOf(obj)
 	val := reflect.Indirect(r).FieldByName(strings.Title(field))

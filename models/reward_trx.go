@@ -69,7 +69,7 @@ func (rwdTrx RewardTrx) GetReferralTrx() ReferralTrx {
 	refTrx.UsedReferralCode = rwdTrx.UsedPromoCode
 	refTrx.RewardType = reward[0].Type
 	refTrx.Type = ReferralType[reward[0].Reference]
-	refTrx.RewardReferral = int64(reward[0].Value)
+	refTrx.RewardReferral = reward[0].Value
 	refTrx.PhoneNumber = rwdTrx.RequestData.Phone
 
 	return refTrx

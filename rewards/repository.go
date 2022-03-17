@@ -18,5 +18,5 @@ type RRepository interface {
 	CountRewards(echo.Context, *models.RewardsPayload) (int64, error)
 	GetRewardPromotions(echo.Context, models.RewardPromotionLists) ([]*models.RewardPromotions, error)
 	RGetRandomId(length int) string
-	RGetReferralValidator(c echo.Context, rewardId int64) (models.Reward, error)
+	RGetRewardDetail(c echo.Context, rewardId int64) (models.Reward, error)
 }

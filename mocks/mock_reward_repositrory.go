@@ -180,17 +180,17 @@ func (mr *MockRRepositoryMockRecorder) RGetRandomId(arg0 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGetRandomId", reflect.TypeOf((*MockRRepository)(nil).RGetRandomId), arg0)
 }
 
-// RGetReferralValidator mocks base method.
-func (m *MockRRepository) RGetReferralValidator(arg0 echo.Context, arg1 int64) (models.Reward, error) {
+// RGetRewardDetail mocks base method.
+func (m *MockRRepository) RGetRewardDetail(arg0 echo.Context, arg1 int64) (models.Reward, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RGetReferralValidator", arg0, arg1)
+	ret := m.ctrl.Call(m, "RGetRewardDetail", arg0, arg1)
 	ret0, _ := ret[0].(models.Reward)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// RGetReferralValidator indicates an expected call of RGetReferralValidator.
-func (mr *MockRRepositoryMockRecorder) RGetReferralValidator(arg0, arg1 interface{}) *gomock.Call {
+// RGetRewardDetail indicates an expected call of RGetRewardDetail.
+func (mr *MockRRepositoryMockRecorder) RGetRewardDetail(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGetReferralValidator", reflect.TypeOf((*MockRRepository)(nil).RGetReferralValidator), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGetRewardDetail", reflect.TypeOf((*MockRRepository)(nil).RGetRewardDetail), arg0, arg1)
 }

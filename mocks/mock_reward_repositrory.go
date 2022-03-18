@@ -179,3 +179,18 @@ func (mr *MockRRepositoryMockRecorder) RGetRandomId(arg0 interface{}) *gomock.Ca
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGetRandomId", reflect.TypeOf((*MockRRepository)(nil).RGetRandomId), arg0)
 }
+
+// RGetRewardDetail mocks base method.
+func (m *MockRRepository) RGetRewardDetail(arg0 echo.Context, arg1 int64) (models.Reward, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RGetRewardDetail", arg0, arg1)
+	ret0, _ := ret[0].(models.Reward)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RGetRewardDetail indicates an expected call of RGetRewardDetail.
+func (mr *MockRRepositoryMockRecorder) RGetRewardDetail(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGetRewardDetail", reflect.TypeOf((*MockRRepository)(nil).RGetRewardDetail), arg0, arg1)
+}

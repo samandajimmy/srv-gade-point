@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gade/srv-gade-point/database"
+	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/quotas"
 	"gade/srv-gade-point/rewards"
@@ -406,6 +407,24 @@ func (rwdRepo *psqlRewardRepository) getRewardPromotions(c echo.Context, query s
 		}
 
 		result = append(result, t)
+	}
+
+	return result, nil
+}
+
+func (rwdRepo *psqlRewardRepository) RGetRewardDetail(c echo.Context, rewardId int64) (models.Reward, error) {
+	var result models.Reward
+
+	query := `select  id, name, description, terms_and_conditions, how_to_use, journal_account, 
+			promo_code, is_promo_code, custom_period, type, validators, campaign_id, 
+			updated_at, created_at from rewards where id = ?`
+
+	err := rwdRepo.dbBun.QueryThenScan(c, &result, query, rewardId)
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return result, err
 	}
 
 	return result, nil

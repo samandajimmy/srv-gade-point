@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 	gcdb "gade/srv-gade-point/database"
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
@@ -124,13 +125,17 @@ func (m *psqlReferralsRepository) GetCampaignId(c echo.Context, prefix string) (
 
 func (m *psqlReferralsRepository) RSumRefIncentive(c echo.Context, promoCode string, reward models.Reward) (models.SumIncentive, error) {
 	var sumIncentive models.SumIncentive
-
+	fmt.Println("awal")
+	fmt.Println(sumIncentive.IsValid)
 	query := `select sum(reward_referral) per_day
 		from referral_transactions rt
-		where rt.used_referral_code = ?0 and rt.reward_id = ?1
-		and rt.trx_date::date = ?2::date`
+		left join reward_transactions rtrx 
+			on rt.used_referral_code = rtrx.used_promo_code 
+			and rt.ref_id = rtrx.ref_id
+		where rt.used_referral_code = ?0
+		and rtrx.transaction_date::date = ?1::date`
 
-	err := m.Bun.QueryThenScan(c, &sumIncentive, query, promoCode, reward.ID, time.Now())
+	err := m.Bun.QueryThenScan(c, &sumIncentive, query, promoCode, time.Now())
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)
@@ -140,11 +145,14 @@ func (m *psqlReferralsRepository) RSumRefIncentive(c echo.Context, promoCode str
 
 	query = `select sum(reward_referral) per_month
 		from referral_transactions rt
-		where rt.used_referral_code = ?0 and rt.reward_id = ?1
-		and trx_date between (date_trunc('month', ?2::date)::date) 
-			and (((date_trunc('month', ?2::date)) + ('1 month'::INTERVAL))::date)`
+		left join reward_transactions rtrx 
+			on rt.used_referral_code = rtrx.used_promo_code 
+			and rt.ref_id = rtrx.ref_id
+		where rt.used_referral_code = ?0
+		and rtrx.transaction_date between (date_trunc('month', ?1::date)::date) 
+			and (((date_trunc('month', ?1::date)) + ('1 month'::INTERVAL))::date)`
 
-	err = m.Bun.QueryThenScan(c, &sumIncentive, query, promoCode, reward.ID, time.Now())
+	err = m.Bun.QueryThenScan(c, &sumIncentive, query, promoCode, time.Now())
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)

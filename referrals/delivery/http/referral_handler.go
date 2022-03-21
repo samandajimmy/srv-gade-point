@@ -28,6 +28,7 @@ func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.RefUseCase) {
 	echoGroup.API.POST("/referral/core-trx", handler.hCoreTrx)
 	middleware.ReferralAuth(handler.checkCif)
 	echoGroup.API.GET("/referral/detail", handler.hGetReferralCodes)
+	echoGroup.API.GET("/referral/prefix", handler.hGetPrefixCampaignReferral)
 }
 
 func (ref *ReferralHandler) hCoreTrx(c echo.Context) error {
@@ -67,6 +68,18 @@ func (ref *ReferralHandler) hGetReferralCodes(c echo.Context) error {
 	}
 
 	responseData, err := ref.ReferralUseCase.UGetReferralCodes(c, pl)
+
+	return hCtrl.ShowResponse(c, responseData, err, errors)
+}
+
+func (ref *ReferralHandler) hGetPrefixCampaignReferral(c echo.Context) error {
+	var errors models.ResponseErrors
+
+	responseData, err := ref.ReferralUseCase.UGetPrefixActiveCampaignReferral(c)
+
+	if err != nil {
+		return hCtrl.ShowResponse(c, nil, err, errors)
+	}
 
 	return hCtrl.ShowResponse(c, responseData, err, errors)
 }

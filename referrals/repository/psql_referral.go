@@ -2,7 +2,6 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
 	gcdb "gade/srv-gade-point/database"
 	"gade/srv-gade-point/helper"
 	"gade/srv-gade-point/logger"
@@ -125,8 +124,7 @@ func (m *psqlReferralsRepository) RGetCampaignId(c echo.Context, prefix string) 
 
 func (m *psqlReferralsRepository) RSumRefIncentive(c echo.Context, promoCode string, reward models.Reward) (models.SumIncentive, error) {
 	var sumIncentive models.SumIncentive
-	fmt.Println("awal")
-	fmt.Println(sumIncentive.IsValid)
+
 	query := `select sum(reward_referral) per_day
 		from referral_transactions rt
 		left join reward_transactions rtrx 
@@ -167,4 +165,31 @@ func (m *psqlReferralsRepository) RSumRefIncentive(c echo.Context, promoCode str
 
 func (m *psqlReferralsRepository) RGenerateCode(c echo.Context, refCode models.ReferralCodes, prefix string) string {
 	return prefix + helper.RandomStr(5, map[string]bool{})
+}
+
+func (m *psqlReferralsRepository) RGetReferralCampaignMetadata(c echo.Context, pv models.PayloadValidator) (models.PrefixResponse, error) {
+	var response models.PrefixResponse
+
+	query := `SELECT c.metadata->>'prefix' as prefix FROM campaigns c
+		LEFT JOIN rewards r ON c.id = r.campaign_id
+		WHERE c.status = ?0 AND c.metadata->>'isReferral' = 'true' AND r.is_promo_code = ?1
+		AND c.start_date::date <= ?2 AND (c.end_date::date >= ?2 OR c.end_date IS null)
+		order by c.created_at desc limit 1`
+
+	err := m.Bun.QueryThenScan(c, &response.Prefix, query, models.CampaignActive,
+		models.IsPromoCodeFalse, pv.TransactionDate)
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return models.PrefixResponse{}, err
+	}
+
+	if response.Prefix == "" {
+		logger.Make(c, nil).Debug(models.ErrRefPrefixNF)
+
+		return models.PrefixResponse{}, models.ErrRefPrefixNF
+	}
+
+	return response, nil
 }

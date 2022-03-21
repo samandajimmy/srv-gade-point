@@ -65,6 +65,21 @@ func (mr *MockRefUseCaseMockRecorder) UGetReferralCodes(arg0, arg1 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UGetReferralCodes", reflect.TypeOf((*MockRefUseCase)(nil).UGetReferralCodes), arg0, arg1)
 }
 
+// UGetPrefixActiveCampaignReferral mocks base method.
+func (m *MockRefUseCase) UGetPrefixActiveCampaignReferral(arg0 echo.Context) (models.PrefixResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UGetPrefixActiveCampaignReferral", arg0)
+	ret0, _ := ret[0].(models.PrefixResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UGetPrefixActiveCampaignReferral indicates an expected call of UGetPrefixActiveCampaignReferral.
+func (mr *MockRefUseCaseMockRecorder) UGetPrefixActiveCampaignReferral(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UGetPrefixActiveCampaignReferral", reflect.TypeOf((*MockRefUseCase)(nil).UGetPrefixActiveCampaignReferral), arg0)
+}
+
 // UPostCoreTrx mocks base method.
 func (m *MockRefUseCase) UPostCoreTrx(arg0 echo.Context, arg1 []models.CoreTrxPayload) ([]models.CoreTrxResponse, error) {
 	m.ctrl.T.Helper()
@@ -80,17 +95,17 @@ func (mr *MockRefUseCaseMockRecorder) UPostCoreTrx(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UPostCoreTrx", reflect.TypeOf((*MockRefUseCase)(nil).UPostCoreTrx), arg0, arg1)
 }
 
-// UReferralCIFValidate mocks base method.
-func (m *MockRefUseCase) UReferralCIFValidate(arg0 echo.Context, arg1 string) (models.ReferralCodes, error) {
+// UValidateReferrer mocks base method.
+func (m *MockRefUseCase) UValidateReferrer(arg0 echo.Context, arg1 models.PayloadValidator, arg2 *models.Campaign) (models.SumIncentive, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UReferralCIFValidate", arg0, arg1)
-	ret0, _ := ret[0].(models.ReferralCodes)
+	ret := m.ctrl.Call(m, "UValidateReferrer", arg0, arg1, arg2)
+	ret0, _ := ret[0].(models.SumIncentive)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// UReferralCIFValidate indicates an expected call of UReferralCIFValidate.
-func (mr *MockRefUseCaseMockRecorder) UReferralCIFValidate(arg0, arg1 interface{}) *gomock.Call {
+// UValidateReferrer indicates an expected call of UValidateReferrer.
+func (mr *MockRefUseCaseMockRecorder) UValidateReferrer(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UReferralCIFValidate", reflect.TypeOf((*MockRefUseCase)(nil).UReferralCIFValidate), arg0, arg1)
 }

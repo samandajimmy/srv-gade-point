@@ -80,19 +80,19 @@ func (mr *MockRefRepositoryMockRecorder) GetReferralByCif(arg0, arg1 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReferralByCif", reflect.TypeOf((*MockRefRepository)(nil).GetReferralByCif), arg0, arg1)
 }
 
-// RGetRefCampaignReward mocks base method.
-func (m *MockRefRepository) RGetRefCampaignReward(arg0 echo.Context, arg1 models.RefCampaignReward) (models.RefCampaignReward, error) {
+// RGetReferralCampaignMetadata mocks base method.
+func (m *MockRefRepository) RGetReferralCampaignMetadata(arg0 echo.Context, arg1 models.PayloadValidator) (models.PrefixResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RGetRefCampaignReward", arg0, arg1)
-	ret0, _ := ret[0].(models.RefCampaignReward)
+	ret := m.ctrl.Call(m, "RGetReferralCampaignMetadata", arg0, arg1)
+	ret0, _ := ret[0].(models.PrefixResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// RGetRefCampaignReward indicates an expected call of RGetRefCampaignReward.
-func (mr *MockRefRepositoryMockRecorder) RGetRefCampaignReward(arg0, arg1 interface{}) *gomock.Call {
+// RGetReferralCampaignMetadata indicates an expected call of RGetReferralCampaignMetadata.
+func (mr *MockRefRepositoryMockRecorder) RGetReferralCampaignMetadata(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGetRefCampaignReward", reflect.TypeOf((*MockRefRepository)(nil).RGetRefCampaignReward), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGetReferralCampaignMetadata", reflect.TypeOf((*MockRefRepository)(nil).RGetReferralCampaignMetadata), arg0, arg1)
 }
 
 // RPostCoreTrx mocks base method.

@@ -298,6 +298,9 @@ var (
 
 	// ErrFormulaSetup to store formula setup error message
 	ErrFormulaSetup = errors.New("Formula tidak lengkap")
+
+	// ErrRefPrefixNF to store get referral codes error
+	ErrRefPrefixNF = errors.New("Prefix untuk promo code tersebut tidak ditemukan")
 )
 
 // DynamicErr to return parameterize errors

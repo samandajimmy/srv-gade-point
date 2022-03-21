@@ -215,6 +215,22 @@ func (rcUc *referralUseCase) UReferralCIFValidate(c echo.Context, cif string) (m
 	return data, nil
 }
 
+func (rcUc *referralUseCase) UGetPrefixActiveCampaignReferral(c echo.Context) (models.PrefixResponse, error) {
+	var pv models.PayloadValidator
+	var prefixResponse models.PrefixResponse
+
+	pv.TransactionDate = time.Now().Format(models.DateTimeFormat)
+	campaignMetadata, err := rcUc.referralRepo.RGetReferralCampaignMetadata(c, pv)
+
+	if err != nil {
+		return models.PrefixResponse{}, err
+	}
+
+	prefixResponse.Prefix = campaignMetadata.Prefix
+
+	return prefixResponse, nil
+}
+
 func (rcUc *referralUseCase) validateReferralIncentive(c echo.Context, cp *[]*models.Campaign, pv models.PayloadValidator) (models.SumIncentive, error) {
 
 	if cp == nil {

@@ -44,3 +44,7 @@ type SumIncentive struct {
 	IsValid       bool    `json:"isValid"`
 	Reward        Reward  `json:"reward"`
 }
+
+type PrefixResponse struct {
+	Prefix string `json:"prefix,omitempty"`
+}

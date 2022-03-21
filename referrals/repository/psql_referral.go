@@ -2,7 +2,6 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
 	gcdb "gade/srv-gade-point/database"
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
@@ -125,8 +124,7 @@ func (m *psqlReferralsRepository) GetCampaignId(c echo.Context, prefix string) (
 
 func (m *psqlReferralsRepository) RSumRefIncentive(c echo.Context, promoCode string, reward models.Reward) (models.SumIncentive, error) {
 	var sumIncentive models.SumIncentive
-	fmt.Println("awal")
-	fmt.Println(sumIncentive.IsValid)
+
 	query := `select sum(reward_referral) per_day
 		from referral_transactions rt
 		left join reward_transactions rtrx 

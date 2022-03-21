@@ -25,7 +25,7 @@ var (
 	})
 
 	_ = AfterSuite(func() {
-		migrator.Drop()
+		_ = migrator.Drop()
 
 		db.Sql.Close()
 		migrator.Close()

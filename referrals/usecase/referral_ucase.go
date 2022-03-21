@@ -175,33 +175,3 @@ func (rcUc *referralUseCase) UReferralCIFValidate(c echo.Context, cif string) (m
 
 	return data, nil
 }
-
-// func (rcUc *referralUseCase) validateReferralIncentive(c echo.Context, cp *[]*models.Campaign, pv models.PayloadValidator) (models.SumIncentive, error) {
-
-// 	if cp == nil {
-// 		return models.SumIncentive{}, nil
-// 	}
-
-// 	camps := *cp
-// 	campaign := *camps[0]
-
-// 	sumIncentive, err := rcUc.UValidateReferrer(c, pv, &campaign)
-
-// 	if err != nil {
-// 		return models.SumIncentive{}, err
-// 	}
-
-// 	if !sumIncentive.ValidPerDay {
-// 		logger.Make(c, nil).Error(models.DynamicErr(models.DynErrIncDayExceeded, helper.FloatToString(sumIncentive.Reward.Validators.Incentive.MaxPerDay)))
-
-// 		return models.SumIncentive{}, models.DynamicErr(models.DynErrIncDayExceeded, helper.FloatToString(sumIncentive.Reward.Validators.Incentive.MaxPerDay))
-// 	}
-
-// 	if !sumIncentive.ValidPerMonth {
-// 		logger.Make(c, nil).Error(models.DynamicErr(models.DynErrIncMonthExceeded, helper.FloatToString(sumIncentive.Reward.Validators.Incentive.MaxPerMonth)))
-
-// 		return models.SumIncentive{}, models.DynamicErr(models.DynErrIncMonthExceeded, helper.FloatToString(sumIncentive.Reward.Validators.Incentive.MaxPerMonth))
-// 	}
-
-// 	return sumIncentive, nil
-// }

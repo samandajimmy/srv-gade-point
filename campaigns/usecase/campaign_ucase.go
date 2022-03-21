@@ -31,9 +31,7 @@ func (cmpgn *campaignUseCase) CreateCampaign(c echo.Context, campaign *models.Ca
 	err := cmpgn.campaignRepo.CreateCampaign(c, campaign)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrCampaignFailed)
-
-		return err
+		return models.ErrCampaignFailed
 	}
 
 	// create array rewards

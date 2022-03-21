@@ -48,3 +48,11 @@ type SumIncentive struct {
 type PrefixResponse struct {
 	Prefix string `json:"prefix,omitempty"`
 }
+
+type ResponseHistoryIncentive struct {
+	TransactionType string    `json:"transactionType"`
+	ProductCode     string    `json:"productCode"`
+	CustomerName    string    `json:"customerName"`
+	RewardReferral  float64   `json:"rewardReferral"`
+	CreatedAt       time.Time `json:"createdAt"`
+}

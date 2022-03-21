@@ -80,6 +80,21 @@ func (mr *MockRefRepositoryMockRecorder) GetReferralByCif(arg0, arg1 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReferralByCif", reflect.TypeOf((*MockRefRepository)(nil).GetReferralByCif), arg0, arg1)
 }
 
+// RGetHistoryIncentive mocks base method.
+func (m *MockRefRepository) RGetHistoryIncentive(arg0 echo.Context, arg1 string) ([]models.ResponseHistoryIncentive, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RGetHistoryIncentive", arg0, arg1)
+	ret0, _ := ret[0].([]models.ResponseHistoryIncentive)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RGetHistoryIncentive indicates an expected call of RGetHistoryIncentive.
+func (mr *MockRefRepositoryMockRecorder) RGetHistoryIncentive(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGetHistoryIncentive", reflect.TypeOf((*MockRefRepository)(nil).RGetHistoryIncentive), arg0, arg1)
+}
+
 // RGetReferralCampaignMetadata mocks base method.
 func (m *MockRefRepository) RGetReferralCampaignMetadata(arg0 echo.Context, arg1 models.PayloadValidator) (models.PrefixResponse, error) {
 	m.ctrl.T.Helper()

@@ -14,4 +14,5 @@ type RefRepository interface {
 	GetReferralByCif(echo.Context, string) (models.ReferralCodes, error)
 	RSumRefIncentive(c echo.Context, promoCode string, reward models.Reward) (models.SumIncentive, error)
 	RGetReferralCampaignMetadata(c echo.Context, pv models.PayloadValidator) (models.PrefixResponse, error)
+	RGetHistoryIncentive(c echo.Context, refCif string) ([]models.ResponseHistoryIncentive, error)
 }

@@ -260,3 +260,25 @@ func (rcUc *referralUseCase) validateReferralIncentive(c echo.Context, cp *[]*mo
 
 	return sumIncentive, nil
 }
+
+func (rcUc *referralUseCase) UGetHistoryIncentive(c echo.Context, refCif string) ([]models.ResponseHistoryIncentive, error) {
+	var historyIncentive []models.ResponseHistoryIncentive
+
+	historyIncentive, err := rcUc.referralRepo.RGetHistoryIncentive(c, refCif)
+
+	if err != nil {
+		logger.Make(c, nil).Error(models.ErrRefHistoryIncentiveNF)
+
+		return []models.ResponseHistoryIncentive{}, models.ErrRefHistoryIncentiveNF
+	}
+
+	length := len(historyIncentive)
+
+	if length == 0 {
+		logger.Make(c, nil).Error(models.ErrRefHistoryIncentiveNF)
+
+		return []models.ResponseHistoryIncentive{}, models.ErrRefHistoryIncentiveNF
+	}
+
+	return historyIncentive, nil
+}

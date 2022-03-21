@@ -189,3 +189,49 @@ func (m *psqlReferralsRepository) RGetReferralCampaignMetadata(c echo.Context, p
 
 	return response, nil
 }
+
+func (m *psqlReferralsRepository) RGetHistoryIncentive(c echo.Context, refCif string) ([]models.ResponseHistoryIncentive, error) {
+	var historyIncentives []models.ResponseHistoryIncentive
+	var history models.ResponseHistoryIncentive
+
+	query := `select
+		(rtrx.request_data->>'validators')::json->>'transactionType' as transactionType, 
+		(rtrx.request_data->>'validators')::json->>'product' as productCode,
+		rtrx.request_data->>'customerName' as customerName,
+		rt.reward_referral,
+		rt.created_at
+			from referral_transactions rt 
+ 			left join reward_transactions rtrx on rtrx.ref_id = rt.ref_id 
+ 			where rtrx.status = '1'
+			and rtrx.request_data->>'referrer' = ?0
+ 			and rt.reward_type = ?1
+ 			order by rt.created_at desc;`
+
+	rows, err := m.Bun.QueryContext(c.Request().Context(), query, refCif, models.CodeTypeIncentive)
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return []models.ResponseHistoryIncentive{}, err
+	}
+
+	for rows.Next() {
+		err = rows.Scan(
+			&history.TransactionType,
+			&history.ProductCode,
+			&history.CustomerName,
+			&history.RewardReferral,
+			&history.CreatedAt,
+		)
+
+		if err != nil {
+			logger.Make(c, nil).Error(err)
+
+			return nil, err
+		}
+
+		historyIncentives = append(historyIncentives, history)
+	}
+
+	return historyIncentives, nil
+}

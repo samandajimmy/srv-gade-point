@@ -77,11 +77,17 @@ func NewDbConn(dbConfig DbConfig) *DbConfig {
 
 func (dbc *DbConfig) Migrate(dbConn *sql.DB) *migrate.Migrate {
 	driver, _ := postgres.WithInstance(dbConn, &postgres.Config{})
-
 	migrationPath := "migrations"
 
 	if os.Getenv(`APP_PATH`) != "" {
 		migrationPath = os.Getenv(`APP_PATH`) + "/" + migrationPath
+	}
+
+	// check migration dir existence
+	_, err := os.Stat(migrationPath)
+
+	if os.IsNotExist(err) {
+		migrationPath = "migrations"
 	}
 
 	migrations, err := migrate.NewWithDatabaseInstance(

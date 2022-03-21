@@ -16,14 +16,13 @@ services:
       - POSTGRES_HOST_AUTH_METHOD=trust
 
   test_app:
+    build:
+      context: ./
+      dockerfile: test.Dockerfile
     container_name: test_app
-    image: artifactory.pegadaian.co.id:8084/golang:1.16
-    env_file: .env
+    env_file: .env.test
     depends_on:
       - db_test
-    volumes:
-      - "./:/app"
-    entrypoint: /app/entrypoint-test.sh
 
   app:
     build: .

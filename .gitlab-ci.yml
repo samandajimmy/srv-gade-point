@@ -40,12 +40,17 @@ lint:
 
 test:
   stage: test
-  image: artifactory.pegadaian.co.id:8084/golang:1.16
-  before_script:
-    - *inject-gopath
+  image: artifactory.pegadaian.co.id:8084/docker/compose:1.29.2
+  services:
+    - artifactory.pegadaian.co.id:8084/docker:dind
   script:
-    - cp ${APP_ENV} .env
-    - docker-compose pull test_app && docker-compose build test_app && docker-compose up test_app
+    - cp ${ARTIFACTORY_SSL_CERT} ${CI_PROJECT_DIR}/ssl_certificate.crt
+    - cp ${APP_ENV} .env.test && cp ${APP_ENV} .env
+    - mkdir -p ~/.docker/ && echo $DOCKER_AUTH_CONFIG > ~/.docker/config.json
+    - docker-compose build test_app
+    - docker-compose up test_app
+    - export TEST_STATUS=$(docker inspect test_app --format='{{.State.ExitCode}}')
+    - eval "[[ "$TEST_STATUS" == "1" ]] && exit 1 || exit 0"
   only:
     - merge_requests
 

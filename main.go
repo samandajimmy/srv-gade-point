@@ -36,8 +36,8 @@ var ech *echo.Echo
 func init() {
 	ech = echo.New()
 	ech.Debug = true
-	config.LoadEnv()
 	logger.Init()
+	config.LoadEnv()
 }
 
 func main() {

@@ -282,7 +282,7 @@ var (
 	ErrGenerateRefCodeFailed = errors.New("Gagal untuk membuat referral code")
 
 	// ErrRefCampaginNF to store create reward failed error message
-	ErrRefCampaginNF = errors.New("Campaign tidak tersedia untuk referral")
+	ErrRefCampaginNF = errors.New("Campaign referral tidak tersedia untuk")
 
 	// ErrRefCodesNF to store get referral codes error
 	ErrRefCodesNF = errors.New("Kode referral tidak ditemukan")

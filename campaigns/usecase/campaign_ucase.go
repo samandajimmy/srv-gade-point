@@ -33,7 +33,7 @@ func (cmpgn *campaignUseCase) CreateCampaign(c echo.Context, campaign *models.Ca
 	if err != nil {
 		requestLogger.Debug(models.ErrCampaignFailed)
 
-		return models.ErrCampaignFailed
+		return err
 	}
 
 	// create array rewards

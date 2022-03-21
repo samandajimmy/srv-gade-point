@@ -1,4 +1,4 @@
-package usecase_test
+package http_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestUsecase(t *testing.T) {
+func TestHttp(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Reward Usecase Suite")
+	RunSpecs(t, "Referral Http Suite")
 }

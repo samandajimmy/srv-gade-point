@@ -35,6 +35,22 @@ func NewRewardHandler(echoGroup models.EchoGroup, us rewards.UseCase) {
 	echoGroup.API.POST("/rewards/rejected", handler.rewardPayment)
 	echoGroup.API.POST("/rewards/check-transaction", handler.checkTransaction)
 	echoGroup.API.GET("/reward/promotions", handler.getRewardPromotions)
+
+	// Endpoint for
+	echoGroup.API.POST("/rewards/core-trx", handler.hCoreTrx)
+}
+
+func (rwd *RewardHandler) hCoreTrx(c echo.Context) error {
+	var pl []models.CoreTrxPayload
+	var errors models.ResponseErrors
+
+	if err := c.Bind(&pl); err != nil {
+		return hCtrl.ShowResponse(c, nil, err, errors)
+	}
+
+	responseData, err := rwd.RewardUseCase.UPostCoreTrx(c, pl)
+
+	return hCtrl.ShowResponse(c, responseData, err, errors)
 }
 
 func (rwd *RewardHandler) multiRewardInquiry(c echo.Context) error {

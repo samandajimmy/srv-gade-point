@@ -8,6 +8,7 @@ import (
 
 // UseCase represent the rewards usecases
 type UseCase interface {
+	UPostCoreTrx(echo.Context, []models.CoreTrxPayload) ([]models.CoreTrxResponse, error)
 	CreateReward(echo.Context, *models.Reward, *models.Campaign) error
 	DeleteByCampaign(echo.Context, int64) error
 	Inquiry(echo.Context, *models.PayloadValidator) (models.RewardsInquiry, *models.ResponseErrors)

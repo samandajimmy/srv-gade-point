@@ -33,21 +33,6 @@ func NewReferralUseCase(
 	}
 }
 
-func (ref *referralUseCase) UPostCoreTrx(c echo.Context, coreTrx []models.CoreTrxPayload) ([]models.CoreTrxResponse, error) {
-	var responseData []models.CoreTrxResponse
-	err := ref.referralRepo.RPostCoreTrx(c, coreTrx)
-
-	if len(coreTrx) == 0 {
-		return nil, models.ErrCoreTrxEmpty
-	}
-
-	if err != nil {
-		return nil, models.ErrCoreTrxFailed
-	}
-
-	return responseData, nil
-}
-
 func (rcUc *referralUseCase) CreateReferralCodes(c echo.Context, requestReferralCodes models.RequestCreateReferral) (models.ReferralCodes, error) {
 
 	var payload models.ReferralCodes

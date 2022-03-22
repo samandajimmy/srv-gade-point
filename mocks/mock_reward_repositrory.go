@@ -194,3 +194,31 @@ func (mr *MockRRepositoryMockRecorder) RGetRewardDetail(arg0, arg1 interface{}) 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGetRewardDetail", reflect.TypeOf((*MockRRepository)(nil).RGetRewardDetail), arg0, arg1)
 }
+
+// RPostCoreTrx mocks base method.
+func (m *MockRRepository) RPostCoreTrx(arg0 echo.Context, arg1 []models.CoreTrxPayload) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RPostCoreTrx", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RPostCoreTrx indicates an expected call of RPostCoreTrx.
+func (mr *MockRRepositoryMockRecorder) RPostCoreTrx(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RPostCoreTrx", reflect.TypeOf((*MockRRepository)(nil).RPostCoreTrx), arg0, arg1)
+}
+
+// RPostCoreTrxRewards mocks base method.
+func (m *MockRRepository) RPostCoreTrxRewards(arg0 echo.Context, arg1 float64, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RPostCoreTrxRewards", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RPostCoreTrxRewards indicates an expected call of RPostCoreTrxRewards.
+func (mr *MockRRepositoryMockRecorder) RPostCoreTrxRewards(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RPostCoreTrxRewards", reflect.TypeOf((*MockRRepository)(nil).RPostCoreTrxRewards), arg0, arg1, arg2)
+}

@@ -49,6 +49,10 @@ type PrefixResponse struct {
 	Prefix string `json:"prefix,omitempty"`
 }
 
+type RequestHistoryIncentive struct {
+	RefCif string `json:"refCif,omitempty" validate:"required"`
+}
+
 type ResponseHistoryIncentive struct {
 	TransactionType string    `json:"transactionType"`
 	ProductCode     string    `json:"productCode"`

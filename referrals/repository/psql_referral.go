@@ -192,12 +192,11 @@ func (m *psqlReferralsRepository) RGetReferralCampaignMetadata(c echo.Context, p
 
 func (m *psqlReferralsRepository) RGetHistoryIncentive(c echo.Context, refCif string) ([]models.ResponseHistoryIncentive, error) {
 	var historyIncentives []models.ResponseHistoryIncentive
-	var history models.ResponseHistoryIncentive
 
 	query := `select
-		(rtrx.request_data->>'validators')::json->>'transactionType' as transactionType, 
-		(rtrx.request_data->>'validators')::json->>'product' as productCode,
-		rtrx.request_data->>'customerName' as customerName,
+		(rtrx.request_data->>'validators')::json->>'transactionType' as transaction_type, 
+		(rtrx.request_data->>'validators')::json->>'product' as product_code,
+		rtrx.request_data->>'customerName' as customer_name,
 		rt.reward_referral,
 		rt.created_at
 			from referral_transactions rt 
@@ -207,30 +206,13 @@ func (m *psqlReferralsRepository) RGetHistoryIncentive(c echo.Context, refCif st
  			and rt.reward_type = ?1
  			order by rt.created_at desc;`
 
-	rows, err := m.Bun.QueryContext(c.Request().Context(), query, refCif, models.CodeTypeIncentive)
+	err := m.Bun.QueryThenScan(c, &historyIncentives, query, refCif,
+		models.CodeTypeIncentive)
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)
 
 		return []models.ResponseHistoryIncentive{}, err
-	}
-
-	for rows.Next() {
-		err = rows.Scan(
-			&history.TransactionType,
-			&history.ProductCode,
-			&history.CustomerName,
-			&history.RewardReferral,
-			&history.CreatedAt,
-		)
-
-		if err != nil {
-			logger.Make(c, nil).Error(err)
-
-			return nil, err
-		}
-
-		historyIncentives = append(historyIncentives, history)
 	}
 
 	return historyIncentives, nil

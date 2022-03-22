@@ -66,7 +66,7 @@ func (mr *MockRefUseCaseMockRecorder) GetReferralCodes(arg0, arg1 interface{}) *
 }
 
 // UGetHistoryIncentive mocks base method.
-func (m *MockRefUseCase) UGetHistoryIncentive(arg0 echo.Context, arg1 string) ([]models.ResponseHistoryIncentive, error) {
+func (m *MockRefUseCase) UGetHistoryIncentive(arg0 echo.Context, arg1 models.RequestHistoryIncentive) ([]models.ResponseHistoryIncentive, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UGetHistoryIncentive", arg0, arg1)
 	ret0, _ := ret[0].([]models.ResponseHistoryIncentive)

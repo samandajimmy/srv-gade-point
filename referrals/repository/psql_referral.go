@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	gcdb "gade/srv-gade-point/database"
+	"gade/srv-gade-point/helper"
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referrals"
@@ -49,11 +50,11 @@ func (refRepo *psqlReferralsRepository) RPostCoreTrx(c echo.Context, coreTrx []m
 
 	return nil
 }
-func (m *psqlReferralsRepository) CreateReferral(c echo.Context, refcodes models.ReferralCodes) (models.ReferralCodes, error) {
 
+func (m *psqlReferralsRepository) RCreateReferral(c echo.Context, refcodes models.ReferralCodes) (models.ReferralCodes, error) {
 	now := time.Now()
-
-	query := `INSERT INTO referral_codes (cif, referral_code, campaign_id, created_at) VALUES (?0, ?1, ?2, ?3) RETURNING id`
+	query := `INSERT INTO referral_codes (cif, referral_code, campaign_id, created_at) 
+		VALUES (?0, ?1, ?2, ?3) RETURNING id`
 
 	_, err := m.Bun.QueryContext(c.Request().Context(), query, refcodes.CIF, refcodes.ReferralCode, refcodes.CampaignId, now)
 
@@ -64,12 +65,11 @@ func (m *psqlReferralsRepository) CreateReferral(c echo.Context, refcodes models
 	}
 
 	refcodes.CreatedAt = now
-	refcodes.UpdatedAt = now
 
 	return refcodes, nil
 }
 
-func (m *psqlReferralsRepository) GetReferralByCif(c echo.Context, cif string) (models.ReferralCodes, error) {
+func (m *psqlReferralsRepository) RGetReferralByCif(c echo.Context, cif string) (models.ReferralCodes, error) {
 
 	var result models.ReferralCodes
 
@@ -95,7 +95,7 @@ func (m *psqlReferralsRepository) GetReferralByCif(c echo.Context, cif string) (
 	return result, nil
 }
 
-func (m *psqlReferralsRepository) GetCampaignId(c echo.Context, prefix string) (int64, error) {
+func (m *psqlReferralsRepository) RGetCampaignId(c echo.Context, prefix string) (int64, error) {
 
 	var code int64
 	now := time.Now()
@@ -161,6 +161,10 @@ func (m *psqlReferralsRepository) RSumRefIncentive(c echo.Context, promoCode str
 	sumIncentive.Reward = reward
 
 	return sumIncentive, nil
+}
+
+func (m *psqlReferralsRepository) RGenerateCode(c echo.Context, refCode models.ReferralCodes, prefix string) string {
+	return prefix + helper.RandomStr(5, map[string]bool{})
 }
 
 func (m *psqlReferralsRepository) RGetReferralCampaignMetadata(c echo.Context, pv models.PayloadValidator) (models.PrefixResponse, error) {

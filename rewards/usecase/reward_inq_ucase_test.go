@@ -7,6 +7,7 @@ import (
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewards"
 	"gade/srv-gade-point/rewards/usecase"
+	"gade/srv-gade-point/test"
 	"net/http"
 
 	"github.com/golang/mock/gomock"
@@ -17,7 +18,7 @@ import (
 
 var _ = Describe("RewardInqUcase", func() {
 	var rUS rewards.UseCase
-	var e DummyEcho
+	var e test.DummyEcho
 	var mockCtrl *gomock.Controller
 	var mockUsecases mocks.MockUsecases
 	var mockRepos mocks.MockRepositories
@@ -46,7 +47,7 @@ var _ = Describe("RewardInqUcase", func() {
 	config.LoadTestData()
 
 	BeforeEach(func() {
-		e = NewDummyEcho(http.MethodPost, "/")
+		e = test.NewDummyEcho(http.MethodPost, "/")
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockUsecases = mocks.NewMockUsecases(mockCtrl)
 		mockRepos = mocks.NewMockRepository(mockCtrl)

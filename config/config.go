@@ -19,16 +19,14 @@ func LoadEnv() {
 	}
 
 	// check .env file existence
-	if _, err := os.Stat(envPath); os.IsNotExist(err) {
-		logger.Make(nil, nil).Fatal(err)
+	_, err := os.Stat(envPath)
+
+	if os.IsNotExist(err) {
+		logger.Make(nil, nil).Debug("env file not found! expected we have set system variable")
 		return
 	}
 
-	err := godotenv.Load(envPath)
-
-	if err != nil {
-		logger.Make(nil, nil).Fatal(err)
-	}
+	_ = godotenv.Load(envPath)
 }
 
 func LoadTestData() {

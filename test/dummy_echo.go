@@ -100,7 +100,11 @@ func (cv *customValidator) Validate(i interface{}) error {
 		return models.ErrInternalServerError
 	}
 
-	isError, _ := obj["isError"].(bool)
+	isError, ok := obj["isError"].(bool)
+
+	if !ok {
+		return nil
+	}
 
 	if isError {
 		return models.ErrInternalServerError

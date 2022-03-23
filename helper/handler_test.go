@@ -45,8 +45,8 @@ var _ = Describe("Handler", func() {
 
 		Context("error echo validate", func() {
 			BeforeEach(func() {
-				reqpl = nil
-				pl = models.ReferralCodes{}
+				reqpl = map[string]interface{}{"isError": true}
+				pl = map[string]interface{}{"cif": "11223344"}
 			})
 
 			It("expect to return error", func() {

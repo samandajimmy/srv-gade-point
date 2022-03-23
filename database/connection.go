@@ -51,16 +51,13 @@ func NewDbConn(dbConfig DbConfig) *DbConfig {
 	dbConfig.Sql, err = sql.Open(`postgres`, connection)
 
 	if err != nil {
-		logger.Make(nil, nil).Debug(err)
-
-		return nil
+		logger.Make(nil, nil).Fatal(err)
 	}
 
 	err = dbConfig.Sql.Ping()
 
 	if err != nil {
-		logger.Make(nil, nil).Debug(err)
-		os.Exit(1)
+		logger.Make(nil, nil).Fatal(err)
 	}
 
 	// bun connection init
@@ -76,7 +73,12 @@ func NewDbConn(dbConfig DbConfig) *DbConfig {
 }
 
 func (dbc *DbConfig) Migrate(dbConn *sql.DB) *migrate.Migrate {
-	driver, _ := postgres.WithInstance(dbConn, &postgres.Config{})
+	driver, err := postgres.WithInstance(dbConn, &postgres.Config{})
+
+	if err != nil {
+		logger.Make(nil, nil).Fatal(err)
+	}
+
 	migrationPath := "migrations"
 
 	if os.Getenv(`APP_PATH`) != "" {
@@ -84,7 +86,7 @@ func (dbc *DbConfig) Migrate(dbConn *sql.DB) *migrate.Migrate {
 	}
 
 	// check migration dir existence
-	_, err := os.Stat(migrationPath)
+	_, err = os.Stat(migrationPath)
 
 	if os.IsNotExist(err) {
 		migrationPath = "migrations"

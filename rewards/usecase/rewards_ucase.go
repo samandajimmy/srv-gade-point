@@ -143,9 +143,6 @@ func (rwd *rewardUseCase) responseInquiry(c echo.Context, reward models.Reward,
 	var voucherName string
 	var err error
 
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-
 	// get the rewards value/benefit
 	rwdValue, _ := reward.Validators.GetRewardValue(plValidator)
 
@@ -174,7 +171,7 @@ func (rwd *rewardUseCase) responseInquiry(c echo.Context, reward models.Reward,
 			voucherCode, err = rwd.voucherUC.VoucherGive(c, plVoucherBuy)
 
 			if err != nil {
-				requestLogger.Debug(models.ErrVoucherUnavailable)
+				logger.Make(c, nil).Debug(models.ErrVoucherUnavailable)
 				return nil, err
 			}
 

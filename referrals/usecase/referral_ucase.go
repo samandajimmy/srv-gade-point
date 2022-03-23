@@ -138,6 +138,11 @@ func (ref *referralUseCase) UValidateReferrer(c echo.Context, pl models.PayloadV
 
 	// validate the max per day and per month
 	validator := sumIncentive.Reward.Validators
+
+	if validator == nil {
+		return sumIncentive, nil
+	}
+
 	validator.Incentive.ValidateMaxIncentive(&sumIncentive)
 
 	return sumIncentive, nil

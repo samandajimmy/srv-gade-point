@@ -473,8 +473,9 @@ func (psqlRepo *psqlVoucherCodeRepository) ValidateVoucherGive(c echo.Context, p
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 
-	query := `SELECT vc.promo_code, v.name, vc.ref_id FROM voucher_codes vc left join vouchers
-		v on vc.voucher_id = v.id where ref_id = $1`
+	query := `SELECT vc.promo_code, v.name, vc.ref_id FROM voucher_codes vc 
+		left join vouchers v on vc.voucher_id = v.id 
+		where ref_id = $1`
 
 	stmt, err := psqlRepo.Conn.Prepare(query)
 

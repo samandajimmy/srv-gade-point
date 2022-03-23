@@ -73,7 +73,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 		if err != nil {
 			respErrors.SetTitle(err.Error())
-			rwdResponse = []models.RewardResponse{}
+
 			continue
 		}
 
@@ -103,6 +103,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	// if reward greater then one
 	if len(*rwdInquiry.Rewards) > 1 {
 		rwdInquiry.RefTrx = rwd.rewardRepo.RGetRandomId(20)
+		respErrors = models.ResponseErrors{}
 	}
 
 	// insert data to reward transaction

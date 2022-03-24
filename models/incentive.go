@@ -1,10 +1,10 @@
 package models
 
 type Incentive struct {
-	MaxTransaction float64     `json:"maxTransaction"`
-	MaxPerDay      float64     `json:"maxPerDay"`
-	MaxPerMonth    float64     `json:"maxPerMonth"`
-	Validator      []Validator `json:"validator"`
+	MaxTransaction *float64     `json:"maxTransaction"`
+	MaxPerDay      *float64     `json:"maxPerDay"`
+	MaxPerMonth    *float64     `json:"maxPerMonth"`
+	Validator      *[]Validator `json:"validator"`
 }
 
 func (i *Incentive) ValidateMaxIncentive(sumIncentive *SumIncentive) {
@@ -27,11 +27,11 @@ func (i *Incentive) ValidateMaxIncentive(sumIncentive *SumIncentive) {
 	sumIncentive.ValidPerDay = ov.StatusField["maxPerDay"]
 
 	if !ov.StatusField["maxPerMonth"] {
-		sumIncentive.PerMonth = i.MaxPerMonth
+		sumIncentive.PerMonth = *i.MaxPerMonth
 	}
 
 	if !ov.StatusField["maxPerDay"] {
-		sumIncentive.PerDay = i.MaxPerDay
+		sumIncentive.PerDay = *i.MaxPerDay
 	}
 
 	if sumIncentive.ValidPerDay || sumIncentive.ValidPerMonth {
@@ -58,7 +58,7 @@ func (i *Incentive) ValidateMaxTransaction(amount float64) float64 {
 	_ = ov.autoValidating(i, &obj)
 
 	if !ov.StatusField["maxTransaction"] {
-		return i.MaxTransaction
+		return *i.MaxTransaction
 	}
 
 	return amount

@@ -1,0 +1,33 @@
+validator:
+  with_incentive:
+    target: referrer
+    channel: 9997, 9999, 9998
+    product: 32, 36, 01, 11, 43, 12, 09, 04, 29, 16, 17, 37, 62
+    transactionType: OP, SL, CC
+    incentive:
+      maxPerDay: 500000
+      maxPerMonth: 700000
+      maxTransaction: 500000
+      validator:
+      - channel: 9997, 9999, 9998
+        product: 32, 36, 01, 11, 43, 12, 09, 04, 29, 16, 17, 37, 62
+        transactionType: OP, SL, CC
+        formula: 30/100*interestAmount
+      - channel: 9997, 9999, 9998
+        product: 32, 36, 01, 11, 43, 12, 09, 04, 29, 16, 17, 37, 62
+        transactionType: OP, SL, CC
+        formula: 0.005*loanAmount
+      - value: 125000
+        channel: 9997, 9999, 9998
+        product: 32, 36, 01, 11, 43, 12, 09, 04, 29, 16, 17, 37, 62
+        transactionType: OP, SL, CC
+      - value: 15000
+        channel: 9997, 9999, 9998
+        product: 32, 36, 01, 11, 43, 12, 09, 04, 29, 16, 17, 37, 62
+        transactionType: OP, SL, CC
+        minTransactionAmount: 50000
+      - value: 15000
+        channel: 9997, 9999, 9998
+        product: 32, 36, 01, 11, 43, 12, 09, 04, 29, 16, 17, 37, 62
+        transactionType: OP, SL, CC
+        minTransactionAmount: 100000

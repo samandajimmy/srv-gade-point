@@ -73,22 +73,26 @@ var _ = Describe("ReferralUcase", func() {
 
 	Describe("UValidateReferrer", func() {
 		It("happy case", func() {
-			var mockCampaigns []models.Campaign
+			var mockCampaign models.Campaign
 			var mockSumIncentive models.SumIncentive
 			var pl = models.PayloadValidator{
 				PromoCode:       "cacing",
 				TransactionDate: "2022-01-18 16:19:32.121",
 			}
 
-			_ = viper.UnmarshalKey("campaign.referralcampaign", &mockCampaigns)
+			_ = viper.UnmarshalKey("campaign.referralcampaign", &mockCampaign)
 			_ = viper.UnmarshalKey("incentive.sumincentive", &mockSumIncentive)
 
-			rewards := *mockCampaigns[0].Rewards
+			rewards := *mockCampaign.Rewards
 			reward := rewards[1]
+			mockCampaignReferral := models.CampaignReferral{
+				Campaign:    mockCampaign,
+				CifReferrer: "",
+			}
 			mockRepos.MockRefRp.EXPECT().RSumRefIncentive(e.Context, pl.PromoCode, reward).Return(mockSumIncentive, nil)
 
 			refUS = usecase.NewReferralUseCase(mockRepos.MockRefRp, mockRepos.MockCRp)
-			data, err := refUS.UValidateReferrer(e.Context, pl, &mockCampaigns[0])
+			data, err := refUS.UValidateReferrer(e.Context, pl, &mockCampaignReferral)
 
 			Expect(ToJson(data)).To(Equal(ToJson(mockSumIncentive)))
 			Expect(err).To(BeNil())

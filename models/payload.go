@@ -19,6 +19,11 @@ type RewardPromotionLists struct {
 }
 
 type RespReferral struct {
-	CIF          string `json:"cif"`
-	ReferralCode string `json:"referralCode"`
+	CIF          string `json:"cif,omitempty"`
+	ReferralCode string `json:"referralCode,omitempty"`
+}
+
+type RespReferralDetail struct {
+	ReferralCode string       `json:"referralCode"`
+	Incentive    SumIncentive `json:"incentive"`
 }

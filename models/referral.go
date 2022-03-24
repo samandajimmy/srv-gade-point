@@ -17,12 +17,8 @@ type RequestCreateReferral struct {
 	Prefix string `json:"prefix,omitempty" validate:"required,max=5"`
 }
 
-type ReferralCodeUser struct {
-	ReferralCode string `json:"referralCode,omitempty"`
-}
-
 type RequestReferralCodeUser struct {
-	CIF string `json:"cif,omitempty" validate:"required"`
+	CIF string `json:"cif" validate:"required"`
 }
 
 type RefCampaignReward struct {
@@ -42,7 +38,7 @@ type SumIncentive struct {
 	ValidPerDay   bool    `json:"validPerDay"`
 	ValidPerMonth bool    `json:"validPerMonth"`
 	IsValid       bool    `json:"isValid"`
-	Reward        Reward  `json:"reward"`
+	Reward        Reward  `json:"-"`
 }
 
 type PrefixResponse struct {

@@ -81,10 +81,11 @@ var _ = Describe("RewardInqUcase", func() {
 		Context("promo referral code", func() {
 			Context("succeeded", func() {
 				BeforeEach(func() {
+					campaignReferral := models.CampaignReferral{Campaign: *mockCampaigns[0], CifReferrer: pl.Referrer}
 					mockUsecases.MockVUs.EXPECT().GetVoucherCode(e.Context, &pl, false).Return(nil, "", nil)
-					mockRepos.MockCRp.EXPECT().GetReferralCampaign(e.Context, pl).Return(&mockCampaigns)
+					mockRepos.MockCRp.EXPECT().GetReferralCampaign(e.Context, pl).Return(&campaignReferral)
 					mockRepos.MockRtRp.EXPECT().GetRewardByPayload(e.Context, pl, nil).Return([]*models.Reward{}, nil)
-					mockUsecases.MockRefUs.EXPECT().UValidateReferrer(e.Context, pl, &campaign).Return(mockSumIncentive, nil)
+					mockUsecases.MockRefUs.EXPECT().UValidateReferrer(e.Context, pl, &campaignReferral).Return(mockSumIncentive, nil)
 					mockRepos.MockRRp.EXPECT().GetRewardTags(e.Context, &rewards[0]).Return(nil, nil)
 					mockRepos.MockRRp.EXPECT().GetRewardTags(e.Context, &rewards[1]).Return(nil, nil)
 					mockUsecases.MockQUs.EXPECT().CheckQuota(e.Context, rewards[0], &pl).Return(true, nil)
@@ -107,11 +108,15 @@ var _ = Describe("RewardInqUcase", func() {
 			Context("exceeded incentive", func() {
 				BeforeEach(func() {
 					mockSumIncentive.IsValid = false
+					campaignReferral := models.CampaignReferral{
+						Campaign:    *mockCampaigns[0],
+						CifReferrer: pl.Referrer,
+					}
 
 					mockUsecases.MockVUs.EXPECT().GetVoucherCode(e.Context, &pl, false).Return(nil, "", nil)
-					mockRepos.MockCRp.EXPECT().GetReferralCampaign(e.Context, pl).Return(&mockCampaigns)
+					mockRepos.MockCRp.EXPECT().GetReferralCampaign(e.Context, pl).Return(&campaignReferral)
 					mockRepos.MockRtRp.EXPECT().GetRewardByPayload(e.Context, pl, nil).Return([]*models.Reward{}, nil)
-					mockUsecases.MockRefUs.EXPECT().UValidateReferrer(e.Context, pl, &campaign).Return(mockSumIncentive, nil)
+					mockUsecases.MockRefUs.EXPECT().UValidateReferrer(e.Context, pl, &campaignReferral).Return(mockSumIncentive, nil)
 				})
 
 				It("expect to return string `Kode referral telah mencapai batas maksimal`", func() {

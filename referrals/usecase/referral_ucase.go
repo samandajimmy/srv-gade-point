@@ -82,43 +82,65 @@ func (rcUc *referralUseCase) UCreateReferralCodes(c echo.Context, requestReferra
 	}, nil
 }
 
-func (rcUc *referralUseCase) UGetReferralCodes(c echo.Context, requestGetReferral models.RequestReferralCodeUser) (models.ReferralCodeUser, error) {
-
-	var result models.ReferralCodeUser
+func (rcUc *referralUseCase) UGetReferralCodes(c echo.Context, requestGetReferral models.RequestReferralCodeUser) (models.RespReferralDetail, error) {
+	var result models.RespReferralDetail
 
 	// get referral codes data by cif
 	referral, err := rcUc.referralRepo.RGetReferralByCif(c, requestGetReferral.CIF)
 
 	// throw empty data if referral codes not found
 	if err != nil {
-		return models.ReferralCodeUser{}, err
+		logger.Make(c, nil).Debug(models.ErrRefCodesNF)
+
+		return result, models.ErrRefCodesNF
 	}
 
 	if referral.ReferralCode == "" {
 		logger.Make(c, nil).Debug(models.ErrRefCodesNF)
 
-		return models.ReferralCodeUser{}, models.ErrRefCodesNF
+		return result, models.ErrRefCodesNF
 	}
+
+	// get reward incentive for referrer
+	reward, err := rcUc.campaignRepo.GetRewardIncentiveByCampaign(c, referral.CampaignId)
+
+	if referral.ReferralCode == "" {
+		logger.Make(c, nil).Debug(err)
+
+		return result, err
+	}
+
+	// sum the incentive based on the ref trx (per day and per month)
+	sumIncentive, err := rcUc.referralRepo.RSumRefIncentive(c, referral.ReferralCode, reward)
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return result, err
+	}
+
+	// validate the max per day and per month
+	validator := sumIncentive.Reward.Validators
+	validator.Incentive.ValidateMaxIncentive(&sumIncentive)
 
 	// if data referral codes found send result
 	result.ReferralCode = referral.ReferralCode
+	result.Incentive = sumIncentive
 
 	return result, nil
 }
 
-func (ref *referralUseCase) UValidateReferrer(c echo.Context, pl models.PayloadValidator, campaign *models.Campaign) (models.SumIncentive, error) {
+func (ref *referralUseCase) UValidateReferrer(c echo.Context, pl models.PayloadValidator, campaignReferral *models.CampaignReferral) (models.SumIncentive, error) {
 	var sumIncentive models.SumIncentive
 	var err error
 
 	// get ref trx based on the active ref campaign
 	// and reward data with used ref code
-	if campaign == nil {
-		camps := ref.campaignRepo.GetReferralCampaign(c, pl)
-		c := *camps
-		campaign = c[0]
+	if campaignReferral == nil {
+		campaignReferral = ref.campaignRepo.GetReferralCampaign(c, pl)
 	}
 
-	for _, reward := range *campaign.Rewards {
+	for _, reward := range *campaignReferral.Rewards {
 		if reward.Validators.Target != models.RefTargetReferrer {
 			continue
 		}
@@ -146,21 +168,6 @@ func (ref *referralUseCase) UValidateReferrer(c echo.Context, pl models.PayloadV
 	validator.Incentive.ValidateMaxIncentive(&sumIncentive)
 
 	return sumIncentive, nil
-}
-
-func (rcUc *referralUseCase) getCampaignIdByPrefix(c echo.Context, prefix string) (int64, error) {
-	// get campaign id by prefix
-	campaignId, err := rcUc.referralRepo.RGetCampaignId(c, prefix)
-
-	if err != nil {
-		return 0, err
-	}
-
-	if campaignId == 0 {
-		return 0, models.ErrRefCampaginNF
-	}
-
-	return campaignId, nil
 }
 
 func (rcUc *referralUseCase) UReferralCIFValidate(c echo.Context, cif string) (models.ReferralCodes, error) {
@@ -196,4 +203,19 @@ func (rcUc *referralUseCase) UGetPrefixActiveCampaignReferral(c echo.Context) (m
 	prefixResponse.Prefix = campaignMetadata.Prefix
 
 	return prefixResponse, nil
+}
+
+func (rcUc *referralUseCase) getCampaignIdByPrefix(c echo.Context, prefix string) (int64, error) {
+	// get campaign id by prefix
+	campaignId, err := rcUc.referralRepo.RGetCampaignId(c, prefix)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if campaignId == 0 {
+		return 0, models.ErrRefCampaginNF
+	}
+
+	return campaignId, nil
 }

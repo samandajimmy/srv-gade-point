@@ -27,7 +27,7 @@ func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.RefUseCase) {
 	echoGroup.API.POST("/referral/generate", handler.HGenerateReferralCodes)
 	echoGroup.API.POST("/referral/core-trx", handler.hCoreTrx)
 	middleware.ReferralAuth(handler.checkCif)
-	echoGroup.API.GET("/referral/detail", handler.hGetReferralCodes)
+	echoGroup.API.GET("/referral/detail", handler.HGetReferralCodes)
 	echoGroup.API.GET("/referral/prefix", handler.hGetPrefixCampaignReferral)
 }
 
@@ -58,9 +58,10 @@ func (ref *ReferralHandler) HGenerateReferralCodes(c echo.Context) error {
 	return hCtrl.ShowResponse(c, responseData, err, errors)
 }
 
-func (ref *ReferralHandler) hGetReferralCodes(c echo.Context) error {
+func (ref *ReferralHandler) HGetReferralCodes(c echo.Context) error {
 	var pl models.RequestReferralCodeUser
 	var errors models.ResponseErrors
+
 	err := hCtrl.Validate(c, &pl)
 
 	if err != nil {

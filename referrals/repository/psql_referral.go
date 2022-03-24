@@ -124,6 +124,7 @@ func (m *psqlReferralsRepository) RGetCampaignId(c echo.Context, prefix string) 
 
 func (m *psqlReferralsRepository) RSumRefIncentive(c echo.Context, promoCode string, reward models.Reward) (models.SumIncentive, error) {
 	var sumIncentive models.SumIncentive
+	var perDay, perMonth float64
 
 	query := `select sum(reward_referral) per_day
 		from referral_transactions rt
@@ -131,9 +132,9 @@ func (m *psqlReferralsRepository) RSumRefIncentive(c echo.Context, promoCode str
 			on rt.used_referral_code = rtrx.used_promo_code 
 			and rt.ref_id = rtrx.ref_id
 		where rt.used_referral_code = ?0
-		and rtrx.transaction_date::date = ?1::date`
+		and rtrx.transaction_date::date = ?1`
 
-	err := m.Bun.QueryThenScan(c, &sumIncentive, query, promoCode, time.Now())
+	err := m.Bun.QueryThenScan(c, &perDay, query, promoCode, time.Now().Format(models.DateFormat))
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)
@@ -150,7 +151,7 @@ func (m *psqlReferralsRepository) RSumRefIncentive(c echo.Context, promoCode str
 		and rtrx.transaction_date between (date_trunc('month', ?1::date)::date) 
 			and (((date_trunc('month', ?1::date)) + ('1 month'::INTERVAL))::date)`
 
-	err = m.Bun.QueryThenScan(c, &sumIncentive, query, promoCode, time.Now())
+	err = m.Bun.QueryThenScan(c, &perMonth, query, promoCode, time.Now())
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)
@@ -159,6 +160,8 @@ func (m *psqlReferralsRepository) RSumRefIncentive(c echo.Context, promoCode str
 	}
 
 	sumIncentive.Reward = reward
+	sumIncentive.PerDay = perDay
+	sumIncentive.PerMonth = perMonth
 
 	return sumIncentive, nil
 }

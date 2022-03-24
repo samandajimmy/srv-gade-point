@@ -66,10 +66,10 @@ func (mr *MockRefUseCaseMockRecorder) UGetPrefixActiveCampaignReferral(arg0 inte
 }
 
 // UGetReferralCodes mocks base method.
-func (m *MockRefUseCase) UGetReferralCodes(arg0 echo.Context, arg1 models.RequestReferralCodeUser) (models.ReferralCodeUser, error) {
+func (m *MockRefUseCase) UGetReferralCodes(arg0 echo.Context, arg1 models.RequestReferralCodeUser) (models.RespReferralDetail, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UGetReferralCodes", arg0, arg1)
-	ret0, _ := ret[0].(models.ReferralCodeUser)
+	ret0, _ := ret[0].(models.RespReferralDetail)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -111,7 +111,7 @@ func (mr *MockRefUseCaseMockRecorder) UReferralCIFValidate(arg0, arg1 interface{
 }
 
 // UValidateReferrer mocks base method.
-func (m *MockRefUseCase) UValidateReferrer(arg0 echo.Context, arg1 models.PayloadValidator, arg2 *models.Campaign) (models.SumIncentive, error) {
+func (m *MockRefUseCase) UValidateReferrer(arg0 echo.Context, arg1 models.PayloadValidator, arg2 *models.CampaignReferral) (models.SumIncentive, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UValidateReferrer", arg0, arg1, arg2)
 	ret0, _ := ret[0].(models.SumIncentive)

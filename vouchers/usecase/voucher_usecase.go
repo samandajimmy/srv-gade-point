@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"gade/srv-gade-point/campaigns"
+	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/pointhistories"
 	"gade/srv-gade-point/vouchercodes"
@@ -443,13 +444,11 @@ func (vchr *voucherUseCase) VoucherBuy(ech echo.Context, payload *models.Payload
 
 func (vchr *voucherUseCase) VoucherGive(ech echo.Context, payload *models.PayloadVoucherBuy) (
 	*models.VoucherCode, error) {
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(ech, nil)
 	now := time.Now()
 	voucherDetail, err := vchr.voucherRepo.GetVoucher(ech, payload.VoucherID)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrVoucherUnavailable)
+		logger.Make(ech, nil).Debug(models.ErrVoucherUnavailable)
 
 		return nil, models.ErrVoucherUnavailable
 	}
@@ -459,7 +458,7 @@ func (vchr *voucherUseCase) VoucherGive(ech echo.Context, payload *models.Payloa
 	err = vchr.updateStockVoucher(ech, voucherDetail)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrVoucherUnavailable)
+		logger.Make(ech, nil).Debug(models.ErrVoucherUnavailable)
 
 		return nil, models.ErrVoucherUnavailable
 	}
@@ -469,13 +468,13 @@ func (vchr *voucherUseCase) VoucherGive(ech echo.Context, payload *models.Payloa
 	vEndDate, _ := time.Parse(time.RFC3339, voucherDetail.EndDate)
 
 	if vStartDate.After(now) {
-		requestLogger.Debug(models.ErrVoucherExpired)
+		logger.Make(ech, nil).Debug(models.ErrVoucherExpired)
 
 		return nil, models.ErrVoucherNotStarted
 	}
 
 	if vEndDate.Before(now) {
-		requestLogger.Debug(models.ErrVoucherExpired)
+		logger.Make(ech, nil).Debug(models.ErrVoucherExpired)
 
 		return nil, models.ErrVoucherExpired
 	}
@@ -484,7 +483,7 @@ func (vchr *voucherUseCase) VoucherGive(ech echo.Context, payload *models.Payloa
 	voucherCode, err := vchr.voucherRepo.BookVoucherCode(ech, payload)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrUpdatePromoCodes)
+		logger.Make(ech, nil).Debug(models.ErrUpdatePromoCodes)
 
 		return nil, models.ErrUpdatePromoCodes
 	}

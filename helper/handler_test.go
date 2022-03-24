@@ -3,6 +3,7 @@ package helper_test
 import (
 	"gade/srv-gade-point/helper"
 	"gade/srv-gade-point/models"
+	"gade/srv-gade-point/test"
 	"net/http"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -12,13 +13,13 @@ import (
 var _ = Describe("Handler", func() {
 	var iHandler helper.IHandler
 	var stHandler helper.Handler
-	var e helper.DummyEcho
+	var e test.DummyEcho
 	var reqpl map[string]interface{}
 	var pl interface{}
 	var err error
 
 	JustBeforeEach(func() {
-		e = helper.NewDummyEcho(http.MethodPost, "/", reqpl)
+		e = test.NewDummyEcho(http.MethodPost, "/", reqpl)
 		iHandler = helper.NewHandler(&stHandler)
 	})
 
@@ -31,13 +32,9 @@ var _ = Describe("Handler", func() {
 			err = iHandler.Validate(e.Context, pl)
 		})
 
-		BeforeEach(func() {
-			reqpl = map[string]interface{}{}
-			pl = nil
-		})
-
 		Context("error echo binding", func() {
 			BeforeEach(func() {
+				reqpl = map[string]interface{}{"cif": "11223344"}
 				pl = &[]struct{ Field string }{}
 			})
 
@@ -48,8 +45,8 @@ var _ = Describe("Handler", func() {
 
 		Context("error echo validate", func() {
 			BeforeEach(func() {
-				reqpl = nil
-				pl = models.AccountToken{}
+				reqpl = map[string]interface{}{"isError": true}
+				pl = map[string]interface{}{"cif": "11223344"}
 			})
 
 			It("expect to return error", func() {
@@ -58,6 +55,11 @@ var _ = Describe("Handler", func() {
 		})
 
 		Context("succeeded", func() {
+			BeforeEach(func() {
+				reqpl = map[string]interface{}{"cif": "11223344"}
+				pl = models.ReferralCodes{CIF: "1122334455"}
+			})
+
 			It("expect to return nil error", func() {
 				Expect(err).To(BeNil())
 			})

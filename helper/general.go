@@ -4,6 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"gade/srv-gade-point/logger"
+	"math/rand"
+	"time"
+)
+
+const (
+	letterBytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 )
 
 func CreateFloat64(input float64) *float64 {
@@ -11,6 +17,10 @@ func CreateFloat64(input float64) *float64 {
 }
 
 func CreateInt64(input int64) *int64 {
+	return &input
+}
+
+func CreateInt8(input int8) *int8 {
 	return &input
 }
 
@@ -26,4 +36,24 @@ func ToJson(obj interface{}) string {
 
 func FloatToString(input float64) string {
 	return fmt.Sprintf("%f", input)
+}
+
+func RandomStr(n int, arrChecker map[string]bool) string {
+	var randString string
+	rand.Seed(time.Now().UnixNano())
+	b := make([]byte, n)
+
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+
+	randString = string(b)
+
+	if arrChecker[randString] {
+		randString = string(RandomStr(n, arrChecker))
+	}
+
+	arrChecker[randString] = true
+
+	return randString
 }

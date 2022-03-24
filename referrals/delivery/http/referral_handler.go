@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	hCtrl helper.IHandler
+	hCtrl = helper.NewHandler(&helper.Handler{})
 )
 
 // ReferralHandler represent the httphandler for referrals
@@ -24,14 +24,27 @@ func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.RefUseCase) {
 		ReferralUseCase: us,
 	}
 
-	hCtrl = helper.NewHandler(&helper.Handler{})
-	echoGroup.API.POST("/referral/generate", handler.hGenerateReferralCodes)
+	echoGroup.API.POST("/referral/generate", handler.HGenerateReferralCodes)
+	echoGroup.API.POST("/referral/core-trx", handler.hCoreTrx)
 	middleware.ReferralAuth(handler.checkCif)
-	echoGroup.API.GET("/referral/get", handler.hGetReferralCodes)
+	echoGroup.API.GET("/referral/detail", handler.hGetReferralCodes)
 	echoGroup.API.GET("/referral/prefix", handler.hGetPrefixCampaignReferral)
 }
 
-func (ref *ReferralHandler) hGenerateReferralCodes(c echo.Context) error {
+func (ref *ReferralHandler) hCoreTrx(c echo.Context) error {
+	var pl []models.CoreTrxPayload
+	var errors models.ResponseErrors
+
+	if err := c.Bind(&pl); err != nil {
+		return hCtrl.ShowResponse(c, nil, err, errors)
+	}
+
+	responseData, err := ref.ReferralUseCase.UPostCoreTrx(c, pl)
+
+	return hCtrl.ShowResponse(c, responseData, err, errors)
+}
+
+func (ref *ReferralHandler) HGenerateReferralCodes(c echo.Context) error {
 	var pl models.RequestCreateReferral
 	var errors models.ResponseErrors
 	err := hCtrl.Validate(c, &pl)
@@ -40,7 +53,7 @@ func (ref *ReferralHandler) hGenerateReferralCodes(c echo.Context) error {
 		return hCtrl.ShowResponse(c, nil, err, errors)
 	}
 
-	responseData, err := ref.ReferralUseCase.CreateReferralCodes(c, pl)
+	responseData, err := ref.ReferralUseCase.UCreateReferralCodes(c, pl)
 
 	return hCtrl.ShowResponse(c, responseData, err, errors)
 }
@@ -54,7 +67,7 @@ func (ref *ReferralHandler) hGetReferralCodes(c echo.Context) error {
 		return hCtrl.ShowResponse(c, nil, err, errors)
 	}
 
-	responseData, err := ref.ReferralUseCase.GetReferralCodes(c, pl)
+	responseData, err := ref.ReferralUseCase.UGetReferralCodes(c, pl)
 
 	return hCtrl.ShowResponse(c, responseData, err, errors)
 }

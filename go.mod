@@ -3,6 +3,7 @@ module gade/srv-gade-point
 go 1.16
 
 require (
+	github.com/brianvoe/gofakeit/v6 v6.15.0
 	github.com/carlescere/scheduler v0.0.0-20170109141437-ee74d2f83d82
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -15,7 +16,7 @@ require (
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.2.8
 	github.com/leodido/go-urn v1.2.0 // indirect
-	github.com/lib/pq v1.0.0
+	github.com/lib/pq v1.8.0
 	github.com/onsi/ginkgo/v2 v2.1.3
 	github.com/onsi/gomega v1.18.1
 	github.com/sirupsen/logrus v1.8.1

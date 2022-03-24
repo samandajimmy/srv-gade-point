@@ -99,11 +99,11 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	}
 
 	rwdInquiry.Rewards = &rwdResponse
+	respErrors = models.ResponseErrors{}
 
 	// if reward greater then one
 	if len(*rwdInquiry.Rewards) > 1 {
 		rwdInquiry.RefTrx = rwd.rewardRepo.RGetRandomId(20)
-		respErrors = models.ResponseErrors{}
 	}
 
 	// insert data to reward transaction

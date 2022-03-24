@@ -25,23 +25,9 @@ func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.RefUseCase) {
 	}
 
 	echoGroup.API.POST("/referral/generate", handler.HGenerateReferralCodes)
-	echoGroup.API.POST("/referral/core-trx", handler.hCoreTrx)
 	middleware.ReferralAuth(handler.checkCif)
 	echoGroup.API.GET("/referral/detail", handler.hGetReferralCodes)
 	echoGroup.API.GET("/referral/prefix", handler.hGetPrefixCampaignReferral)
-}
-
-func (ref *ReferralHandler) hCoreTrx(c echo.Context) error {
-	var pl []models.CoreTrxPayload
-	var errors models.ResponseErrors
-
-	if err := c.Bind(&pl); err != nil {
-		return hCtrl.ShowResponse(c, nil, err, errors)
-	}
-
-	responseData, err := ref.ReferralUseCase.UPostCoreTrx(c, pl)
-
-	return hCtrl.ShowResponse(c, responseData, err, errors)
 }
 
 func (ref *ReferralHandler) HGenerateReferralCodes(c echo.Context) error {

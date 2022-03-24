@@ -1,8 +1,13 @@
 package models
 
+var (
+	CoreTrxSuccess       = "success"
+	CoreTrxInqFailed     = "failed_inquiry"
+	CoreTrxPaymentFailed = "failed_payment"
+)
+
 type CoreTrxPayload struct {
 	CIF            string  `json:"cif"`
-	Referrer       string  `json:"referrer"`
 	PhoneNumber    string  `json:"phoneNumber,omitempty"`
 	CustomerName   string  `json:"customerName,omitempty"`
 	TrxID          string  `json:"trxId"`
@@ -14,9 +19,8 @@ type CoreTrxPayload struct {
 	ProductCode    string  `json:"productCode"`
 	TrxType        string  `json:"trxType"`
 	Channel        string  `json:"channel,omitempty"`
-	InqStatus      int8    `json:"inqStatus"`
-	RwdTotal       float64 `json:"rwdTotal"`
-	RootRefTrx     string  `json:"rootRefTrx"`
+	InqStatus      string  `json:"inqStatus"`
+	RefTrx         string  `json:"refTrx"`
 }
 
 type CoreTrxResponse struct {

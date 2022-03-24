@@ -439,12 +439,12 @@ func (rwdRepo *psqlRewardRepository) RPostCoreTrx(c echo.Context, coreTrx []mode
 
 		stmts = append(stmts, gcdb.NewPipelineStmt(`INSERT INTO core_transactions 
 		(created_at, transaction_amount, loan_amount, interest_amount, product_code, 
-		transaction_date, total_reward, transaction_id, marketing_code, transaction_type,
+		transaction_date, transaction_id, marketing_code, transaction_type,
 		inq_status, root_ref_trx) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
 			nilFilters, createdAt, trx.TrxAmount, trx.LoanAmount,
-			trx.InterestAmount, trx.ProductCode, trx.TrxDate, trx.RwdTotal, trx.TrxID,
-			trx.MarketingCode, trx.TrxType, trx.InqStatus, trx.RootRefTrx))
+			trx.InterestAmount, trx.ProductCode, trx.TrxDate, trx.TrxID,
+			trx.MarketingCode, trx.TrxType, trx.InqStatus, trx.RefTrx))
 	}
 
 	err := gcdb.WithTransaction(rwdRepo.Conn, func(tx gcdb.Transaction) error {

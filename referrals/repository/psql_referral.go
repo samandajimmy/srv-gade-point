@@ -22,35 +22,6 @@ func NewPsqlReferralRepository(Conn *sql.DB, Bun *gcdb.DbBun) referrals.RefRepos
 	return &psqlReferralsRepository{Conn, Bun}
 }
 
-func (refRepo *psqlReferralsRepository) RPostCoreTrx(c echo.Context, coreTrx []models.CoreTrxPayload) error {
-	var nilFilters []string
-	createdAt := time.Now()
-	trxType := 1
-	totalReward := 0
-	stmts := []*gcdb.PipelineStmt{}
-	for _, trx := range coreTrx {
-
-		stmts = append(stmts, gcdb.NewPipelineStmt(`INSERT INTO core_transactions 
-		(created_at, transaction_amount, loan_amount, interest_amount, product_code, 
-		transaction_date, total_reward, transaction_id, marketing_code, transaction_type) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-			nilFilters, createdAt, trx.TrxAmount, trx.LoanAmount,
-			trx.InterestAmount, trx.ProductCode, trx.TrxDate, totalReward, trx.TrxID,
-			trx.MarketingCode, trxType))
-	}
-
-	err := gcdb.WithTransaction(refRepo.Conn, func(tx gcdb.Transaction) error {
-		return gcdb.RunPipelineQueryRow(tx, stmts...)
-	})
-
-	if err != nil {
-		logger.Make(c, nil).Debug(err)
-		return err
-	}
-
-	return nil
-}
-
 func (m *psqlReferralsRepository) RCreateReferral(c echo.Context, refcodes models.ReferralCodes) (models.ReferralCodes, error) {
 	now := time.Now()
 	query := `INSERT INTO referral_codes (cif, referral_code, campaign_id, created_at) 

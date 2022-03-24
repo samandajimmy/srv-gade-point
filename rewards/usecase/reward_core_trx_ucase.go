@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 
 	"github.com/labstack/echo"
@@ -27,7 +26,6 @@ func (rwd *rewardUseCase) UPostCoreTrx(c echo.Context, coreTrx []models.CoreTrxP
 		var plInq models.PayloadValidator
 		plInq.Validators = &validator
 		plInq.CIF = inq.CIF
-		plInq.Referrer = inq.Referrer
 		plInq.Phone = inq.PhoneNumber
 		plInq.TransactionAmount = &inq.TrxAmount
 		plInq.PromoCode = inq.MarketingCode
@@ -48,14 +46,13 @@ func (rwd *rewardUseCase) UPostCoreTrx(c echo.Context, coreTrx []models.CoreTrxP
 		var resInq models.RewardsInquiry
 		resInq, respErrors := rwd.Inquiry(c, &plInq)
 
-		if len(respErrors.Title) > 0 {
+		if respErrors.Title != "" {
+			coreTrx[i].InqStatus = models.CoreTrxInqFailed
 			continue
 		}
 
-		rwdTotal := URwdPayment(c, rwd, resInq, inq)
-		coreTrx[i].InqStatus = 1
-		coreTrx[i].RwdTotal = rwdTotal
-		coreTrx[i].RootRefTrx = resInq.RefTrx
+		coreTrx[i].InqStatus = URwdPayment(c, rwd, resInq, inq)
+		coreTrx[i].RefTrx = resInq.RefTrx
 	}
 
 	var responseData []models.CoreTrxResponse
@@ -69,22 +66,23 @@ func (rwd *rewardUseCase) UPostCoreTrx(c echo.Context, coreTrx []models.CoreTrxP
 }
 
 // use in reward payment after inqury success
-func URwdPayment(c echo.Context, rwd *rewardUseCase, resInq models.RewardsInquiry, inq models.CoreTrxPayload) float64 {
+func URwdPayment(c echo.Context, rwd *rewardUseCase, resInq models.RewardsInquiry, inq models.CoreTrxPayload) string {
 	var plPayment models.RewardPayment
-	var rwdTotal float64
+	var status string = models.CoreTrxSuccess
 
 	for _, rwds := range *resInq.Rewards {
 		plPayment.RefCore = inq.TrxID
 		plPayment.CIF = rwds.CIF
 		plPayment.RefTrx = rwds.RefTrx
 
-		resPayment, _ := rwd.Payment(c, &plPayment)
+		_, errResp := rwd.Payment(c, &plPayment)
 
-		if value := &rwds.Value; *value != 0 {
-			rwdTotal += *value
+		if errResp != nil {
+			status = models.CoreTrxPaymentFailed
+			break
 		}
 
-		logger.Make(c, nil).Info(resPayment)
 	}
-	return rwdTotal
+
+	return status
 }

@@ -109,6 +109,20 @@ func (mr *MockRefRepositoryMockRecorder) RGetReferralCampaignMetadata(arg0, arg1
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGetReferralCampaignMetadata", reflect.TypeOf((*MockRefRepository)(nil).RGetReferralCampaignMetadata), arg0, arg1)
 }
 
+// RPostCoreTrx mocks base method.
+func (m *MockRefRepository) RPostCoreTrx(arg0 echo.Context, arg1 []models.CoreTrxPayload) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RPostCoreTrx", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RPostCoreTrx indicates an expected call of RPostCoreTrx.
+func (mr *MockRefRepositoryMockRecorder) RPostCoreTrx(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RPostCoreTrx", reflect.TypeOf((*MockRefRepository)(nil).RPostCoreTrx), arg0, arg1)
+}
+
 // RSumRefIncentive mocks base method.
 func (m *MockRefRepository) RSumRefIncentive(arg0 echo.Context, arg1 string, arg2 models.Reward) (models.SumIncentive, error) {
 	m.ctrl.T.Helper()

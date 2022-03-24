@@ -8,7 +8,6 @@ import (
 
 // Repository represent the referrals repository contract
 type RefRepository interface {
-	RPostCoreTrx(echo.Context, []models.CoreTrxPayload) error
 	RCreateReferral(echo.Context, models.ReferralCodes) (models.ReferralCodes, error)
 	RGetCampaignId(echo.Context, string) (int64, error)
 	RGetReferralByCif(echo.Context, string) (models.ReferralCodes, error)

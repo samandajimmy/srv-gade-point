@@ -2,7 +2,7 @@ package main
 
 import (
 	"gade/srv-gade-point/config"
-	"gade/srv-gade-point/helper"
+	"gade/srv-gade-point/test"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -11,7 +11,7 @@ import (
 var _ = Describe("Main", func() {
 	Describe("Ping", func() {
 		config.LoadEnv()
-		e := helper.NewDummyEcho("GET", "/")
+		e := test.NewDummyEcho("GET", "/")
 		result := `{"status":"Success","message":"PONG!!","data":null}` + "\n"
 		err := ping(e.Context)
 

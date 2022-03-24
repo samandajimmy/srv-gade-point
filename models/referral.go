@@ -13,7 +13,7 @@ type ReferralCodes struct {
 }
 
 type RequestCreateReferral struct {
-	CIF    string `json:"cif,omitempty" validate:"required"`
+	CIF    string `json:"cif,omitempty" validate:"required,max=10"`
 	Prefix string `json:"prefix,omitempty" validate:"required,max=5"`
 }
 

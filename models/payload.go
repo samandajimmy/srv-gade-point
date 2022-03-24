@@ -17,3 +17,8 @@ type RewardPromotionLists struct {
 	TransactionType string `json:"transactionType,omitempty"`
 	Channel         string `json:"channel,omitempty"`
 }
+
+type RespReferral struct {
+	CIF          string `json:"cif"`
+	ReferralCode string `json:"referralCode"`
+}

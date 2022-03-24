@@ -73,7 +73,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 		if err != nil {
 			respErrors.SetTitle(err.Error())
-			rwdResponse = []models.RewardResponse{}
+
 			continue
 		}
 
@@ -99,6 +99,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	}
 
 	rwdInquiry.Rewards = &rwdResponse
+	respErrors = models.ResponseErrors{}
 
 	// if reward greater then one
 	if len(*rwdInquiry.Rewards) > 1 {

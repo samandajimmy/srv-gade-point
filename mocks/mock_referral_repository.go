@@ -35,49 +35,48 @@ func (m *MockRefRepository) EXPECT() *MockRefRepositoryMockRecorder {
 	return m.recorder
 }
 
-// CreateReferral mocks base method.
-func (m *MockRefRepository) CreateReferral(arg0 echo.Context, arg1 models.ReferralCodes) (models.ReferralCodes, error) {
+// RCreateReferral mocks base method.
+func (m *MockRefRepository) RCreateReferral(arg0 echo.Context, arg1 models.ReferralCodes) (models.ReferralCodes, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateReferral", arg0, arg1)
+	ret := m.ctrl.Call(m, "RCreateReferral", arg0, arg1)
 	ret0, _ := ret[0].(models.ReferralCodes)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateReferral indicates an expected call of CreateReferral.
-func (mr *MockRefRepositoryMockRecorder) CreateReferral(arg0, arg1 interface{}) *gomock.Call {
+// RCreateReferral indicates an expected call of RCreateReferral.
+func (mr *MockRefRepositoryMockRecorder) RCreateReferral(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateReferral", reflect.TypeOf((*MockRefRepository)(nil).CreateReferral), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RCreateReferral", reflect.TypeOf((*MockRefRepository)(nil).RCreateReferral), arg0, arg1)
 }
 
-// GetCampaignId mocks base method.
-func (m *MockRefRepository) GetCampaignId(arg0 echo.Context, arg1 string) (int64, error) {
+// RGenerateCode mocks base method.
+func (m *MockRefRepository) RGenerateCode(arg0 echo.Context, arg1 models.ReferralCodes, arg2 string) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCampaignId", arg0, arg1)
+	ret := m.ctrl.Call(m, "RGenerateCode", arg0, arg1, arg2)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// RGenerateCode indicates an expected call of RGenerateCode.
+func (mr *MockRefRepositoryMockRecorder) RGenerateCode(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGenerateCode", reflect.TypeOf((*MockRefRepository)(nil).RGenerateCode), arg0, arg1, arg2)
+}
+
+// RGetCampaignId mocks base method.
+func (m *MockRefRepository) RGetCampaignId(arg0 echo.Context, arg1 string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RGetCampaignId", arg0, arg1)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetCampaignId indicates an expected call of GetCampaignId.
-func (mr *MockRefRepositoryMockRecorder) GetCampaignId(arg0, arg1 interface{}) *gomock.Call {
+// RGetCampaignId indicates an expected call of RGetCampaignId.
+func (mr *MockRefRepositoryMockRecorder) RGetCampaignId(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCampaignId", reflect.TypeOf((*MockRefRepository)(nil).GetCampaignId), arg0, arg1)
-}
-
-// GetReferralByCif mocks base method.
-func (m *MockRefRepository) GetReferralByCif(arg0 echo.Context, arg1 string) (models.ReferralCodes, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetReferralByCif", arg0, arg1)
-	ret0, _ := ret[0].(models.ReferralCodes)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetReferralByCif indicates an expected call of GetReferralByCif.
-func (mr *MockRefRepositoryMockRecorder) GetReferralByCif(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReferralByCif", reflect.TypeOf((*MockRefRepository)(nil).GetReferralByCif), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGetCampaignId", reflect.TypeOf((*MockRefRepository)(nil).RGetCampaignId), arg0, arg1)
 }
 
 // RGetHistoryIncentive mocks base method.
@@ -93,6 +92,21 @@ func (m *MockRefRepository) RGetHistoryIncentive(arg0 echo.Context, arg1 string)
 func (mr *MockRefRepositoryMockRecorder) RGetHistoryIncentive(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGetHistoryIncentive", reflect.TypeOf((*MockRefRepository)(nil).RGetHistoryIncentive), arg0, arg1)
+}
+
+// RGetReferralByCif mocks base method.
+func (m *MockRefRepository) RGetReferralByCif(arg0 echo.Context, arg1 string) (models.ReferralCodes, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RGetReferralByCif", arg0, arg1)
+	ret0, _ := ret[0].(models.ReferralCodes)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RGetReferralByCif indicates an expected call of RGetReferralByCif.
+func (mr *MockRefRepositoryMockRecorder) RGetReferralByCif(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGetReferralByCif", reflect.TypeOf((*MockRefRepository)(nil).RGetReferralByCif), arg0, arg1)
 }
 
 // RGetReferralCampaignMetadata mocks base method.

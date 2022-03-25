@@ -38,6 +38,7 @@ var _ = Describe("ReferralHandler", func() {
 	var response models.Response
 	var expectResp models.Response
 	var pl models.RequestCreateReferral
+	var plGetHistory models.RequestHistoryIncentive
 	var campaign models.Campaign
 	var usecases config.Usecases
 
@@ -49,6 +50,7 @@ var _ = Describe("ReferralHandler", func() {
 		_, usecases = test.LoadRealRepoUsecase(db)
 		handler.ReferralUseCase = usecases.ReferralsUseCase
 		pl = models.RequestCreateReferral{CIF: "1122334455", Prefix: "PSE"}
+		plGetHistory = models.RequestHistoryIncentive{RefCif: "123456789"}
 	})
 
 	Describe("HGenerateReferralCodes", func() {
@@ -163,4 +165,42 @@ var _ = Describe("ReferralHandler", func() {
 		})
 	})
 
+	Describe("HGetHistoriesIncentive", func() {
+		JustBeforeEach(func() {
+			e = test.NewDummyEcho(http.MethodPost, "/", plGetHistory)
+			_ = handler.HGetHistoriesIncentive(e.Context)
+			_ = json.Unmarshal(e.Response.Body.Bytes(), &response)
+		})
+
+		Context("get referral incentive error", func() {
+			BeforeEach(func() {
+				expectResp = models.Response{
+					Code:   "99",
+					Status: "Error",
+				}
+			})
+
+			Context("when cif is empty get referral incentive history", func() {
+				BeforeEach(func() {
+					plGetHistory.RefCif = ""
+					expectResp.Message = "Key: 'RequestHistoryIncentive.RefCif' Error:Field validation for 'RefCif' failed on the 'required' tag"
+				})
+
+				It("expect response to return as expected", func() {
+					Expect(response).To(Equal(expectResp))
+				})
+			})
+
+			Context("when cif has no referral incentive history", func() {
+				BeforeEach(func() {
+					plGetHistory.RefCif = "1017441370"
+					expectResp.Message = "Data history incentive referral tidak ditemukan"
+				})
+
+				It("expect response to return as expected", func() {
+					Expect(response).To(Equal(expectResp))
+				})
+			})
+		})
+	})
 })

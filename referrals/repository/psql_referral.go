@@ -193,3 +193,31 @@ func (m *psqlReferralsRepository) RGetReferralCampaignMetadata(c echo.Context, p
 
 	return response, nil
 }
+
+func (m *psqlReferralsRepository) RGetHistoryIncentive(c echo.Context, refCif string) ([]models.ResponseHistoryIncentive, error) {
+	var historyIncentives []models.ResponseHistoryIncentive
+
+	query := `select
+		(rtrx.request_data->>'validators')::json->>'transactionType' as transaction_type, 
+		(rtrx.request_data->>'validators')::json->>'product' as product_code,
+		rtrx.request_data->>'customerName' as customer_name,
+		rt.reward_referral,
+		rt.created_at
+			from referral_transactions rt 
+ 			left join reward_transactions rtrx on rtrx.ref_id = rt.ref_id 
+ 			where rtrx.status = '1'
+			and rtrx.request_data->>'referrer' = ?0
+ 			and rt.reward_type = ?1
+ 			order by rt.created_at desc;`
+
+	err := m.Bun.QueryThenScan(c, &historyIncentives, query, refCif,
+		models.CodeTypeIncentive)
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return []models.ResponseHistoryIncentive{}, err
+	}
+
+	return historyIncentives, nil
+}

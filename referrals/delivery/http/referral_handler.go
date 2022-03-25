@@ -29,6 +29,7 @@ func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.RefUseCase) {
 	middleware.ReferralAuth(handler.checkCif)
 	echoGroup.API.GET("/referral/detail", handler.hGetReferralCodes)
 	echoGroup.API.GET("/referral/prefix", handler.hGetPrefixCampaignReferral)
+	echoGroup.API.GET("/referral/incentive", handler.HGetHistoriesIncentive)
 }
 
 func (ref *ReferralHandler) hCoreTrx(c echo.Context) error {
@@ -76,6 +77,24 @@ func (ref *ReferralHandler) hGetPrefixCampaignReferral(c echo.Context) error {
 	var errors models.ResponseErrors
 
 	responseData, err := ref.ReferralUseCase.UGetPrefixActiveCampaignReferral(c)
+
+	if err != nil {
+		return hCtrl.ShowResponse(c, nil, err, errors)
+	}
+
+	return hCtrl.ShowResponse(c, responseData, err, errors)
+}
+func (ref *ReferralHandler) HGetHistoriesIncentive(c echo.Context) error {
+	var pl models.RequestHistoryIncentive
+	var errors models.ResponseErrors
+
+	err := hCtrl.Validate(c, &pl)
+
+	if err != nil {
+		return hCtrl.ShowResponse(c, nil, err, errors)
+	}
+
+	responseData, err := ref.ReferralUseCase.UGetHistoryIncentive(c, pl)
 
 	if err != nil {
 		return hCtrl.ShowResponse(c, nil, err, errors)

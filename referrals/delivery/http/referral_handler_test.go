@@ -242,4 +242,46 @@ var _ = Describe("ReferralHandler", func() {
 			})
 		})
 	})
+
+	Describe("HGetHistoriesIncentive", func() {
+		var reqpl models.RequestHistoryIncentive
+
+		JustBeforeEach(func() {
+			pl = reqpl
+			e = test.NewDummyEcho(http.MethodPost, "/", pl)
+			_ = handler.HGetHistoriesIncentive(e.Context)
+			_ = json.Unmarshal(e.Response.Body.Bytes(), &response)
+		})
+
+		Context("get referral incentive error", func() {
+			BeforeEach(func() {
+				expectResp = models.Response{
+					Code:   "99",
+					Status: "Error",
+				}
+			})
+
+			Context("when cif is empty get referral incentive history", func() {
+				BeforeEach(func() {
+					reqpl.RefCif = ""
+					expectResp.Message = "Key: 'RequestHistoryIncentive.RefCif' Error:Field validation for 'RefCif' failed on the 'required' tag"
+				})
+
+				It("expect response to return as expected", func() {
+					Expect(response).To(Equal(expectResp))
+				})
+			})
+
+			Context("when cif has no referral incentive history", func() {
+				BeforeEach(func() {
+					reqpl.RefCif = "1017441370"
+					expectResp.Message = "Data history incentive referral tidak ditemukan"
+				})
+
+				It("expect response to return as expected", func() {
+					Expect(response).To(Equal(expectResp))
+				})
+			})
+		})
+	})
 })

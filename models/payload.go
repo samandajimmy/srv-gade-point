@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 // PayloadList a struct to store all payload for a list response
 type PayloadList struct {
 	Status          string `json:"status,omitempty"`
@@ -26,4 +28,16 @@ type RespReferral struct {
 type RespReferralDetail struct {
 	ReferralCode string       `json:"referralCode"`
 	Incentive    SumIncentive `json:"incentive"`
+}
+
+type RequestHistoryIncentive struct {
+	RefCif string `json:"refCif" validate:"required"`
+}
+
+type ResponseHistoryIncentive struct {
+	TransactionType string    `json:"transactionType"`
+	ProductCode     string    `json:"productCode"`
+	CustomerName    string    `json:"customerName"`
+	RewardReferral  float64   `json:"rewardReferral"`
+	CreatedAt       time.Time `json:"createdAt"`
 }

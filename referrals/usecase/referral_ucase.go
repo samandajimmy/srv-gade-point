@@ -219,3 +219,24 @@ func (rcUc *referralUseCase) getCampaignIdByPrefix(c echo.Context, prefix string
 
 	return campaignId, nil
 }
+func (rcUc *referralUseCase) UGetHistoryIncentive(c echo.Context, pl models.RequestHistoryIncentive) ([]models.ResponseHistoryIncentive, error) {
+	var historyIncentive []models.ResponseHistoryIncentive
+
+	historyIncentive, err := rcUc.referralRepo.RGetHistoryIncentive(c, pl.RefCif)
+
+	if err != nil {
+		logger.Make(c, nil).Error(models.ErrRefHistoryIncentiveNF)
+
+		return []models.ResponseHistoryIncentive{}, models.ErrRefHistoryIncentiveNF
+	}
+
+	length := len(historyIncentive)
+
+	if length == 0 {
+		logger.Make(c, nil).Error(models.ErrRefHistoryIncentiveNF)
+
+		return []models.ResponseHistoryIncentive{}, models.ErrRefHistoryIncentiveNF
+	}
+
+	return historyIncentive, nil
+}

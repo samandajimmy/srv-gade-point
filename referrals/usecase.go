@@ -14,4 +14,5 @@ type RefUseCase interface {
 	UReferralCIFValidate(echo.Context, string) (models.ReferralCodes, error)
 	UValidateReferrer(c echo.Context, pl models.PayloadValidator, campaignReferral *models.CampaignReferral) (models.SumIncentive, error)
 	UGetPrefixActiveCampaignReferral(echo.Context) (models.PrefixResponse, error)
+	UGetHistoryIncentive(c echo.Context, pl models.RequestHistoryIncentive) ([]models.ResponseHistoryIncentive, error)
 }

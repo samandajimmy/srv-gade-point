@@ -1,6 +1,7 @@
 package models_test
 
 import (
+	"gade/srv-gade-point/helper"
 	"gade/srv-gade-point/models"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -24,14 +25,14 @@ var _ = Describe("Incentive", func() {
 		Context(`incentive per day greater than max per day
 			and incentive per month greater than max per month`, func() {
 			BeforeEach(func() {
-				incentive.MaxPerDay = float64(500)
-				incentive.MaxPerMonth = float64(500)
+				incentive.MaxPerDay = helper.CreateFloat64(500)
+				incentive.MaxPerMonth = helper.CreateFloat64(500)
 				sum.PerDay = float64(1000)
 				sum.PerMonth = float64(1000)
 			})
 
 			It("expect to have incentive per day equal to max per day", func() {
-				Expect(sum.PerDay).To(Equal(incentive.MaxPerDay))
+				Expect(sum.PerDay).To(Equal(*incentive.MaxPerDay))
 			})
 
 			It("expect incentive validPerDay to be false", func() {
@@ -39,7 +40,7 @@ var _ = Describe("Incentive", func() {
 			})
 
 			It("expect to have incentive per month equal to max per month", func() {
-				Expect(sum.PerDay).To(Equal(incentive.MaxPerDay))
+				Expect(sum.PerDay).To(Equal(*incentive.MaxPerDay))
 			})
 
 			It("expect incentive validPerMonth to be false", func() {
@@ -54,8 +55,8 @@ var _ = Describe("Incentive", func() {
 		Context(`incentive per day less than max per day
 			and incentive per month less than max per month`, func() {
 			BeforeEach(func() {
-				incentive.MaxPerDay = float64(1000)
-				incentive.MaxPerMonth = float64(1000)
+				incentive.MaxPerDay = helper.CreateFloat64(1000)
+				incentive.MaxPerMonth = helper.CreateFloat64(1000)
 				sum.PerDay = float64(100)
 				sum.PerMonth = float64(100)
 			})
@@ -84,8 +85,8 @@ var _ = Describe("Incentive", func() {
 		Context(`incentive per day equal to max per day
 			and incentive per month equal to max per month`, func() {
 			BeforeEach(func() {
-				incentive.MaxPerDay = float64(1000)
-				incentive.MaxPerMonth = float64(1000)
+				incentive.MaxPerDay = helper.CreateFloat64(1000)
+				incentive.MaxPerMonth = helper.CreateFloat64(1000)
 				sum.PerDay = float64(1000)
 				sum.PerMonth = float64(1000)
 			})
@@ -114,7 +115,7 @@ var _ = Describe("Incentive", func() {
 
 	Describe("ValidateMaxTransaction", func() {
 		var output, amount float64
-		incentive := models.Incentive{MaxTransaction: 1000}
+		incentive := models.Incentive{MaxTransaction: helper.CreateFloat64(1000)}
 
 		JustBeforeEach(func() {
 			output = incentive.ValidateMaxTransaction(amount)

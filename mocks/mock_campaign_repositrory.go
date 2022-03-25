@@ -124,10 +124,10 @@ func (mr *MockCRepositoryMockRecorder) GetCampaignDetail(arg0, arg1 interface{})
 }
 
 // GetReferralCampaign mocks base method.
-func (m *MockCRepository) GetReferralCampaign(arg0 echo.Context, arg1 models.PayloadValidator) *[]*models.Campaign {
+func (m *MockCRepository) GetReferralCampaign(arg0 echo.Context, arg1 models.PayloadValidator) *models.CampaignReferral {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetReferralCampaign", arg0, arg1)
-	ret0, _ := ret[0].(*[]*models.Campaign)
+	ret0, _ := ret[0].(*models.CampaignReferral)
 	return ret0
 }
 
@@ -135,6 +135,21 @@ func (m *MockCRepository) GetReferralCampaign(arg0 echo.Context, arg1 models.Pay
 func (mr *MockCRepositoryMockRecorder) GetReferralCampaign(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReferralCampaign", reflect.TypeOf((*MockCRepository)(nil).GetReferralCampaign), arg0, arg1)
+}
+
+// GetRewardIncentiveByCampaign mocks base method.
+func (m *MockCRepository) GetRewardIncentiveByCampaign(arg0 echo.Context, arg1 int64) (models.Reward, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRewardIncentiveByCampaign", arg0, arg1)
+	ret0, _ := ret[0].(models.Reward)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRewardIncentiveByCampaign indicates an expected call of GetRewardIncentiveByCampaign.
+func (mr *MockCRepositoryMockRecorder) GetRewardIncentiveByCampaign(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRewardIncentiveByCampaign", reflect.TypeOf((*MockCRepository)(nil).GetRewardIncentiveByCampaign), arg0, arg1)
 }
 
 // SavePoint mocks base method.

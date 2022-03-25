@@ -1,40 +1,40 @@
 
 campaign: 
   referralCampaign:
+    id: 1
+    name: Kampanye referral
+    description: Kampanye referral
+    endDate: '2023-10-19T00:00:00Z'
+    startDate: '2019-05-19T00:00:00Z'
+    rewards:
     - id: 1
-      name: Kampanye referral
-      description: Kampanye referral
-      endDate: '2023-10-19T00:00:00Z'
-      startDate: '2019-05-19T00:00:00Z'
-      rewards:
-      - id: 1
-        name: Discount referral
-        description: ini adalah reward discount referral
-        termsAndConditions: jelaskan bagaimana dan apa saja persyaratannya
-        howToUse: jelaskan bagaimana cara mendapatkan diskon ini
-        journalAccount: '1122334455'
-        isPromoCode: 0
-        type: 1
-        validators:
-          channel: 9997, 9999
-          product: '37'
-          transactionType: OP
-          value: 50000
-        tags: []
-      - id: 2
-        name: Discount referrer
-        description: ini adalah reward discount referrer
-        termsAndConditions: jelaskan bagaimana dan apa saja persyaratannya
-        howToUse: jelaskan bagaimana cara mendapatkan diskon ini
-        journalAccount: '1122334455'
-        isPromoCode: 0
-        type: 5
-        validators:
-          channel: 9997, 9999
-          product: '37'
-          transactionType: OP
-          target: referrer
-          incentive:
-            maxPerDay: 500000
-            maxPerMonth: 1000000
-        tags: []
+      name: Discount referral
+      description: ini adalah reward discount referral
+      termsAndConditions: jelaskan bagaimana dan apa saja persyaratannya
+      howToUse: jelaskan bagaimana cara mendapatkan diskon ini
+      journalAccount: '1122334455'
+      isPromoCode: 0
+      type: 1
+      validators:
+        channel: 9997, 9999
+        product: '37'
+        transactionType: OP
+        value: 50000
+      tags: []
+    - id: 2
+      name: Discount referrer
+      description: ini adalah reward discount referrer
+      termsAndConditions: jelaskan bagaimana dan apa saja persyaratannya
+      howToUse: jelaskan bagaimana cara mendapatkan diskon ini
+      journalAccount: '1122334455'
+      isPromoCode: 0
+      type: 5
+      validators:
+        channel: 9997, 9999
+        product: '37'
+        transactionType: OP
+        target: referrer
+        incentive:
+          maxPerDay: 500000
+          maxPerMonth: 1000000
+      tags: []

@@ -15,23 +15,24 @@ import (
 
 // Validator to store all validator data
 type Validator struct {
-	CampaignCode         string    `json:"campaignCode,omitempty"`
-	Channel              string    `json:"channel,omitempty" validate:"required"`
-	Discount             *float64  `json:"discount,omitempty"`
-	Formula              string    `json:"formula,omitempty"`
-	MaxLoanAmount        *float64  `json:"maxLoanAmount,omitempty"`
-	MaxValue             *float64  `json:"maxValue,omitempty"`
-	MinLoanAmount        *float64  `json:"minLoanAmount,omitempty"`
-	MinTransactionAmount *float64  `json:"minTransactionAmount,omitempty"`
-	Multiplier           *float64  `json:"multiplier,omitempty"`
-	Product              string    `json:"product,omitempty" validate:"required"`
-	Source               string    `json:"source,omitempty"` // device name that user used
-	TransactionType      string    `json:"transactionType,omitempty" validate:"required"`
-	Unit                 string    `json:"unit,omitempty"`
-	Target               string    `json:"target,omitempty"`
-	Value                *float64  `json:"value,omitempty"`
-	ValueVoucherID       *int64    `json:"valueVoucherId,omitempty"`
-	Incentive            Incentive `json:"incentive,omitempty"`
+	CampaignCode         string     `json:"campaignCode,omitempty"`
+	Channel              string     `json:"channel,omitempty" validate:"required"`
+	Discount             *float64   `json:"discount,omitempty"`
+	Formula              string     `json:"formula,omitempty"`
+	MaxLoanAmount        *float64   `json:"maxLoanAmount,omitempty"`
+	MaxValue             *float64   `json:"maxValue,omitempty"`
+	MinLoanAmount        *float64   `json:"minLoanAmount,omitempty"`
+	MinTransactionAmount *float64   `json:"minTransactionAmount,omitempty"`
+	Multiplier           *float64   `json:"multiplier,omitempty"`
+	Deviden              *float64   `json:"deviden,omitempty"`
+	Product              string     `json:"product,omitempty" validate:"required"`
+	Source               string     `json:"source,omitempty"` // device name that user used
+	TransactionType      string     `json:"transactionType,omitempty" validate:"required"`
+	Unit                 string     `json:"unit,omitempty"`
+	Target               string     `json:"target,omitempty"`
+	Value                *float64   `json:"value,omitempty"`
+	ValueVoucherID       *int64     `json:"valueVoucherId,omitempty"`
+	Incentive            *Incentive `json:"incentive,omitempty"`
 }
 
 // PayloadValidator to store a payload to validate a request
@@ -40,7 +41,7 @@ type PayloadValidator struct {
 	IsMulti           bool       `json:"isMulti,omitempty"`
 	CampaignID        string     `json:"campaignId,omitempty"`
 	CIF               string     `json:"cif,omitempty"`
-	Referrer          string     `json:"referrer,omitempty" validate:"isRequiredWith=Validators.CampaignCode,necsfield=CIF"`
+	Referrer          string     `json:"referrer" validate:"isRequiredWith=Validators.CampaignCode,necsfield=CIF"`
 	CustomerName      string     `json:"customerName,omitempty"`
 	LoanAmount        *float64   `json:"loanAmount,omitempty"`
 	Phone             string     `json:"phone,omitempty"`
@@ -238,24 +239,21 @@ func (v *Validator) CalculateMaximumValue(value *float64) (float64, error) {
 }
 
 func (v *Validator) CalculateIncentive(pv *PayloadValidator) float64 {
-
 	var rewardResult float64
 	var i Incentive
 
 	// check if incentive is available
-	isIncentiveEmpty := reflect.DeepEqual(i, v.Incentive)
-
-	if isIncentiveEmpty {
+	if reflect.DeepEqual(i, v.Incentive) {
 		return 0
 	}
 
 	// check if incentive validator is available
-	if len(v.Incentive.Validator) == 0 {
+	if v.Incentive.Validator == nil {
 		return 0
 	}
 
 	// get reward value by looping reward incentive validator that match payload validator
-	for _, validator := range v.Incentive.Validator {
+	for _, validator := range *v.Incentive.Validator {
 		value, _ := validator.GetRewardValue(pv)
 		rewardResult += value
 	}

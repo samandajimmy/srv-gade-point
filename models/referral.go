@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 // ReferralCodes is represent a referral_transactions model
 type ReferralCodes struct {
@@ -43,4 +45,15 @@ type SumIncentive struct {
 
 type PrefixResponse struct {
 	Prefix string `json:"prefix,omitempty"`
+}
+
+// RespFriends list member used code referral
+type RespFriends struct {
+	CustomerName string `json:"customerName,omitempty"`
+}
+
+type PayloadFriends struct {
+	CIF   string `json:"cif,omitempty"`
+	Limit int8   `json:"limit"`
+	Page  int8   `json:"page"`
 }

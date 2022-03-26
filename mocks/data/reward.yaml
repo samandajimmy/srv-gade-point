@@ -17,3 +17,19 @@ reward:
       refTrx: someIDs
       type: incentive
       journalAccount: '1122334455'
+  inquiry:
+    cif: '1122334454'
+    phone: '085866612336'
+    promoCode: JSR11224
+    validators:
+      channel: '9997'
+      product: '62'
+      transactionType: OP
+    customerName: Jimmy Samanda Rasu
+    transactionDate: '2022-03-11 14:34:19.241'
+    transactionAmount: 15000000
+  payment:
+    cif: "1122334454"
+    refTrx: WHv2aN1tZZtr4by5lKNh
+    refCore: '1230020620000313'
+

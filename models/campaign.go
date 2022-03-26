@@ -26,6 +26,12 @@ type Campaign struct {
 	Metadata    *Metadata  `json:"metadata,omitempty"`
 }
 
+type CampaignReferral struct {
+	Campaign
+
+	CifReferrer string `json:"cifReferrer"`
+}
+
 type Metadata struct {
 	IsReferral bool   `json:"isReferral,omitempty"`
 	Prefix     string `json:"prefix,omitempty"`

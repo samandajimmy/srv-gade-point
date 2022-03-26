@@ -31,6 +31,8 @@ var (
 
 	CodeTypeVoucher string = "voucher"
 
+	CodeTypeIncentive string = "incentive"
+
 	RefTargetReferral string = CodeTypeReferral
 
 	RefTargetReferrer string = "referrer"

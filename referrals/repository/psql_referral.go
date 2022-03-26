@@ -95,6 +95,7 @@ func (m *psqlReferralsRepository) RGetCampaignId(c echo.Context, prefix string) 
 
 func (m *psqlReferralsRepository) RSumRefIncentive(c echo.Context, promoCode string, reward models.Reward) (models.SumIncentive, error) {
 	var sumIncentive models.SumIncentive
+	var perDay, perMonth float64
 
 	query := `select sum(reward_referral) per_day
 		from referral_transactions rt
@@ -102,9 +103,9 @@ func (m *psqlReferralsRepository) RSumRefIncentive(c echo.Context, promoCode str
 			on rt.used_referral_code = rtrx.used_promo_code 
 			and rt.ref_id = rtrx.ref_id
 		where rt.used_referral_code = ?0
-		and rtrx.transaction_date::date = ?1::date`
+		and rtrx.transaction_date::date = ?1`
 
-	err := m.Bun.QueryThenScan(c, &sumIncentive, query, promoCode, time.Now())
+	err := m.Bun.QueryThenScan(c, &perDay, query, promoCode, time.Now().Format(models.DateFormat))
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)
@@ -121,7 +122,7 @@ func (m *psqlReferralsRepository) RSumRefIncentive(c echo.Context, promoCode str
 		and rtrx.transaction_date between (date_trunc('month', ?1::date)::date) 
 			and (((date_trunc('month', ?1::date)) + ('1 month'::INTERVAL))::date)`
 
-	err = m.Bun.QueryThenScan(c, &sumIncentive, query, promoCode, time.Now())
+	err = m.Bun.QueryThenScan(c, &perMonth, query, promoCode, time.Now())
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)
@@ -130,6 +131,8 @@ func (m *psqlReferralsRepository) RSumRefIncentive(c echo.Context, promoCode str
 	}
 
 	sumIncentive.Reward = reward
+	sumIncentive.PerDay = perDay
+	sumIncentive.PerMonth = perMonth
 
 	return sumIncentive, nil
 }
@@ -163,4 +166,32 @@ func (m *psqlReferralsRepository) RGetReferralCampaignMetadata(c echo.Context, p
 	}
 
 	return response, nil
+}
+
+func (m *psqlReferralsRepository) RGetHistoryIncentive(c echo.Context, refCif string) ([]models.ResponseHistoryIncentive, error) {
+	var historyIncentives []models.ResponseHistoryIncentive
+
+	query := `select
+		(rtrx.request_data->>'validators')::json->>'transactionType' as transaction_type, 
+		(rtrx.request_data->>'validators')::json->>'product' as product_code,
+		rtrx.request_data->>'customerName' as customer_name,
+		rt.reward_referral,
+		rt.created_at
+			from referral_transactions rt 
+ 			left join reward_transactions rtrx on rtrx.ref_id = rt.ref_id 
+ 			where rtrx.status = '1'
+			and rtrx.request_data->>'referrer' = ?0
+ 			and rt.reward_type = ?1
+ 			order by rt.created_at desc;`
+
+	err := m.Bun.QueryThenScan(c, &historyIncentives, query, refCif,
+		models.CodeTypeIncentive)
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return []models.ResponseHistoryIncentive{}, err
+	}
+
+	return historyIncentives, nil
 }

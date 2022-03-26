@@ -9,6 +9,7 @@ import (
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewards"
+	"reflect"
 	"strings"
 	"time"
 
@@ -236,7 +237,7 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 	return campaigns, nil
 }
 
-func (m *psqlCampaignRepository) GetReferralCampaign(c echo.Context, pv models.PayloadValidator) *[]*models.Campaign {
+func (m *psqlCampaignRepository) GetReferralCampaign(c echo.Context, pv models.PayloadValidator) *models.CampaignReferral {
 	query := `SELECT distinct c.id, c.name, c.description, c.start_date, c.end_date, c.status,
 		c.updated_at, c.created_at
 		FROM campaigns c
@@ -256,8 +257,8 @@ func (m *psqlCampaignRepository) GetReferralCampaign(c echo.Context, pv models.P
 		return nil
 	}
 
-	var campaigns []*models.Campaign
-	err = m.dbBun.ScanRows(c.Request().Context(), rows, &campaigns)
+	var campaign models.CampaignReferral
+	err = m.dbBun.ScanRows(c.Request().Context(), rows, &campaign)
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)
@@ -265,11 +266,11 @@ func (m *psqlCampaignRepository) GetReferralCampaign(c echo.Context, pv models.P
 		return nil
 	}
 
-	if campaigns == nil {
+	if reflect.DeepEqual(campaign, models.CampaignReferral{}) {
 		return nil
 	}
 
-	rewards, err := m.rwdRepo.GetRewardByCampaign(c, campaigns[0].ID)
+	rewards, err := m.rwdRepo.GetRewardByCampaign(c, campaign.ID)
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)
@@ -277,9 +278,54 @@ func (m *psqlCampaignRepository) GetReferralCampaign(c echo.Context, pv models.P
 		return nil
 	}
 
-	campaigns[0].Rewards = &rewards
+	campaign.Rewards = &rewards
+	var cif string
 
-	return &campaigns
+	query = `select cif from referral_codes rc 
+		where lower(rc.referral_code) = ?0
+		and rc.campaign_id = ?1`
+
+	err = m.dbBun.QueryThenScan(c, &cif, query, strings.ToLower(pv.PromoCode), campaign.ID)
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return nil
+	}
+
+	campaign.CifReferrer = cif
+
+	return &campaign
+}
+
+func (m *psqlCampaignRepository) GetRewardIncentiveByCampaign(c echo.Context, campaignId int64) (models.Reward, error) {
+	rewards, err := m.rwdRepo.GetRewardByCampaign(c, campaignId)
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return models.Reward{}, err
+	}
+
+	// get reward that has incentive object and target is referrer
+	// note that reward incentive cannot have multiple object
+	for _, reward := range rewards {
+		if reward.Validators == nil {
+			continue
+		}
+
+		if reward.Validators.Incentive == nil {
+			continue
+		}
+
+		if reward.Validators.Target != models.RefTargetReferrer {
+			continue
+		}
+
+		return reward, nil
+	}
+
+	return models.Reward{}, models.ErrMessageNoRewards
 }
 
 func (m *psqlCampaignRepository) GetCampaignAvailable(c echo.Context, pv models.PayloadValidator) ([]*models.Campaign, error) {

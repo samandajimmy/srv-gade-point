@@ -16,7 +16,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 	cp := models.CampaignPack{}
 	// get code type promo, voucher or referral
-	plValidator.CodeType = rwd.getCodeType(c, *plValidator, &cp)
+	plValidator.CodeType = rwd.getCodeType(c, plValidator, &cp)
 	// get existing reward transaction if exist
 	existingTrx := rwd.getExistingTrx(c, plValidator)
 
@@ -32,7 +32,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 	// check if promoCode type is a referral code. if yes,
 	// we need to validate the referral promo campaign
-	err := rwd.validatePromoReferral(c, *plValidator, cp.ReferralPack)
+	err := rwd.validatePromoReferral(c, plValidator, cp.ReferralPack)
 
 	if err != nil {
 		respErrors.SetTitle(err.Error())
@@ -125,7 +125,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	return rwdInquiry, &respErrors
 }
 
-func (rwd *rewardUseCase) validatePromoReferral(c echo.Context, pl models.PayloadValidator,
+func (rwd *rewardUseCase) validatePromoReferral(c echo.Context, pl *models.PayloadValidator,
 	campaigns *[]*models.Campaign) error {
 
 	if pl.CodeType != models.CodeTypeReferral {
@@ -134,9 +134,12 @@ func (rwd *rewardUseCase) validatePromoReferral(c echo.Context, pl models.Payloa
 
 	// validate referral codes
 	camps := *campaigns
-	campaign := *camps[0]
+	campaignReferral := models.CampaignReferral{
+		Campaign:    *camps[0],
+		CifReferrer: pl.Referrer,
+	}
 	// get data incentive of used referral code
-	incentive, err := rwd.referralUs.UValidateReferrer(c, pl, &campaign)
+	incentive, err := rwd.referralUs.UValidateReferrer(c, *pl, &campaignReferral)
 
 	if err != nil {
 		return err
@@ -243,12 +246,12 @@ func (rwd *rewardUseCase) responseReward(c echo.Context, reward models.Reward,
 	return rwdResp, nil
 }
 
-func (rwd *rewardUseCase) getCodeType(c echo.Context, plValidator models.PayloadValidator,
+func (rwd *rewardUseCase) getCodeType(c echo.Context, pl *models.PayloadValidator,
 	cp *models.CampaignPack) string {
 
 	// check if the promo code is a voucher or not
 	// get voucher code with promo code
-	vc, _, _ := rwd.voucherUC.GetVoucherCode(c, &plValidator, false)
+	vc, _, _ := rwd.voucherUC.GetVoucherCode(c, pl, false)
 
 	if vc != nil {
 		cp.VoucherPack = vc
@@ -258,10 +261,13 @@ func (rwd *rewardUseCase) getCodeType(c echo.Context, plValidator models.Payload
 
 	// check if the promo code is a referral or not
 	// get campaign referral by referral code
-	cr := rwd.campaignRepo.GetReferralCampaign(c, plValidator)
+	cr := rwd.campaignRepo.GetReferralCampaign(c, *pl)
 
 	if cr != nil {
-		cp.ReferralPack = cr
+		var campaign []*models.Campaign
+		campaign = append(campaign, &cr.Campaign)
+		cp.ReferralPack = &campaign
+		pl.Referrer = cr.CifReferrer
 
 		return models.CodeTypeReferral
 	}

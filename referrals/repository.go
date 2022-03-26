@@ -16,4 +16,5 @@ type RefRepository interface {
 	RGenerateCode(c echo.Context, refCode models.ReferralCodes, prefix string) string
 	RGetReferralCampaignMetadata(c echo.Context, pv models.PayloadValidator) (models.PrefixResponse, error)
 	RGetHistoryIncentive(c echo.Context, refCif string) ([]models.ResponseHistoryIncentive, error)
+	RTotalFriends(c echo.Context, refCif string) (models.RespTotalFriends, error)
 }

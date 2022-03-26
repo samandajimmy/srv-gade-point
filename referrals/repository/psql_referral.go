@@ -224,3 +224,30 @@ func (m *psqlReferralsRepository) RGetHistoryIncentive(c echo.Context, refCif st
 
 	return historyIncentives, nil
 }
+
+func (m *psqlReferralsRepository) RTotalFriends(c echo.Context, cif string) (models.RespTotalFriends, error) {
+	var friends []models.Friends
+	var resTFriend models.RespTotalFriends
+
+	query := `SELECT
+			DISTINCT customer_name
+			FROM (
+			SELECT rt.request_data ->>'customerName' as customer_name
+				FROM reward_transactions rt
+				LEFT JOIN referral_codes rc ON rt.used_promo_code = rc.referral_code 
+				where rc.cif = ?
+				order by rt.created_at desc
+			) AS subquery;`
+
+	err := m.Bun.QueryThenScan(c, &friends, query, cif)
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return models.RespTotalFriends{}, err
+	}
+
+	resTFriend.TotalFriends = len(friends)
+
+	return resTFriend, nil
+}

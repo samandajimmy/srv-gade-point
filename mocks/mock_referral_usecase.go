@@ -125,6 +125,21 @@ func (mr *MockRefUseCaseMockRecorder) UReferralCIFValidate(arg0, arg1 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UReferralCIFValidate", reflect.TypeOf((*MockRefUseCase)(nil).UReferralCIFValidate), arg0, arg1)
 }
 
+// UTotalFriends mocks base method.
+func (m *MockRefUseCase) UTotalFriends(arg0 echo.Context, arg1 models.RequestReferralCodeUser) (models.RespTotalFriends, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UTotalFriends", arg0, arg1)
+	ret0, _ := ret[0].(models.RespTotalFriends)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UTotalFriends indicates an expected call of UTotalFriends.
+func (mr *MockRefUseCaseMockRecorder) UTotalFriends(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UTotalFriends", reflect.TypeOf((*MockRefUseCase)(nil).UTotalFriends), arg0, arg1)
+}
+
 // UValidateReferrer mocks base method.
 func (m *MockRefUseCase) UValidateReferrer(arg0 echo.Context, arg1 models.PayloadValidator, arg2 *models.CampaignReferral) (models.SumIncentive, error) {
 	m.ctrl.T.Helper()

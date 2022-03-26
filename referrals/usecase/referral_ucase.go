@@ -240,3 +240,27 @@ func (rcUc *referralUseCase) UGetHistoryIncentive(c echo.Context, pl models.Requ
 
 	return historyIncentive, nil
 }
+
+func (rcUc *referralUseCase) UTotalFriends(c echo.Context, pl models.RequestReferralCodeUser) (models.RespTotalFriends, error) {
+	var ttlFriends models.RespTotalFriends
+
+	// Check if a cif already had a referral code
+	referral, errRef := rcUc.referralRepo.RGetReferralByCif(c, pl.CIF)
+
+	if errRef != nil {
+		return models.RespTotalFriends{}, models.ErrCIF
+	}
+
+	// if not exist, return invalid cif
+	if referral.ReferralCode == "" {
+		return models.RespTotalFriends{}, models.ErrCIF
+	}
+
+	ttlFriends, err := rcUc.referralRepo.RTotalFriends(c, pl.CIF)
+
+	if err != nil {
+		return models.RespTotalFriends{}, models.ErrCIF
+	}
+
+	return ttlFriends, nil
+}

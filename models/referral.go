@@ -44,3 +44,11 @@ type SumIncentive struct {
 type PrefixResponse struct {
 	Prefix string `json:"prefix,omitempty"`
 }
+
+type RespTotalFriends struct {
+	TotalFriends int `json:"totalFriends"`
+}
+
+type Friends struct {
+	CustomerName string `json:"customerName"`
+}

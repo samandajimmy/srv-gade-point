@@ -197,7 +197,7 @@ func (m *psqlReferralsRepository) RGetReferralCampaignMetadata(c echo.Context, p
 	return response, nil
 }
 
-func (m *psqlReferralsRepository) RGetHistoryIncentive(c echo.Context, refCif string) ([]models.ResponseHistoryIncentive, error) {
+func (m *psqlReferralsRepository) RGetHistoryIncentive(c echo.Context, pl models.RequestHistoryIncentive) ([]models.ResponseHistoryIncentive, error) {
 	var historyIncentives []models.ResponseHistoryIncentive
 
 	query := `select
@@ -205,16 +205,16 @@ func (m *psqlReferralsRepository) RGetHistoryIncentive(c echo.Context, refCif st
 		(rtrx.request_data->>'validators')::json->>'product' as product_code,
 		rtrx.request_data->>'customerName' as customer_name,
 		rt.reward_referral,
-		rt.created_at
+		EXTRACT(EPOCH FROM rt.created_at::timestamp) as created_at
 			from referral_transactions rt 
  			left join reward_transactions rtrx on rtrx.ref_id = rt.ref_id 
  			where rtrx.status = '1'
 			and rtrx.request_data->>'referrer' = ?0
  			and rt.reward_type = ?1
- 			order by rt.created_at desc;`
+ 			order by rt.created_at desc limit ?2;`
 
-	err := m.Bun.QueryThenScan(c, &historyIncentives, query, refCif,
-		models.CodeTypeIncentive)
+	err := m.Bun.QueryThenScan(c, &historyIncentives, query, pl.RefCif,
+		models.CodeTypeIncentive, pl.Limit)
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)

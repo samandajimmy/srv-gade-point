@@ -29,7 +29,7 @@ func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.RefUseCase) {
 	middleware.ReferralAuth(handler.checkCif)
 	echoGroup.API.GET("/referral/detail", handler.HGetReferralCodes)
 	echoGroup.API.GET("/referral/prefix", handler.hGetPrefixCampaignReferral)
-	echoGroup.API.GET("/referral/incentive", handler.HGetHistoriesIncentive)
+	echoGroup.API.POST("/referral/incentive", handler.HGetHistoriesIncentive)
 }
 
 func (ref *ReferralHandler) hCoreTrx(c echo.Context) error {

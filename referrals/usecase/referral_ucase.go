@@ -222,7 +222,7 @@ func (rcUc *referralUseCase) getCampaignIdByPrefix(c echo.Context, prefix string
 func (rcUc *referralUseCase) UGetHistoryIncentive(c echo.Context, pl models.RequestHistoryIncentive) ([]models.ResponseHistoryIncentive, error) {
 	var historyIncentive []models.ResponseHistoryIncentive
 
-	historyIncentive, err := rcUc.referralRepo.RGetHistoryIncentive(c, pl.RefCif)
+	historyIncentive, err := rcUc.referralRepo.RGetHistoryIncentive(c, pl)
 
 	if err != nil {
 		logger.Make(c, nil).Error(models.ErrRefHistoryIncentiveNF)

@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	govaluate "gopkg.in/Knetic/govaluate.v2"
 )
 
@@ -30,6 +29,8 @@ type Validator struct {
 	TransactionType      string     `json:"transactionType,omitempty" validate:"required"`
 	Unit                 string     `json:"unit,omitempty"`
 	Target               string     `json:"target,omitempty"`
+	IsPrivate            bool       `json:"isPrivate"`
+	IsDecimal            bool       `json:"isDecimal"`
 	Value                *float64   `json:"value,omitempty"`
 	ValueVoucherID       *int64     `json:"valueVoucherId,omitempty"`
 	Incentive            *Incentive `json:"incentive,omitempty"`
@@ -41,7 +42,7 @@ type PayloadValidator struct {
 	IsMulti           bool       `json:"isMulti,omitempty"`
 	CampaignID        string     `json:"campaignId,omitempty"`
 	CIF               string     `json:"cif,omitempty"`
-	Referrer          string     `json:"referrer" validate:"isRequiredWith=Validators.CampaignCode,necsfield=CIF"`
+	Referrer          string     `json:"referrer,omitempty" validate:"isRequiredWith=Validators.CampaignCode,necsfield=CIF"`
 	CustomerName      string     `json:"customerName,omitempty"`
 	LoanAmount        *float64   `json:"loanAmount,omitempty"`
 	Phone             string     `json:"phone,omitempty"`
@@ -56,7 +57,8 @@ type PayloadValidator struct {
 	CodeType          string     `json:"codeType,omitempty"`
 }
 
-var skippedValidator = []string{"multiplier", "value", "formula", "maxValue", "unit", "isPrivate", "incentive"}
+var skippedValidator = []string{"multiplier", "value", "formula", "maxValue", "unit", "isPrivate",
+	"isDecimal", "incentive"}
 var compareEqual = []string{"channel", "product", "transactionType", "source", "campaignCode"}
 var evalFunc = []string{"floor"}
 var tightenValidator = map[string]string{
@@ -144,7 +146,7 @@ func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float6
 	expression, err := govaluate.NewEvaluableExpressionWithFunctions(v.Formula, goValuateFunc())
 
 	if err != nil {
-		logrus.Debug(err)
+		logger.Make(nil, nil).Debug(err)
 
 		return 0, err
 	}
@@ -153,7 +155,7 @@ func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float6
 	regex, err := regexp.Compile("[^a-zA-Z0-9]+")
 
 	if err != nil {
-		logrus.Debug(err)
+		logger.Make(nil, nil).Debug(err)
 
 		return 0, nil
 	}
@@ -189,7 +191,7 @@ func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float6
 	result, err := expression.Evaluate(parameters)
 
 	if err != nil {
-		logrus.Debug(err)
+		logger.Make(nil, nil).Debug(err)
 
 		return 0, err
 	}

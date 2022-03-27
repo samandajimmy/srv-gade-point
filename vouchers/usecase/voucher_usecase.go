@@ -668,7 +668,7 @@ func (vchr *voucherUseCase) createVoucherCodes(c echo.Context, voucher *models.V
 	}
 
 	// store promo codes data
-	err = vchr.voucherRepo.CreatePromoCode(c, promoCode)
+	err = vchr.voucherRepo.CreatePromoCode(c, promoCode, voucher.Synced)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrVoucherStorePomoCodes)

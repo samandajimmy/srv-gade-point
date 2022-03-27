@@ -22,7 +22,7 @@ type Campaign struct {
 	Status      *int8      `json:"status,omitempty"`
 	UpdatedAt   *time.Time `json:"updatedAt,omitempty"`
 	CreatedAt   *time.Time `json:"createdAt,omitempty"`
-	Rewards     *[]Reward  `json:"rewards,omitempty"`
+	Rewards     *[]Reward  `json:"rewards,omitempty" bun:"-"`
 	Metadata    *Metadata  `json:"metadata,omitempty"`
 }
 

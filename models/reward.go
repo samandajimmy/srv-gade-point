@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"math"
 	"time"
 )
 
@@ -38,7 +37,7 @@ var (
 	RefTargetReferrer string = "referrer"
 )
 
-var rewardType = map[int64]string{
+var RewardTypeStr = map[int64]string{
 	RewardTypePoint:              "point",
 	RewardTypeDirectDiscount:     "discount",
 	RewardTypePercentageDiscount: "discount",
@@ -126,18 +125,23 @@ type RewardPromotions struct {
 
 // GetRewardTypeText to get text of reward type
 func (rwd Reward) GetRewardTypeText() string {
-	return rewardType[*rwd.Type]
+	return RewardTypeStr[*rwd.Type]
 }
 
 // Populate to generate a reward response
 func (rwdResp *RewardResponse) Populate(reward Reward, rwdValue float64, pv PayloadValidator) {
 	rwdResp.Type = reward.GetRewardTypeText()
-	rwdResp.Value = roundDown(rwdValue, 0)
+	rwdResp.Value = rwdValue
 	rwdResp.JournalAccount = reward.JournalAccount
 	rwdResp.RefTrx = reward.RefID
 	rwdResp.RewardID = reward.ID
 	rwdResp.CIF = pv.CIF
 	rwdResp.Product = pv.Validators.Product
+
+	// no round when it should decimal
+	if !reward.Validators.IsDecimal {
+		rwdResp.Value = RoundDown(rwdValue, 0)
+	}
 
 	// convert pv struct to map
 	pvMap := map[string]interface{}{}
@@ -155,13 +159,4 @@ func (rwdResp *RewardResponse) Populate(reward Reward, rwdValue float64, pv Payl
 		rwdResp.Reference = RefTargetReferrer
 		rwdResp.CIF = pvMap[RefTargetReferrer].(string)
 	}
-}
-
-func roundDown(input float64, places int) (newVal float64) {
-	var round float64
-	pow := math.Pow(10, float64(places))
-	digit := pow * input
-	round = math.Floor(digit)
-	newVal = round / pow
-	return
 }

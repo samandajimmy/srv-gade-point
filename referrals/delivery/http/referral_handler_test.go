@@ -261,9 +261,21 @@ var _ = Describe("ReferralHandler", func() {
 				}
 			})
 
+			Context("when limit is empty referral incentive history", func() {
+				BeforeEach(func() {
+					reqpl.RefCif = "1017441370"
+					expectResp.Message = "Key: 'RequestHistoryIncentive.Limit' Error:Field validation for 'Limit' failed on the 'required' tag"
+				})
+
+				It("expect response to return as expected", func() {
+					Expect(response).To(Equal(expectResp))
+				})
+			})
+
 			Context("when cif is empty get referral incentive history", func() {
 				BeforeEach(func() {
 					reqpl.RefCif = ""
+					reqpl.Limit = 1
 					expectResp.Message = "Key: 'RequestHistoryIncentive.RefCif' Error:Field validation for 'RefCif' failed on the 'required' tag"
 				})
 
@@ -275,6 +287,7 @@ var _ = Describe("ReferralHandler", func() {
 			Context("when cif has no referral incentive history", func() {
 				BeforeEach(func() {
 					reqpl.RefCif = "1017441370"
+					reqpl.Limit = 1
 					expectResp.Message = "Data history incentive referral tidak ditemukan"
 				})
 

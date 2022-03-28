@@ -30,7 +30,23 @@ func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.RefUseCase) {
 	echoGroup.API.GET("/referral/detail", handler.HGetReferralCodes)
 	echoGroup.API.GET("/referral/prefix", handler.hGetPrefixCampaignReferral)
 	echoGroup.API.GET("/referral/incentive", handler.HGetHistoriesIncentive)
+	echoGroup.API.GET("/referral/total-friends", handler.HTotalFriends)
 	echoGroup.API.GET("/referral/friends", handler.HFriendsReferral)
+}
+
+func (ref *ReferralHandler) HTotalFriends(c echo.Context) error {
+	var pl models.RequestReferralCodeUser
+	var errors models.ResponseErrors
+
+	err := hCtrl.Validate(c, &pl)
+
+	if err != nil {
+		return hCtrl.ShowResponse(c, nil, err, errors)
+	}
+
+	responseData, err := ref.ReferralUseCase.UTotalFriends(c, pl)
+
+	return hCtrl.ShowResponse(c, responseData, err, errors)
 }
 
 func (ref *ReferralHandler) hCoreTrx(c echo.Context) error {

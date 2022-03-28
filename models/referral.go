@@ -47,9 +47,12 @@ type PrefixResponse struct {
 	Prefix string `json:"prefix,omitempty"`
 }
 
-// RespFriends list member used code referral
-type RespFriends struct {
-	CustomerName string `json:"customerName,omitempty"`
+type RespTotalFriends struct {
+	TotalFriends int `json:"totalFriends"`
+}
+
+type Friends struct {
+	CustomerName string `json:"customerName"`
 }
 
 type PayloadFriends struct {

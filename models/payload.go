@@ -31,9 +31,15 @@ type RespReferralDetail struct {
 type RequestHistoryIncentive struct {
 	RefCif string `json:"refCif" validate:"required"`
 	Limit  int64  `json:"limit" validate:"required"`
+	Page   int64  `json:"page"`
 }
 
 type ResponseHistoryIncentive struct {
+	TotalData            int64                           `json:"totalData"`
+	HistoryIncentiveData *[]ResponseHistoryIncentiveData `json:"historyIncentiveData"`
+}
+
+type ResponseHistoryIncentiveData struct {
 	TransactionType string  `json:"transactionType"`
 	ProductCode     string  `json:"productCode"`
 	CustomerName    string  `json:"customerName"`

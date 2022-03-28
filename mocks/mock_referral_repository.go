@@ -95,10 +95,10 @@ func (mr *MockRefRepositoryMockRecorder) RGetCampaignId(arg0, arg1 interface{}) 
 }
 
 // RGetHistoryIncentive mocks base method.
-func (m *MockRefRepository) RGetHistoryIncentive(arg0 echo.Context, arg1 models.RequestHistoryIncentive) ([]models.ResponseHistoryIncentive, error) {
+func (m *MockRefRepository) RGetHistoryIncentive(arg0 echo.Context, arg1 models.RequestHistoryIncentive) (models.ResponseHistoryIncentive, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RGetHistoryIncentive", arg0, arg1)
-	ret0, _ := ret[0].([]models.ResponseHistoryIncentive)
+	ret0, _ := ret[0].(models.ResponseHistoryIncentive)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"gade/srv-gade-point/config"
 	"gade/srv-gade-point/database"
+	"gade/srv-gade-point/helper"
 	"gade/srv-gade-point/models"
 	refhttp "gade/srv-gade-point/referrals/delivery/http"
 	"gade/srv-gade-point/test"
@@ -243,12 +244,87 @@ var _ = Describe("ReferralHandler", func() {
 
 	Describe("HGetHistoriesIncentive", func() {
 		var reqpl models.RequestHistoryIncentive
+		var refCif = gofakeit.Regex("[1234567890]{10}")
+		var userCif = gofakeit.Regex("[1234567890]{10}")
+		var refCode models.RespReferral
+		var plInquiry models.PayloadValidator
+		var plPayment models.RewardPayment
 
 		JustBeforeEach(func() {
 			pl = reqpl
 			e = test.NewDummyEcho(http.MethodPost, "/", pl)
 			_ = handler.HGetHistoriesIncentive(e.Context)
 			_ = json.Unmarshal(e.Response.Body.Bytes(), &response)
+		})
+
+		BeforeEach(func() {
+			_ = viper.UnmarshalKey("reward.inquiry", &plInquiry)
+			_ = viper.UnmarshalKey("reward.payment", &plPayment)
+			withPromoCode := false
+
+			// create voucher
+			voucher := fakedata.VoucherDirectDisc()
+			_ = usecases.VoucherUseCase.CreateVoucher(e.Context, &voucher)
+
+			// create campaign referral
+			campaign = fakedata.CampaignReferral()
+			reward1 := fakedata.RewardDirectDisc(withPromoCode)
+			reward2 := fakedata.RewardIncentive(withPromoCode)
+			campaign.Rewards = &[]models.Reward{reward1, reward2}
+			_ = usecases.CampaignUseCase.CreateCampaign(e.Context, &campaign)
+
+			// create referral code
+			createReferral := models.RequestCreateReferral{
+				CIF:    refCif,
+				Prefix: campaign.Metadata.Prefix,
+			}
+			refCode, _ = usecases.ReferralsUseCase.UCreateReferralCodes(e.Context, createReferral)
+
+			// prepare reward inquiry data
+			plInquiry.CIF = userCif
+			plInquiry.IsMulti = true
+			plInquiry.TransactionDate = time.Now().AddDate(0, 0, 0).Format(models.DateTimeFormat + ".000")
+			plInquiry.PromoCode = refCode.ReferralCode
+			plInquiry.Validators.Channel = reward1.Validators.Channel
+			plInquiry.Validators.Product = reward1.Validators.Product
+			plInquiry.Validators.TransactionType = reward1.Validators.TransactionType
+			plInquiry.TransactionAmount = helper.CreateFloat64(100000)
+
+			// get the reward
+			inquiry, _ := usecases.RewardUseCase.Inquiry(e.Context, &plInquiry)
+
+			plPayment.RootRefTrx = inquiry.RefTrx
+			_, _ = usecases.RewardUseCase.Payment(e.Context, &plPayment)
+
+			reqpl.Limit = 1
+			reqpl.RefCif = refCif
+		})
+
+		Context("get referral incentive history succeed", func() {
+			BeforeEach(func() {
+				expectResp.Code = "00"
+				expectResp.Status = "Success"
+			})
+
+			Context("when payload page is empty get referral incentive history", func() {
+				It("expect response to return as expected", func() {
+					Expect(response.Code).To(Equal(expectResp.Code))
+					Expect(response.Status).To(Equal(expectResp.Status))
+					Expect(response.Data).ToNot(BeNil())
+				})
+			})
+
+			Context("when payload page is not empty get referral incentive history", func() {
+				BeforeEach(func() {
+					reqpl.Page = 1
+				})
+
+				It("expect response to return as expected", func() {
+					Expect(response.Code).To(Equal(expectResp.Code))
+					Expect(response.Status).To(Equal(expectResp.Status))
+					Expect(response.Data).ToNot(BeNil())
+				})
+			})
 		})
 
 		Context("get referral incentive error", func() {
@@ -262,6 +338,7 @@ var _ = Describe("ReferralHandler", func() {
 			Context("when limit is empty referral incentive history", func() {
 				BeforeEach(func() {
 					reqpl.RefCif = "1017441370"
+					reqpl.Limit = 0
 					expectResp.Message = "Key: 'RequestHistoryIncentive.Limit' Error:Field validation for 'Limit' failed on the 'required' tag"
 				})
 

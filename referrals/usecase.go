@@ -16,4 +16,5 @@ type RefUseCase interface {
 	UGetPrefixActiveCampaignReferral(echo.Context) (models.PrefixResponse, error)
 	UGetHistoryIncentive(c echo.Context, pl models.RequestHistoryIncentive) ([]models.ResponseHistoryIncentive, error)
 	UTotalFriends(echo.Context, models.RequestReferralCodeUser) (models.RespTotalFriends, error)
+	UFriendsReferral(echo.Context, models.PayloadFriends) ([]models.Friends, error)
 }

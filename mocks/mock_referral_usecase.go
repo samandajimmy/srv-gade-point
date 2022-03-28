@@ -50,6 +50,21 @@ func (mr *MockRefUseCaseMockRecorder) UCreateReferralCodes(arg0, arg1 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UCreateReferralCodes", reflect.TypeOf((*MockRefUseCase)(nil).UCreateReferralCodes), arg0, arg1)
 }
 
+// UFriendsReferral mocks base method.
+func (m *MockRefUseCase) UFriendsReferral(arg0 echo.Context, arg1 models.PayloadFriends) ([]models.Friends, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UFriendsReferral", arg0, arg1)
+	ret0, _ := ret[0].([]models.Friends)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UFriendsReferral indicates an expected call of UFriendsReferral.
+func (mr *MockRefUseCaseMockRecorder) UFriendsReferral(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UFriendsReferral", reflect.TypeOf((*MockRefUseCase)(nil).UFriendsReferral), arg0, arg1)
+}
+
 // UGetHistoryIncentive mocks base method.
 func (m *MockRefUseCase) UGetHistoryIncentive(arg0 echo.Context, arg1 models.RequestHistoryIncentive) ([]models.ResponseHistoryIncentive, error) {
 	m.ctrl.T.Helper()

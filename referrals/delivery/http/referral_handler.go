@@ -31,6 +31,7 @@ func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.RefUseCase) {
 	echoGroup.API.GET("/referral/prefix", handler.hGetPrefixCampaignReferral)
 	echoGroup.API.GET("/referral/incentive", handler.HGetHistoriesIncentive)
 	echoGroup.API.GET("/referral/total-friends", handler.HTotalFriends)
+	echoGroup.API.GET("/referral/friends", handler.HFriendsReferral)
 }
 
 func (ref *ReferralHandler) HTotalFriends(c echo.Context) error {
@@ -130,6 +131,20 @@ func (ref *ReferralHandler) checkCif(c echo.Context) error {
 	}
 
 	responseData, err := ref.ReferralUseCase.UReferralCIFValidate(c, pl.CIF)
+
+	return hCtrl.ShowResponse(c, responseData, err, errors)
+}
+
+func (ref *ReferralHandler) HFriendsReferral(c echo.Context) error {
+	var pl models.PayloadFriends
+	var errors models.ResponseErrors
+	err := hCtrl.Validate(c, &pl)
+
+	if err != nil {
+		return hCtrl.ShowResponse(c, nil, err, errors)
+	}
+
+	responseData, err := ref.ReferralUseCase.UFriendsReferral(c, pl)
 
 	return hCtrl.ShowResponse(c, responseData, err, errors)
 }

@@ -264,3 +264,27 @@ func (rcUc *referralUseCase) UTotalFriends(c echo.Context, pl models.RequestRefe
 
 	return ttlFriends, nil
 }
+
+func (rcUc *referralUseCase) UFriendsReferral(c echo.Context, pl models.PayloadFriends) ([]models.Friends, error) {
+
+	var referral []models.Friends
+
+	if pl.Limit == 0 {
+		pl.Limit = 4
+	}
+
+	// get friends refferal by cif
+	referral, err := rcUc.referralRepo.RFriendsReferral(c, pl)
+
+	// throw empty data if referral codes not found
+	if err != nil {
+		return referral, err
+	}
+
+	if len(referral) == 0 {
+		logger.Make(c, nil).Debug(models.ErrFriends)
+		return nil, models.ErrFriends
+	}
+
+	return referral, nil
+}

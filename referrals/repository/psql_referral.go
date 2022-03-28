@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 	gcdb "gade/srv-gade-point/database"
 	"gade/srv-gade-point/helper"
 	"gade/srv-gade-point/logger"
@@ -223,4 +224,33 @@ func (m *psqlReferralsRepository) RGetHistoryIncentive(c echo.Context, refCif st
 	}
 
 	return historyIncentives, nil
+}
+
+func (m *psqlReferralsRepository) RFriendsReferral(c echo.Context, pl models.PayloadFriends) ([]models.RespFriends, error) {
+
+	var refMembers []models.RespFriends
+
+	query := `SELECT rt.request_data ->>'customerName' as customer_name
+	FROM reward_transactions rt
+	LEFT JOIN referral_codes rc ON rt.used_promo_code = rc.referral_code 
+	where rc.cif = ?
+	order by rt.created_at desc LIMIT ?`
+
+	paging := ""
+
+	if pl.Page > 0 {
+		paging = fmt.Sprintf(" OFFSET %d", ((pl.Page - 1) * pl.Limit))
+	}
+
+	query += paging
+
+	err := m.Bun.QueryThenScan(c, &refMembers, query, pl.CIF, pl.Limit)
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return nil, err
+	}
+
+	return refMembers, nil
 }

@@ -58,6 +58,7 @@ type Voucher struct {
 	Validators           *Validator `json:"validators,omitempty"`
 	UpdatedAt            *time.Time `json:"updatedAt,omitempty"`
 	CreatedAt            *time.Time `json:"createdAt,omitempty"`
+	Synced               bool       `json:"-" bun:"-"`
 }
 
 // UpdateVoucher to store payload for update status

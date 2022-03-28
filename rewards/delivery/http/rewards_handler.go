@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	hCtrl helper.IHandler
+	hCtrl = helper.NewHandler(&helper.Handler{})
 )
 
 // RewardHandler represent the httphandler for reward
@@ -23,23 +23,21 @@ func NewRewardHandler(echoGroup models.EchoGroup, us rewards.UseCase) {
 		RewardUseCase: us,
 	}
 
-	hCtrl = helper.NewHandler(&helper.Handler{})
-
 	// End Point For CMS
 	echoGroup.Admin.GET("/rewards", handler.getRewards)
 
 	// End Point For External
 	echoGroup.API.POST("/rewards/inquiry", handler.rewardInquiry)
-	echoGroup.API.POST("/rewards/inquiry/multi", handler.multiRewardInquiry)
+	echoGroup.API.POST("/rewards/inquiry/multi", handler.MultiRewardInquiry)
 	echoGroup.API.POST("/rewards/succeeded", handler.rewardPayment)
 	echoGroup.API.POST("/rewards/rejected", handler.rewardPayment)
 	echoGroup.API.POST("/rewards/check-transaction", handler.checkTransaction)
 	echoGroup.API.GET("/reward/promotions", handler.getRewardPromotions)
 }
 
-func (rwd *RewardHandler) multiRewardInquiry(c echo.Context) error {
+func (rwd *RewardHandler) MultiRewardInquiry(c echo.Context) error {
 	var pl models.PayloadValidator
-	var errors *models.ResponseErrors
+	var errors = &models.ResponseErrors{}
 	err := hCtrl.Validate(c, &pl)
 
 	if err != nil {
@@ -54,7 +52,7 @@ func (rwd *RewardHandler) multiRewardInquiry(c echo.Context) error {
 
 func (rwd *RewardHandler) rewardInquiry(c echo.Context) error {
 	var pl models.PayloadValidator
-	var errors *models.ResponseErrors
+	var errors = &models.ResponseErrors{}
 	err := hCtrl.Validate(c, &pl)
 
 	if err != nil {
@@ -113,7 +111,7 @@ func (rwd *RewardHandler) getRewards(c echo.Context) error {
 // getRewardPromotions Get reward promotions by param promoCode, transactionDate and transactionAmount
 func (rwd *RewardHandler) getRewardPromotions(c echo.Context) error {
 	var pl models.RewardPromotionLists
-	var errors *models.ResponseErrors
+	var errors = &models.ResponseErrors{}
 	err := hCtrl.Validate(c, &pl)
 
 	if err != nil {

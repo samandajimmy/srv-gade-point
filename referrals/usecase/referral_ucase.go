@@ -225,16 +225,12 @@ func (rcUc *referralUseCase) UGetHistoryIncentive(c echo.Context, pl models.Requ
 	historyIncentive, err := rcUc.referralRepo.RGetHistoryIncentive(c, pl.RefCif)
 
 	if err != nil {
-		logger.Make(c, nil).Error(models.ErrRefHistoryIncentiveNF)
-
 		return []models.ResponseHistoryIncentive{}, models.ErrRefHistoryIncentiveNF
 	}
 
 	length := len(historyIncentive)
 
 	if length == 0 {
-		logger.Make(c, nil).Error(models.ErrRefHistoryIncentiveNF)
-
 		return []models.ResponseHistoryIncentive{}, models.ErrRefHistoryIncentiveNF
 	}
 

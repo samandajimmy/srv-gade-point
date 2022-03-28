@@ -16,12 +16,8 @@ import (
 	"github.com/labstack/echo/middleware"
 )
 
-type customValidator struct {
-	validator *validator.Validate
-}
-
-func (cv *customValidator) Validate(i interface{}) error {
-	return cv.validator.Struct(i)
+type CustomValidator struct {
+	Validator *validator.Validate
 }
 
 type customMiddleware struct {
@@ -49,7 +45,19 @@ func InitMiddleware(ech *echo.Echo, echoGroup models.EchoGroup) {
 	cm.cors()
 	cm.basicAuth()
 	cm.jwtAuth()
-	cm.customValidation()
+	cv := CustomValidator{}
+	cm.e.Validator = &cv
+}
+
+func ReferralAuth(handlerFn echo.HandlerFunc) {
+	echGroup.Referral.Use(
+		jwtMiddFn,
+		func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				return handlerFn(c)
+			}
+		},
+	)
 }
 
 func (cm *customMiddleware) customBodyDump() {
@@ -62,15 +70,6 @@ func (cm *customMiddleware) customBodyDump() {
 			logger.MakeWithoutReportCaller(c, resp).Info("Response payload for endpoint " + reqBody.Method + " " + reqBody.URL.Path)
 		},
 	}))
-}
-
-func (cm *customMiddleware) customValidation() {
-	validator := validator.New()
-	customValidator := customValidator{}
-	_ = validator.RegisterValidation("isRequiredWith", customValidator.isRequiredWith)
-	_ = validator.RegisterValidation("dateString", customValidator.dateString)
-	customValidator.validator = validator
-	cm.e.Validator = &customValidator
 }
 
 func (cm customMiddleware) cors() {
@@ -90,23 +89,23 @@ func (cm customMiddleware) basicAuth() {
 	}))
 }
 
-func ReferralAuth(handlerFn echo.HandlerFunc) {
-	echGroup.Referral.Use(
-		jwtMiddFn,
-		func(next echo.HandlerFunc) echo.HandlerFunc {
-			return func(c echo.Context) error {
-				return handlerFn(c)
-			}
-		},
-	)
-}
-
 func (cm customMiddleware) jwtAuth() {
 	echGroup.Admin.Use(jwtMiddFn)
 	echGroup.API.Use(jwtMiddFn)
 }
 
-func (cv *customValidator) isRequiredWith(fl validator.FieldLevel) bool {
+func (cv *CustomValidator) CustomValidation() {
+	validator := validator.New()
+	_ = validator.RegisterValidation("isRequiredWith", cv.isRequiredWith)
+	_ = validator.RegisterValidation("dateString", cv.dateString)
+	cv.Validator = validator
+}
+
+func (cv *CustomValidator) Validate(i interface{}) error {
+	return cv.Validator.Struct(i)
+}
+
+func (cv *CustomValidator) isRequiredWith(fl validator.FieldLevel) bool {
 	field := fl.Field()
 	otherField, _, _ := fl.GetStructFieldOK()
 
@@ -119,7 +118,7 @@ func (cv *customValidator) isRequiredWith(fl validator.FieldLevel) bool {
 	return true
 }
 
-func (cv *customValidator) dateString(fl validator.FieldLevel) bool {
+func (cv *CustomValidator) dateString(fl validator.FieldLevel) bool {
 	field := fl.Field()
 	vValue := fl.Param()
 

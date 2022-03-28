@@ -88,12 +88,18 @@ func (m *psqlVoucherRepository) CreateVoucher(c echo.Context, voucher *models.Vo
 	return nil
 }
 
-func (m *psqlVoucherRepository) CreatePromoCode(c echo.Context, promoCodes []*models.VoucherCode) error {
+func (m *psqlVoucherRepository) CreatePromoCode(c echo.Context, promoCodes []*models.VoucherCode, synced bool) error {
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	arrSplitted := arrSpliter(promoCodes)
 
 	for _, pCodes := range arrSplitted {
+		if synced {
+			_ = m.insertVoucherCodes(c, pCodes)
+
+			continue
+		}
+
 		go func(pCodes []*models.VoucherCode) {
 			_ = m.insertVoucherCodes(c, pCodes)
 		}(pCodes)

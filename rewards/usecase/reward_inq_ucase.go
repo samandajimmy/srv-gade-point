@@ -100,6 +100,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 	rwdInquiry.Rewards = &rwdResponse
 	respErrors = models.ResponseErrors{}
+	rwdInquiry.RefTrx = rwdResponse[0].RefTrx
 
 	// if reward greater then one
 	if len(*rwdInquiry.Rewards) > 1 {
@@ -172,7 +173,6 @@ func (rwd *rewardUseCase) getVoucherReward(c echo.Context, plValidator *models.P
 	rwdResp, _ := rwd.responseInquiry(c, rewardsVoucher[0], plValidator)
 	rwdInquiry.RefTrx = rwdResp.RefTrx // nolint
 	rwdResp.RewardID = 0               // nolint
-	rwdResp.RefTrx = ""                // nolint
 
 	// nolint
 	if rwdResp != nil {

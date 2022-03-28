@@ -3,6 +3,8 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"gade/srv-gade-point/database"
+	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/vouchercodes"
 	"time"
@@ -12,11 +14,12 @@ import (
 
 type psqlVoucherCodeRepository struct {
 	Conn *sql.DB
+	Bun  *database.DbBun
 }
 
 // NewPsqlVoucherCodeRepository will create an object that represent the vouchercode.Repository interface
-func NewPsqlVoucherCodeRepository(Conn *sql.DB) vouchercodes.VcRepository {
-	return &psqlVoucherCodeRepository{Conn}
+func NewPsqlVoucherCodeRepository(Conn *sql.DB, Bun *database.DbBun) vouchercodes.VcRepository {
+	return &psqlVoucherCodeRepository{Conn, Bun}
 }
 
 func (psqlRepo *psqlVoucherCodeRepository) CountVoucherCode(c echo.Context, payload map[string]interface{}) (string, error) {
@@ -133,8 +136,6 @@ func (psqlRepo *psqlVoucherCodeRepository) CountVoucherCodeByVoucherID(c echo.Co
 
 func (psqlRepo *psqlVoucherCodeRepository) GetVoucherCodes(c echo.Context, payload map[string]interface{}) ([]models.VoucherCode, error) {
 	var result []models.VoucherCode
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
 	voucherID := payload["voucherId"].(string)
 	paging := ""
 	where := ""
@@ -154,7 +155,7 @@ func (psqlRepo *psqlVoucherCodeRepository) GetVoucherCodes(c echo.Context, paylo
 	rows, err := psqlRepo.Conn.Query(query)
 
 	if err != nil {
-		requestLogger.Debug(err)
+		logger.Make(c, nil).Debug(err)
 
 		return nil, err
 	}
@@ -177,7 +178,7 @@ func (psqlRepo *psqlVoucherCodeRepository) GetVoucherCodes(c echo.Context, paylo
 		)
 
 		if err != nil {
-			requestLogger.Debug(err)
+			logger.Make(c, nil).Debug(err)
 
 			return nil, err
 		}

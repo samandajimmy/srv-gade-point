@@ -50,6 +50,21 @@ func (mr *MockRefRepositoryMockRecorder) RCreateReferral(arg0, arg1 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RCreateReferral", reflect.TypeOf((*MockRefRepository)(nil).RCreateReferral), arg0, arg1)
 }
 
+// RFriendsReferral mocks base method.
+func (m *MockRefRepository) RFriendsReferral(arg0 echo.Context, arg1 models.PayloadFriends) ([]models.Friends, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RFriendsReferral", arg0, arg1)
+	ret0, _ := ret[0].([]models.Friends)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RFriendsReferral indicates an expected call of RFriendsReferral.
+func (mr *MockRefRepositoryMockRecorder) RFriendsReferral(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RFriendsReferral", reflect.TypeOf((*MockRefRepository)(nil).RFriendsReferral), arg0, arg1)
+}
+
 // RGenerateCode mocks base method.
 func (m *MockRefRepository) RGenerateCode(arg0 echo.Context, arg1 models.ReferralCodes, arg2 string) string {
 	m.ctrl.T.Helper()
@@ -151,4 +166,19 @@ func (m *MockRefRepository) RSumRefIncentive(arg0 echo.Context, arg1 string, arg
 func (mr *MockRefRepositoryMockRecorder) RSumRefIncentive(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RSumRefIncentive", reflect.TypeOf((*MockRefRepository)(nil).RSumRefIncentive), arg0, arg1, arg2)
+}
+
+// RTotalFriends mocks base method.
+func (m *MockRefRepository) RTotalFriends(arg0 echo.Context, arg1 string) (models.RespTotalFriends, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RTotalFriends", arg0, arg1)
+	ret0, _ := ret[0].(models.RespTotalFriends)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RTotalFriends indicates an expected call of RTotalFriends.
+func (mr *MockRefRepositoryMockRecorder) RTotalFriends(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RTotalFriends", reflect.TypeOf((*MockRefRepository)(nil).RTotalFriends), arg0, arg1)
 }

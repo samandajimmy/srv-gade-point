@@ -10,7 +10,7 @@ import (
 type Repository interface {
 	UpdateVoucherStock(c echo.Context, voucherId string) error
 	CreateVoucher(echo.Context, *models.Voucher) error
-	CreatePromoCode(echo.Context, []*models.VoucherCode) error
+	CreatePromoCode(c echo.Context, vc []*models.VoucherCode, synced bool) error
 	UpdateVoucher(echo.Context, int64, *models.UpdateVoucher) error
 	GetVouchersAdmin(echo.Context, map[string]interface{}) ([]*models.Voucher, error)
 	GetVoucherAdmin(echo.Context, string) (*models.Voucher, error)

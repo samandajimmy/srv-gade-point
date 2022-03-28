@@ -4,6 +4,7 @@ import (
 	"gade/srv-gade-point/config"
 	"gade/srv-gade-point/database"
 	"gade/srv-gade-point/helper"
+	"gade/srv-gade-point/middleware"
 	"gade/srv-gade-point/mocks"
 	"gade/srv-gade-point/models"
 	"net/http"
@@ -11,8 +12,6 @@ import (
 	"os"
 	"reflect"
 	"strings"
-
-	"gopkg.in/go-playground/validator.v9"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang/mock/gomock"
@@ -28,14 +27,16 @@ type (
 	}
 
 	customValidator struct {
-		validator *validator.Validate
+		middleware.CustomValidator
 	}
 )
 
 func NewDummyEcho(method, path string, pl ...interface{}) DummyEcho {
 	var body string
 	e := echo.New()
-	e.Validator = &customValidator{validator: validator.New()}
+	cv := customValidator{}
+	cv.CustomValidation()
+	e.Validator = &cv
 
 	if pl != nil {
 		body = helper.ToJson(pl[0])
@@ -91,7 +92,7 @@ func (cv *customValidator) Validate(i interface{}) error {
 	}
 
 	if rValue.Kind() == reflect.Struct {
-		return cv.validator.Struct(i)
+		return cv.Validator.Struct(i)
 	}
 
 	obj, ok := i.(map[string]interface{})

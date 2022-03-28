@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/database"
+	"gade/srv-gade-point/helper"
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewards"
@@ -28,53 +29,17 @@ type psqlCampaignRepository struct {
 func NewPsqlCampaignRepository(Conn *sql.DB, dbBun *database.DbBun, rwdRepo rewards.RRepository) campaigns.CRepository {
 	return &psqlCampaignRepository{Conn, dbBun, rwdRepo}
 }
-
 func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models.Campaign) error {
-	var endDate *string
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-	now := time.Now()
-	query := `INSERT INTO campaigns (name, description, start_date, end_date, status, created_at, metadata)
-		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
-	stmt, err := m.Conn.Prepare(query)
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return err
-	}
-
-	var lastID int64
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return err
-	}
-
-	if campaign.EndDate != "" {
-		endDate = &campaign.EndDate
-	}
-
-	metadata, err := json.Marshal(campaign.Metadata)
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return err
-	}
-
-	err = stmt.QueryRow(campaign.Name, campaign.Description, campaign.StartDate, endDate,
-		campaign.Status, &now, string(metadata)).Scan(&lastID)
-
-	if err != nil {
-		requestLogger.Debug(err)
-
-		return err
-	}
-
-	campaign.ID = lastID
+	now := helper.NowDbBun()
 	campaign.CreatedAt = &now
+	_, err := m.dbBun.NewInsert().Model(campaign).Exec(c.Request().Context())
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return err
+	}
+
 	return nil
 }
 

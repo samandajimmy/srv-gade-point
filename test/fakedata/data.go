@@ -33,7 +33,7 @@ func CampaignReferral() models.Campaign {
 
 func VoucherDirectDisc() models.Voucher {
 	startDate := time.Now().AddDate(0, 0, -1)
-	stock := int32(10)
+	stock := int32(5)
 	validator := Validator()
 	value := gofakeit.Float64Range(50000, 1000000)
 	validator.Value = &value
@@ -54,6 +54,7 @@ func VoucherDirectDisc() models.Voucher {
 		TermsAndConditions: gofakeit.LoremIpsumSentence(10),
 		HowToUse:           gofakeit.LoremIpsumSentence(10),
 		Validators:         &validator,
+		Synced:             true,
 	}
 }
 
@@ -141,6 +142,7 @@ func RewardGoldback(withPromoCode bool) models.Reward {
 	reward.Type = &models.RewardTypeGoldback
 	reward.Validators = func() *models.Validator {
 		validator := Validator()
+		validator.IsDecimal = true
 		validator.Formula = "transactionAmount/deviden"
 		deviden := gofakeit.Float64Range(50000, 1000000)
 		validator.Deviden = &deviden
@@ -166,11 +168,25 @@ func RewardVoucher(withPromoCode bool, voucherId int64) models.Reward {
 
 func RewardIncentive(withPromoCode bool) models.Reward {
 	var validator models.Validator
-
 	_ = viper.UnmarshalKey("validator.with_incentive", &validator)
 	reward := Reward(withPromoCode)
 	reward.Type = &models.RewardTypeIncentive
 	reward.Validators = &validator
 
 	return reward
+}
+
+func PayloadInquiry() models.PayloadValidator {
+	validator := Validator()
+
+	return models.PayloadValidator{
+		BranchCode:        gofakeit.Regex("[1234567890]{5}"),
+		CIF:               gofakeit.Regex("[1234567890]{10}"),
+		CustomerName:      gofakeit.PetName(),
+		Phone:             "0815" + gofakeit.Regex("[1234567890]{10}"),
+		PromoCode:         gofakeit.Regex("[ABCDEFGHIJKLMNOPQRSTUVWXYZ]{10}"),
+		TransactionDate:   time.Now().Format(models.DateTimeFormat + ".000"),
+		TransactionAmount: helper.CreateFloat64(gofakeit.Float64Range(50000, 1000000)),
+		Validators:        &validator,
+	}
 }

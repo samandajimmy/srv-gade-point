@@ -301,8 +301,12 @@ var (
 
 	// ErrRefPrefixNF to store get referral codes error
 	ErrRefPrefixNF = errors.New("Prefix untuk promo code tersebut tidak ditemukan")
+
 	// ErrRefHistoryIncentiveNF to store get history incentive error message
 	ErrRefHistoryIncentiveNF = errors.New("Data history incentive referral tidak ditemukan")
+
+	// ErrFriends get friends by cif data not found
+	ErrFriends = errors.New("Data Sahabat tidak di temukan")
 )
 
 // DynamicErr to return parameterize errors

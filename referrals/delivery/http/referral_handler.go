@@ -27,11 +27,11 @@ func NewReferralsHandler(echoGroup models.EchoGroup, us referrals.RefUseCase) {
 	echoGroup.API.POST("/referral/generate", handler.HGenerateReferralCodes)
 	echoGroup.API.POST("/referral/core-trx", handler.hCoreTrx)
 	middleware.ReferralAuth(handler.checkCif)
-	echoGroup.API.GET("/referral/detail", handler.HGetReferralCodes)
-	echoGroup.API.GET("/referral/prefix", handler.hGetPrefixCampaignReferral)
-	echoGroup.API.GET("/referral/incentive", handler.HGetHistoriesIncentive)
-	echoGroup.API.GET("/referral/total-friends", handler.HTotalFriends)
-	echoGroup.API.GET("/referral/friends", handler.HFriendsReferral)
+	echoGroup.API.POST("/referral/detail", handler.HGetReferralCodes)
+	echoGroup.API.POST("/referral/prefix", handler.hGetPrefixCampaignReferral)
+	echoGroup.API.POST("/referral/incentive", handler.HGetHistoriesIncentive)
+	echoGroup.API.POST("/referral/total-friends", handler.HTotalFriends)
+	echoGroup.API.POST("/referral/friends", handler.HFriendsReferral)
 }
 
 func (ref *ReferralHandler) HTotalFriends(c echo.Context) error {

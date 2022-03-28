@@ -57,3 +57,7 @@ func RandomStr(n int, arrChecker map[string]bool) string {
 
 	return randString
 }
+
+func NowDbBun() time.Time {
+	return time.Now().Add(7 * time.Hour)
+}

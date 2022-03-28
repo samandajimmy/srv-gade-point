@@ -45,8 +45,6 @@ var _ = Describe("ReferralHandler", func() {
 	var campaign models.Campaign
 	var usecases config.Usecases
 
-	config.LoadEnv()
-
 	BeforeEach(func() {
 		response, expectResp = models.Response{}, models.Response{}
 		e = test.NewDummyEcho(http.MethodPost, "/", pl)

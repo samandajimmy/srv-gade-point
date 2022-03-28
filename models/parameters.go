@@ -1,6 +1,7 @@
 package models
 
 import (
+	"math"
 	"time"
 
 	"github.com/labstack/echo"
@@ -85,13 +86,22 @@ var (
 
 // EchoGroup to store routes group
 type EchoGroup struct {
-	Admin *echo.Group
-	API   *echo.Group
-	Token *echo.Group
+	Admin    *echo.Group
+	API      *echo.Group
+	Token    *echo.Group
 	Referral *echo.Group
 }
 
 // NowUTC to get real current datetime but UTC format
 func NowUTC() time.Time {
 	return time.Now().UTC().Add(7 * time.Hour)
+}
+
+func RoundDown(input float64, places int) (newVal float64) {
+	var round float64
+	pow := math.Pow(10, float64(places))
+	digit := pow * input
+	round = math.Floor(digit)
+	newVal = round / pow
+	return
 }

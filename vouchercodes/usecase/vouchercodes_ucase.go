@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/csv"
 	"encoding/json"
+	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/vouchercodes"
 	"gade/srv-gade-point/vouchers"
@@ -56,14 +57,11 @@ func (vchrCodeUs *voucherCodeUseCase) GetVoucherCodeHistory(c echo.Context, payl
 }
 
 func (vchrCodeUs *voucherCodeUseCase) GetVoucherCodes(c echo.Context, payload map[string]interface{}) ([]models.VoucherCode, string, error) {
-	logger := models.RequestLogger{}
-	requestLogger := logger.GetRequestLogger(c, nil)
-
 	// count voucher by voucherId
 	counter, err := vchrCodeUs.voucherCodeRepo.CountVoucherCodeByVoucherID(c, payload)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrUsersNA)
+		logger.Make(c, nil).Debug(models.ErrUsersNA)
 
 		return nil, "", models.ErrUsersNA
 	}
@@ -72,7 +70,7 @@ func (vchrCodeUs *voucherCodeUseCase) GetVoucherCodes(c echo.Context, payload ma
 	data, err := vchrCodeUs.voucherCodeRepo.GetVoucherCodes(c, payload)
 
 	if err != nil {
-		requestLogger.Debug(models.ErrGetVoucherCodes)
+		logger.Make(c, nil).Debug(models.ErrGetVoucherCodes)
 
 		return nil, "", models.ErrGetVoucherCodes
 	}
@@ -154,7 +152,7 @@ func (vchrCodeUs *voucherCodeUseCase) ImportVoucherCodes(c echo.Context, file *m
 	}
 
 	// store to db
-	err = vchrCodeUs.voucherRepo.CreatePromoCode(c, vchrCodes)
+	err = vchrCodeUs.voucherRepo.CreatePromoCode(c, vchrCodes, voucher.Synced)
 
 	if err != nil {
 		requestLogger.Debug(models.ErrVoucherStorePomoCodes)

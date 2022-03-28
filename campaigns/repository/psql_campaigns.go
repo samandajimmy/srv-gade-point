@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gade/srv-gade-point/campaigns"
 	"gade/srv-gade-point/database"
+	"gade/srv-gade-point/helper"
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/rewards"
@@ -29,7 +30,7 @@ func NewPsqlCampaignRepository(Conn *sql.DB, dbBun *database.DbBun, rwdRepo rewa
 	return &psqlCampaignRepository{Conn, dbBun, rwdRepo}
 }
 func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models.Campaign) error {
-	now := time.Now().Add(7 * time.Hour)
+	now := helper.NowDbBun()
 	campaign.CreatedAt = &now
 	_, err := m.dbBun.NewInsert().Model(campaign).Exec(c.Request().Context())
 

@@ -46,6 +46,7 @@ func InitMiddleware(ech *echo.Echo, echoGroup models.EchoGroup) {
 	cm.basicAuth()
 	cm.jwtAuth()
 	cv := CustomValidator{}
+	cv.CustomValidation()
 	cm.e.Validator = &cv
 }
 

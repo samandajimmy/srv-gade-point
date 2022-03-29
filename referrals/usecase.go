@@ -8,7 +8,6 @@ import (
 
 // UseCase represent the referrals usecases
 type RefUseCase interface {
-	UPostCoreTrx(echo.Context, []models.CoreTrxPayload) ([]models.CoreTrxResponse, error)
 	UCreateReferralCodes(echo.Context, models.RequestCreateReferral) (models.RespReferral, error)
 	UGetReferralCodes(echo.Context, models.RequestReferralCodeUser) (models.RespReferralDetail, error)
 	UReferralCIFValidate(echo.Context, string) (models.ReferralCodes, error)

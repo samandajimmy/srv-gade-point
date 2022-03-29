@@ -198,30 +198,55 @@ func (m *psqlReferralsRepository) RGetReferralCampaignMetadata(c echo.Context, p
 	return response, nil
 }
 
-func (m *psqlReferralsRepository) RGetHistoryIncentive(c echo.Context, refCif string) ([]models.ResponseHistoryIncentive, error) {
-	var historyIncentives []models.ResponseHistoryIncentive
+func (m *psqlReferralsRepository) RGetHistoryIncentive(c echo.Context, pl models.RequestHistoryIncentive) (models.ResponseHistoryIncentive, error) {
+	var historyIncentives models.ResponseHistoryIncentive
+	var historyData []models.ResponseHistoryIncentiveData
+	var totalData int64
 
 	query := `select
 		(rtrx.request_data->>'validators')::json->>'transactionType' as transaction_type, 
 		(rtrx.request_data->>'validators')::json->>'product' as product_code,
 		rtrx.request_data->>'customerName' as customer_name,
 		rt.reward_referral,
-		rt.created_at
+		EXTRACT(EPOCH FROM rt.created_at::timestamp) as created_at
 			from referral_transactions rt 
  			left join reward_transactions rtrx on rtrx.ref_id = rt.ref_id 
  			where rtrx.status = '1'
 			and rtrx.request_data->>'referrer' = ?0
  			and rt.reward_type = ?1
- 			order by rt.created_at desc;`
+ 			order by rt.created_at desc limit ?2`
 
-	err := m.Bun.QueryThenScan(c, &historyIncentives, query, refCif,
-		models.CodeTypeIncentive)
+	if pl.Page > 0 {
+		paging := fmt.Sprintf(" OFFSET %d", ((pl.Page - 1) * pl.Limit))
+		query += paging
+	}
+
+	err := m.Bun.QueryThenScan(c, &historyData, query, pl.RefCif,
+		models.CodeTypeIncentive, pl.Limit)
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)
 
-		return []models.ResponseHistoryIncentive{}, err
+		return models.ResponseHistoryIncentive{}, err
 	}
+
+	query = `select count(rt.id) as total_data
+			from referral_transactions rt 
+ 			left join reward_transactions rtrx on rtrx.ref_id = rt.ref_id 
+ 				where rtrx.request_data->>'referrer' = ? 
+ 				and rtrx.status = '1'
+ 				and rt.reward_type = 'incentive';`
+
+	err = m.Bun.QueryThenScan(c, &totalData, query, pl.RefCif)
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return models.ResponseHistoryIncentive{}, err
+	}
+
+	historyIncentives.TotalData = totalData
+	historyIncentives.HistoryIncentiveData = &historyData
 
 	return historyIncentives, nil
 }

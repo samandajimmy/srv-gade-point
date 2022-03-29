@@ -253,11 +253,10 @@ func (m *psqlReferralsRepository) RFriendsReferral(c echo.Context, pl models.Pay
 
 	var refMembers []models.Friends
 
-	query := `SELECT rt.request_data ->>'customerName' as customer_name
+	query := `SELECT distinct(rt.request_data ->>'customerName') as customer_name
 	FROM reward_transactions rt
 	LEFT JOIN referral_codes rc ON rt.used_promo_code = rc.referral_code 
-	where rc.cif = ?
-	order by rt.created_at desc LIMIT ?`
+	where rc.cif = ? LIMIT ?`
 
 	paging := ""
 

@@ -31,8 +31,6 @@ var (
 
 	// APIRCError represents response code error
 	APIRCError = "99"
-
-	whitelistedEndpoints = []string{}
 )
 
 // NewAPI for create new client request
@@ -156,14 +154,4 @@ func (api *API) stringURL() string {
 	URLStr, _ := url.QueryUnescape(api.Host.String())
 
 	return URLStr
-}
-
-func isWhitelisted(str string) bool {
-	for _, ep := range whitelistedEndpoints {
-		if str == ep {
-			return true
-		}
-	}
-
-	return false
 }

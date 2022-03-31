@@ -33,16 +33,6 @@ type RefCampaignReward struct {
 	ReferralCode   string    `json:"referralCode"`
 }
 
-type SumIncentive struct {
-	PerDay        float64 `json:"perDay"`
-	PerMonth      float64 `json:"perMonth"`
-	Total         float64 `json:"total"`
-	ValidPerDay   bool    `json:"validPerDay"`
-	ValidPerMonth bool    `json:"validPerMonth"`
-	IsValid       bool    `json:"isValid"`
-	Reward        Reward  `json:"-"`
-}
-
 type PrefixResponse struct {
 	Prefix string `json:"prefix,omitempty"`
 }

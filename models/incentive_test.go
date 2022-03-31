@@ -11,15 +11,15 @@ import (
 var _ = Describe("Incentive", func() {
 	Describe("ValidateMaxIncentive", func() {
 		var incentive models.Incentive
-		var sum models.SumIncentive
+		var obj models.ObjIncentive
 
 		JustBeforeEach(func() {
-			incentive.ValidateMaxIncentive(&sum)
+			incentive.Validate(&obj)
 		})
 
 		BeforeEach(func() {
 			incentive = models.Incentive{}
-			sum = models.SumIncentive{}
+			obj = models.ObjIncentive{}
 		})
 
 		Context(`incentive per day greater than max per day
@@ -27,28 +27,28 @@ var _ = Describe("Incentive", func() {
 			BeforeEach(func() {
 				incentive.MaxPerDay = helper.CreateFloat64(500)
 				incentive.MaxPerMonth = helper.CreateFloat64(500)
-				sum.PerDay = float64(1000)
-				sum.PerMonth = float64(1000)
+				obj.PerDay = float64(1000)
+				obj.PerMonth = float64(1000)
 			})
 
 			It("expect to have incentive per day equal to max per day", func() {
-				Expect(sum.PerDay).To(Equal(*incentive.MaxPerDay))
+				Expect(obj.PerDay).To(Equal(*incentive.MaxPerDay))
 			})
 
 			It("expect incentive validPerDay to be false", func() {
-				Expect(sum.ValidPerDay).To(BeFalse())
+				Expect(obj.ValidPerDay).To(BeFalse())
 			})
 
 			It("expect to have incentive per month equal to max per month", func() {
-				Expect(sum.PerDay).To(Equal(*incentive.MaxPerDay))
+				Expect(obj.PerDay).To(Equal(*incentive.MaxPerDay))
 			})
 
 			It("expect incentive validPerMonth to be false", func() {
-				Expect(sum.ValidPerMonth).To(BeFalse())
+				Expect(obj.ValidPerMonth).To(BeFalse())
 			})
 
 			It("expect to have incentive per month equal to max per month", func() {
-				Expect(sum.IsValid).To(BeFalse())
+				Expect(obj.IsValid).To(BeFalse())
 			})
 		})
 
@@ -57,28 +57,28 @@ var _ = Describe("Incentive", func() {
 			BeforeEach(func() {
 				incentive.MaxPerDay = helper.CreateFloat64(1000)
 				incentive.MaxPerMonth = helper.CreateFloat64(1000)
-				sum.PerDay = float64(100)
-				sum.PerMonth = float64(100)
+				obj.PerDay = float64(100)
+				obj.PerMonth = float64(100)
 			})
 
 			It("expect to have incentive per day equal to 100", func() {
-				Expect(sum.PerDay).To(Equal(float64(100)))
+				Expect(obj.PerDay).To(Equal(float64(100)))
 			})
 
 			It("expect incentive validPerDay to be true", func() {
-				Expect(sum.ValidPerDay).To(BeTrue())
+				Expect(obj.ValidPerDay).To(BeTrue())
 			})
 
 			It("expect to have incentive per month equal to 100", func() {
-				Expect(sum.PerDay).To(Equal(float64(100)))
+				Expect(obj.PerDay).To(Equal(float64(100)))
 			})
 
 			It("expect incentive validPerMonth to be false", func() {
-				Expect(sum.ValidPerMonth).To(BeTrue())
+				Expect(obj.ValidPerMonth).To(BeTrue())
 			})
 
 			It("expect to have incentive per month equal to max per month", func() {
-				Expect(sum.IsValid).To(BeTrue())
+				Expect(obj.IsValid).To(BeTrue())
 			})
 		})
 
@@ -87,67 +87,66 @@ var _ = Describe("Incentive", func() {
 			BeforeEach(func() {
 				incentive.MaxPerDay = helper.CreateFloat64(1000)
 				incentive.MaxPerMonth = helper.CreateFloat64(1000)
-				sum.PerDay = float64(1000)
-				sum.PerMonth = float64(1000)
+				obj.PerDay = float64(1000)
+				obj.PerMonth = float64(1000)
 			})
 
 			It("expect to have incentive per day equal to 1000", func() {
-				Expect(sum.PerDay).To(Equal(float64(1000)))
+				Expect(obj.PerDay).To(Equal(float64(1000)))
 			})
 
 			It("expect incentive validPerDay to be true", func() {
-				Expect(sum.ValidPerDay).To(BeTrue())
+				Expect(obj.ValidPerDay).To(BeTrue())
 			})
 
 			It("expect to have incentive per month equal to 1000", func() {
-				Expect(sum.PerDay).To(Equal(float64(1000)))
+				Expect(obj.PerDay).To(Equal(float64(1000)))
 			})
 
 			It("expect incentive validPerMonth to be false", func() {
-				Expect(sum.ValidPerMonth).To(BeTrue())
+				Expect(obj.ValidPerMonth).To(BeTrue())
 			})
 
 			It("expect to have incentive per month equal to max per month", func() {
-				Expect(sum.IsValid).To(BeTrue())
-			})
-		})
-	})
-
-	Describe("ValidateMaxTransaction", func() {
-		var output, amount float64
-		incentive := models.Incentive{MaxTransaction: helper.CreateFloat64(1000)}
-
-		JustBeforeEach(func() {
-			output = incentive.ValidateMaxTransaction(amount)
-		})
-
-		Context("when below the MaxTransaction", func() {
-			BeforeEach(func() {
-				amount = float64(200)
-			})
-
-			It("expect to return 200", func() {
-				Expect(output).To(Equal(float64(200)))
+				Expect(obj.IsValid).To(BeTrue())
 			})
 		})
 
-		Context("when meet the MaxTransaction", func() {
-			BeforeEach(func() {
-				amount = float64(1000)
+		Context("ValidateMaxTransaction", func() {
+			incentive := models.Incentive{MaxPerTransaction: helper.CreateFloat64(1000)}
+
+			JustBeforeEach(func() {
+				incentive.Validate(&obj)
 			})
 
-			It("expect to return 1000", func() {
-				Expect(output).To(Equal(float64(1000)))
-			})
-		})
+			Context("when below the MaxTransaction", func() {
+				BeforeEach(func() {
+					obj.PerTransaction = float64(200)
+				})
 
-		Context("when above the MaxTransaction", func() {
-			BeforeEach(func() {
-				amount = float64(2000)
+				It("expect to return 200", func() {
+					Expect(obj.ValidTransaction).To(BeTrue())
+				})
 			})
 
-			It("expect to return 1000", func() {
-				Expect(output).To(Equal(float64(1000)))
+			Context("when meet the MaxTransaction", func() {
+				BeforeEach(func() {
+					obj.PerTransaction = float64(1000)
+				})
+
+				It("expect to return 1000", func() {
+					Expect(obj.ValidTransaction).To(BeTrue())
+				})
+			})
+
+			Context("when above the MaxTransaction", func() {
+				BeforeEach(func() {
+					obj.PerTransaction = float64(2000)
+				})
+
+				It("expect to return 1000", func() {
+					Expect(obj.ValidTransaction).To(BeFalse())
+				})
 			})
 		})
 	})

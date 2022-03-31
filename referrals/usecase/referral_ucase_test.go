@@ -3,12 +3,12 @@ package usecase_test
 import (
 	"net/http"
 
-	. "gade/srv-gade-point/helper"
 	"gade/srv-gade-point/mocks"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referrals"
 	"gade/srv-gade-point/referrals/usecase"
 	"gade/srv-gade-point/test"
+	"gade/srv-gade-point/test/fakedata"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
@@ -28,7 +28,7 @@ var _ = Describe("ReferralUcase", func() {
 		e = test.NewDummyEcho(http.MethodPost, "/")
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockRepos, _ = e.LoadMockRepoUsecase(mockCtrl)
-		refUS = usecase.NewReferralUseCase(mockRepos.MockRefRp, mockRepos.MockCRp)
+		refUS = usecase.NewReferralUseCase(mockRepos.MockRefRp, mockRepos.MockCRp, mockRepos.MockRestRefRp)
 
 		_ = viper.UnmarshalKey("referralcode.one", &mockRefCode)
 	})
@@ -74,27 +74,25 @@ var _ = Describe("ReferralUcase", func() {
 	Describe("UValidateReferrer", func() {
 		It("happy case", func() {
 			var mockCampaign models.Campaign
-			var mockSumIncentive models.SumIncentive
-			var pl = models.PayloadValidator{
-				PromoCode:       "cacing",
-				TransactionDate: "2022-01-18 16:19:32.121",
-			}
+			var mockObjIncentive models.ObjIncentive
+			var pl = fakedata.PayloadInquiry()
+			pl.PromoCode = "something"
+			pl.TransactionDate = "2022-01-18 16:19:32.121"
 
 			_ = viper.UnmarshalKey("campaign.referralcampaign", &mockCampaign)
-			_ = viper.UnmarshalKey("incentive.sumincentive", &mockSumIncentive)
+			_ = viper.UnmarshalKey("incentive.objincentive", &mockObjIncentive)
 
-			rewards := *mockCampaign.Rewards
-			reward := rewards[1]
+			mockObjIncentive.PerTransaction = *pl.TransactionAmount
 			mockCampaignReferral := models.CampaignReferral{
 				Campaign:    mockCampaign,
 				CifReferrer: "",
 			}
-			mockRepos.MockRefRp.EXPECT().RSumRefIncentive(e.Context, pl.PromoCode, reward).Return(mockSumIncentive, nil)
+			mockRepos.MockRefRp.EXPECT().RSumRefIncentive(e.Context, pl.PromoCode).Return(mockObjIncentive, nil)
 
-			refUS = usecase.NewReferralUseCase(mockRepos.MockRefRp, mockRepos.MockCRp)
+			refUS = usecase.NewReferralUseCase(mockRepos.MockRefRp, mockRepos.MockCRp, mockRepos.MockRestRefRp)
 			data, err := refUS.UValidateReferrer(e.Context, pl, &mockCampaignReferral)
 
-			Expect(ToJson(data)).To(Equal(ToJson(mockSumIncentive)))
+			Expect(data).To(Equal(mockObjIncentive))
 			Expect(err).To(BeNil())
 		})
 	})

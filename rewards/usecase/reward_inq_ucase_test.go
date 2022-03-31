@@ -24,14 +24,14 @@ var _ = Describe("RewardInqUcase", func() {
 	var mockRepos mocks.MockRepositories
 	var mockCampaigns []*models.Campaign
 	var mockRespInquiry models.RewardsInquiry
-	var mockSumIncentive models.SumIncentive
+	var mockObjIncentive models.ObjIncentive
 
 	var pl = models.PayloadValidator{
 		IsMulti:           true,
 		CIF:               "11223344515111",
 		Referrer:          "1122334451522",
 		Phone:             "081511150290",
-		PromoCode:         "cacing",
+		PromoCode:         "something",
 		CustomerName:      "Jimmy Samanda Rasu",
 		TransactionDate:   "2022-01-18 16:19:32.121",
 		TransactionAmount: CreateFloat64(100000),
@@ -62,7 +62,7 @@ var _ = Describe("RewardInqUcase", func() {
 		BeforeEach(func() {
 			_ = viper.UnmarshalKey("campaign.referralcampaign", &mockCampaigns)
 			_ = viper.UnmarshalKey("reward.responseinquiry", &mockRespInquiry)
-			_ = viper.UnmarshalKey("incentive.sumincentive", &mockSumIncentive)
+			_ = viper.UnmarshalKey("incentive.objincentive", &mockObjIncentive)
 
 			campaign = *mockCampaigns[0]
 			rewards = *campaign.Rewards
@@ -85,7 +85,7 @@ var _ = Describe("RewardInqUcase", func() {
 					mockUsecases.MockVUs.EXPECT().GetVoucherCode(e.Context, &pl, false).Return(nil, "", nil)
 					mockRepos.MockCRp.EXPECT().GetReferralCampaign(e.Context, pl).Return(&campaignReferral)
 					mockRepos.MockRtRp.EXPECT().GetRewardByPayload(e.Context, pl, nil).Return([]*models.Reward{}, nil)
-					mockUsecases.MockRefUs.EXPECT().UValidateReferrer(e.Context, pl, &campaignReferral).Return(mockSumIncentive, nil)
+					mockUsecases.MockRefUs.EXPECT().UValidateReferrer(e.Context, pl, &campaignReferral).Return(mockObjIncentive, nil)
 					mockRepos.MockRRp.EXPECT().GetRewardTags(e.Context, &rewards[0]).Return(nil, nil)
 					mockRepos.MockRRp.EXPECT().GetRewardTags(e.Context, &rewards[1]).Return(nil, nil)
 					mockUsecases.MockQUs.EXPECT().CheckQuota(e.Context, rewards[0], &pl).Return(true, nil)
@@ -107,7 +107,7 @@ var _ = Describe("RewardInqUcase", func() {
 
 			Context("exceeded incentive", func() {
 				BeforeEach(func() {
-					mockSumIncentive.IsValid = false
+					mockObjIncentive.IsValid = false
 					campaignReferral := models.CampaignReferral{
 						Campaign:    *mockCampaigns[0],
 						CifReferrer: pl.Referrer,
@@ -116,7 +116,7 @@ var _ = Describe("RewardInqUcase", func() {
 					mockUsecases.MockVUs.EXPECT().GetVoucherCode(e.Context, &pl, false).Return(nil, "", nil)
 					mockRepos.MockCRp.EXPECT().GetReferralCampaign(e.Context, pl).Return(&campaignReferral)
 					mockRepos.MockRtRp.EXPECT().GetRewardByPayload(e.Context, pl, nil).Return([]*models.Reward{}, nil)
-					mockUsecases.MockRefUs.EXPECT().UValidateReferrer(e.Context, pl, &campaignReferral).Return(mockSumIncentive, nil)
+					mockUsecases.MockRefUs.EXPECT().UValidateReferrer(e.Context, pl, &campaignReferral).Return(mockObjIncentive, nil)
 				})
 
 				It("expect to return string `Kode referral telah mencapai batas maksimal`", func() {

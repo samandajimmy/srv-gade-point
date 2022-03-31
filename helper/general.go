@@ -61,3 +61,19 @@ func RandomStr(n int, arrChecker map[string]bool) string {
 func NowDbBun() time.Time {
 	return time.Now().Add(7 * time.Hour)
 }
+
+func InterfaceToMap(obj interface{}) map[string]interface{} {
+	var mappedObj map[string]interface{}
+
+	byteObj, err := json.Marshal(obj)
+
+	if err != nil {
+		logger.Make(nil, nil).Error(err)
+	}
+
+	if err := json.Unmarshal(byteObj, &mappedObj); err != nil {
+		logger.Make(nil, nil).Error(err)
+	}
+
+	return mappedObj
+}

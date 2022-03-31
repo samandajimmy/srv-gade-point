@@ -191,6 +191,7 @@ var _ = Describe("ReferralHandler", func() {
 			campaign = fakedata.CampaignReferral()
 			reward1 := fakedata.RewardDirectDisc(withPromoCode)
 			reward2 := fakedata.RewardIncentive(withPromoCode)
+			reward2.Validators.Incentive.OslInactiveValidation = false
 			campaign.Rewards = &[]models.Reward{reward1, reward2}
 			_ = usecases.CampaignUseCase.CreateCampaign(e.Context, &campaign)
 			// create referral code
@@ -227,7 +228,6 @@ var _ = Describe("ReferralHandler", func() {
 							"isValid":       true,
 							"perDay":        float64(155000),
 							"perMonth":      float64(155000),
-							"total":         float64(0),
 							"validPerDay":   true,
 							"validPerMonth": true,
 						},

@@ -26,8 +26,8 @@ type RespReferral struct {
 }
 
 type RespReferralDetail struct {
-	ReferralCode string       `json:"referralCode"`
-	Incentive    SumIncentive `json:"incentive"`
+	ReferralCode string          `json:"referralCode"`
+	Incentive    DetailIncentive `json:"incentive"`
 }
 
 type RequestHistoryIncentive struct {
@@ -40,4 +40,9 @@ type ResponseHistoryIncentive struct {
 	CustomerName    string    `json:"customerName"`
 	RewardReferral  float64   `json:"rewardReferral"`
 	CreatedAt       time.Time `json:"createdAt"`
+}
+
+type ReqOslStatus struct {
+	Cif         string `json:"cif"`
+	ProductCode string `json:"product_code"`
 }

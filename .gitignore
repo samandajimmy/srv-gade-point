@@ -17,3 +17,5 @@ srv-gade-point
 latest_commit_hash
 
 *.out
+
+ssl_certificate.crt

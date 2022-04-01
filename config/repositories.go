@@ -1,6 +1,7 @@
 package config
 
 import (
+	"gade/srv-gade-point/api"
 	_campaignRepository "gade/srv-gade-point/campaigns/repository"
 	_campaignTrxRepository "gade/srv-gade-point/campaigntrxs/repository"
 	_pHistoryRepository "gade/srv-gade-point/pointhistories/repository"
@@ -33,19 +34,20 @@ import (
 )
 
 type Repositories struct {
-	CampaignRepository    campaigns.CRepository
-	CampaignTrxRepository campaigntrxs.Repository
-	PHistoryRepository    pointhistories.Repository
-	QuotaRepository       quotas.Repository
-	ReferralsRepository   referrals.RefRepository
-	ReferralTrxRepository referraltrxs.RefTRepository
-	RewardRepository      rewards.RRepository
-	RewardTrxRepository   rewardtrxs.RtRepository
-	TagRepository         tags.Repository
-	TokenRepository       tokens.Repository
-	UserRepository        users.Repository
-	VoucherCodeRepository vouchercodes.VcRepository
-	VoucherRepository     vouchers.Repository
+	CampaignRepository      campaigns.CRepository
+	CampaignTrxRepository   campaigntrxs.Repository
+	PHistoryRepository      pointhistories.Repository
+	QuotaRepository         quotas.Repository
+	ReferralsRepository     referrals.RefRepository
+	ReferralsRestRepository referrals.RestRefRepository
+	ReferralTrxRepository   referraltrxs.RefTRepository
+	RewardRepository        rewards.RRepository
+	RewardTrxRepository     rewardtrxs.RtRepository
+	TagRepository           tags.Repository
+	TokenRepository         tokens.Repository
+	UserRepository          users.Repository
+	VoucherCodeRepository   vouchercodes.VcRepository
+	VoucherRepository       vouchers.Repository
 }
 
 func NewRepositories(dbConn *sql.DB, dbBun *database.DbBun) Repositories {
@@ -63,19 +65,22 @@ func NewRepositories(dbConn *sql.DB, dbBun *database.DbBun) Repositories {
 	userRepository := _userRepository.NewPsqlUserRepository(dbConn)
 	referralsRepository := _referralsRepository.NewPsqlReferralRepository(dbConn, dbBun)
 
+	referralRestRepository := _referralsRepository.NewRestReferall(api.NewXpoinAPI())
+
 	return Repositories{
-		CampaignRepository:    campaignRepository,
-		CampaignTrxRepository: campaignTrxRepository,
-		PHistoryRepository:    pHistoryRepository,
-		QuotaRepository:       quotaRepository,
-		ReferralsRepository:   referralsRepository,
-		ReferralTrxRepository: referralTrxRepository,
-		RewardRepository:      rewardRepository,
-		RewardTrxRepository:   rewardTrxRepository,
-		TagRepository:         tagRepository,
-		TokenRepository:       tokenRepository,
-		UserRepository:        userRepository,
-		VoucherCodeRepository: voucherCodeRepository,
-		VoucherRepository:     voucherRepository,
+		CampaignRepository:      campaignRepository,
+		CampaignTrxRepository:   campaignTrxRepository,
+		PHistoryRepository:      pHistoryRepository,
+		QuotaRepository:         quotaRepository,
+		ReferralsRepository:     referralsRepository,
+		ReferralsRestRepository: referralRestRepository,
+		ReferralTrxRepository:   referralTrxRepository,
+		RewardRepository:        rewardRepository,
+		RewardTrxRepository:     rewardTrxRepository,
+		TagRepository:           tagRepository,
+		TokenRepository:         tokenRepository,
+		UserRepository:          userRepository,
+		VoucherCodeRepository:   voucherCodeRepository,
+		VoucherRepository:       voucherRepository,
 	}
 }

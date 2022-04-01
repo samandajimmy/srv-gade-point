@@ -97,11 +97,11 @@ func (dbc *DbConfig) Migrate(dbConn *sql.DB) *migrate.Migrate {
 		dbc.Username, driver)
 
 	if err != nil {
-		logger.Make(nil, nil).Debug(err)
+		logger.Make(nil, nil).Error(err)
 	}
 
 	if err := migrations.Up(); err != nil {
-		logger.Make(nil, nil).Debug(err)
+		logger.Make(nil, nil).Error(err)
 	}
 
 	return migrations

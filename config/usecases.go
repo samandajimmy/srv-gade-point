@@ -59,7 +59,8 @@ func NewUsecases(repos Repositories) Usecases {
 		repos.CampaignRepository, repos.PHistoryRepository, repos.VoucherCodeRepository)
 	campaignTrxUseCase := _campaignTrxUseCase.NewCampaignTrxUseCase(repos.CampaignTrxRepository)
 	userUseCase := _userUseCase.NewUserUseCase(repos.UserRepository)
-	referralsUseCase := _referralsUseCase.NewReferralUseCase(repos.ReferralsRepository, repos.CampaignRepository)
+	referralsUseCase := _referralsUseCase.NewReferralUseCase(repos.ReferralsRepository, repos.CampaignRepository,
+		repos.ReferralsRestRepository)
 	rewardUseCase := _rewardUseCase.NewRewardUseCase(repos.RewardRepository, repos.CampaignRepository,
 		tagUseCase, quotaUseCase, voucherUseCase, repos.VoucherCodeRepository, repos.RewardTrxRepository,
 		repos.ReferralTrxRepository, referralsUseCase)

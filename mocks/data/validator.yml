@@ -8,6 +8,7 @@ validator:
       maxPerDay: 500000
       maxPerMonth: 700000
       maxTransaction: 500000
+      oslInactiveValidation: true
       validator:
       - channel: 9997, 9999, 9998
         product: 32, 36, 01, 11, 43, 12, 09, 04, 29, 16, 17, 37, 62

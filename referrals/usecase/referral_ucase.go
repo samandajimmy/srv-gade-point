@@ -13,16 +13,19 @@ import (
 type referralUseCase struct {
 	referralRepo referrals.RefRepository
 	campaignRepo campaigns.CRepository
+	restReferral referrals.RestRefRepository
 }
 
 // NewReferralUseCase will create new an rewardtrxUseCase object representation of referrals.RefUseCase interface
 func NewReferralUseCase(
 	refRepo referrals.RefRepository,
 	campaignRepo campaigns.CRepository,
+	restReferral referrals.RestRefRepository,
 ) referrals.RefUseCase {
 	return &referralUseCase{
 		referralRepo: refRepo,
 		campaignRepo: campaignRepo,
+		restReferral: restReferral,
 	}
 }
 
@@ -81,8 +84,6 @@ func (rcUc *referralUseCase) UGetReferralCodes(c echo.Context, requestGetReferra
 	}
 
 	if referral.ReferralCode == "" {
-		logger.Make(c, nil).Debug(models.ErrRefCodesNF)
-
 		return result, models.ErrRefCodesNF
 	}
 
@@ -90,33 +91,30 @@ func (rcUc *referralUseCase) UGetReferralCodes(c echo.Context, requestGetReferra
 	reward, err := rcUc.campaignRepo.GetRewardIncentiveByCampaign(c, referral.CampaignId)
 
 	if referral.ReferralCode == "" {
-		logger.Make(c, nil).Debug(err)
-
 		return result, err
 	}
 
 	// sum the incentive based on the ref trx (per day and per month)
-	sumIncentive, err := rcUc.referralRepo.RSumRefIncentive(c, referral.ReferralCode, reward)
+	objIncentive, err := rcUc.referralRepo.RSumRefIncentive(c, referral.ReferralCode)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
-
 		return result, err
 	}
 
 	// validate the max per day and per month
-	validator := sumIncentive.Reward.Validators
-	validator.Incentive.ValidateMaxIncentive(&sumIncentive)
+	validator := reward.Validators
+	validator.Incentive.Validate(&objIncentive)
 
 	// if data referral codes found send result
 	result.ReferralCode = referral.ReferralCode
-	result.Incentive = sumIncentive
+	result.Incentive = objIncentive.DetailIncentive
 
 	return result, nil
 }
 
-func (ref *referralUseCase) UValidateReferrer(c echo.Context, pl models.PayloadValidator, campaignReferral *models.CampaignReferral) (models.SumIncentive, error) {
-	var sumIncentive models.SumIncentive
+func (ref *referralUseCase) UValidateReferrer(c echo.Context, pl models.PayloadValidator, campaignReferral *models.CampaignReferral) (models.ObjIncentive, error) {
+	var objIncentive models.ObjIncentive
+	var chosenReward models.Reward
 	var err error
 
 	// get ref trx based on the active ref campaign
@@ -131,28 +129,45 @@ func (ref *referralUseCase) UValidateReferrer(c echo.Context, pl models.PayloadV
 		}
 
 		// sum the incentive based on the ref trx (per day and per month)
-		sumIncentive, err = ref.referralRepo.RSumRefIncentive(c, pl.PromoCode, reward)
+		objIncentive, err = ref.referralRepo.RSumRefIncentive(c, pl.PromoCode)
 
 		if err != nil {
 			continue
 		}
 
-		if (sumIncentive.Reward != models.Reward{}) {
-			break
-		}
+		chosenReward = reward
 
 	}
 
 	// validate the max per day and per month
-	validator := sumIncentive.Reward.Validators
+	validator := chosenReward.Validators
 
 	if validator == nil {
-		return sumIncentive, nil
+		return objIncentive, nil
 	}
 
-	validator.Incentive.ValidateMaxIncentive(&sumIncentive)
+	objIncentive.PerTransaction = *pl.TransactionAmount
+	validator.Incentive.Validate(&objIncentive)
 
-	return sumIncentive, nil
+	// when its not valid then no need to check the next validation
+	if !objIncentive.IsValid {
+		return objIncentive, nil
+	}
+
+	// when there is no osl inactive validation then return immediately
+	if !validator.Incentive.OslInactiveValidation {
+		return objIncentive, nil
+	}
+
+	// validate the osl inactive
+	restPl := models.ReqOslStatus{Cif: pl.CIF, ProductCode: pl.Validators.Product}
+	oslStatus, err := ref.restReferral.RRGetOslStatus(c, restPl)
+
+	if err != nil || !oslStatus {
+		return models.ObjIncentive{}, models.ErrOslInactive
+	}
+
+	return objIncentive, nil
 }
 
 func (rcUc *referralUseCase) UReferralCIFValidate(c echo.Context, cif string) (models.ReferralCodes, error) {

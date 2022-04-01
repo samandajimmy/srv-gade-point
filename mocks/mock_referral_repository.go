@@ -154,18 +154,18 @@ func (mr *MockRefRepositoryMockRecorder) RPostCoreTrx(arg0, arg1 interface{}) *g
 }
 
 // RSumRefIncentive mocks base method.
-func (m *MockRefRepository) RSumRefIncentive(arg0 echo.Context, arg1 string, arg2 models.Reward) (models.SumIncentive, error) {
+func (m *MockRefRepository) RSumRefIncentive(arg0 echo.Context, arg1 string) (models.ObjIncentive, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RSumRefIncentive", arg0, arg1, arg2)
-	ret0, _ := ret[0].(models.SumIncentive)
+	ret := m.ctrl.Call(m, "RSumRefIncentive", arg0, arg1)
+	ret0, _ := ret[0].(models.ObjIncentive)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // RSumRefIncentive indicates an expected call of RSumRefIncentive.
-func (mr *MockRefRepositoryMockRecorder) RSumRefIncentive(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockRefRepositoryMockRecorder) RSumRefIncentive(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RSumRefIncentive", reflect.TypeOf((*MockRefRepository)(nil).RSumRefIncentive), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RSumRefIncentive", reflect.TypeOf((*MockRefRepository)(nil).RSumRefIncentive), arg0, arg1)
 }
 
 // RTotalFriends mocks base method.

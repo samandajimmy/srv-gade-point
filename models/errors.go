@@ -15,6 +15,9 @@ var (
 	// ErrConflict to store conflicted error message
 	ErrConflict = errors.New("Item sudah ada")
 
+	// ErrSetVar to store setting variable error message
+	ErrSetVar = errors.New("Setting variable error")
+
 	// ErrBadParamInput to store bad parameter error message
 	ErrBadParamInput = errors.New("Parameter yang diberikan tidak valid")
 
@@ -288,7 +291,10 @@ var (
 	ErrRefCodesNF = errors.New("Kode referral tidak ditemukan")
 
 	// ErrRefTrxExceeded to store exceeded referral code trx error message
-	ErrRefTrxExceeded = errors.New("Kode referral telah mencapai batas maksimal")
+	ErrRefTrxExceeded = errors.New("Kode referral tidak dapat digunakan")
+
+	// ErrXpoinApi to store xpoin api error message
+	ErrXpoinApi = errors.New("Terjadi kesalahan pada Xpoin")
 
 	// ErrIncDayExceeded to store exceeded incentive per day error message
 	DynErrIncDayExceeded = "Saldo insentif per hari maksimal Rp %s"
@@ -307,6 +313,12 @@ var (
 
 	// ErrFriends get friends by cif data not found
 	ErrFriends = errors.New("Data Sahabat tidak di temukan")
+
+	// ErrOslInactive error message of get osl status
+	ErrOslInactive = errors.New("OSL dari nasabah telah aktif")
+
+	// ErrXpoinAPIRequest to store xpoin api request error message
+	ErrXpoinAPIRequest = "XPOIN API: RC-%s - %s"
 )
 
 // DynamicErr to return parameterize errors

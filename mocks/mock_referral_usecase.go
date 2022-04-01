@@ -156,10 +156,10 @@ func (mr *MockRefUseCaseMockRecorder) UTotalFriends(arg0, arg1 interface{}) *gom
 }
 
 // UValidateReferrer mocks base method.
-func (m *MockRefUseCase) UValidateReferrer(arg0 echo.Context, arg1 models.PayloadValidator, arg2 *models.CampaignReferral) (models.SumIncentive, error) {
+func (m *MockRefUseCase) UValidateReferrer(arg0 echo.Context, arg1 models.PayloadValidator, arg2 *models.CampaignReferral) (models.ObjIncentive, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UValidateReferrer", arg0, arg1, arg2)
-	ret0, _ := ret[0].(models.SumIncentive)
+	ret0, _ := ret[0].(models.ObjIncentive)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -34,22 +34,7 @@ func (ov *ObjectValidator) autoValidating(validator interface{}, objects ...inte
 	for _, obj := range objects {
 		rObject = reflect.ValueOf(obj).Elem()
 
-		for i := 0; i < rObject.NumField(); i++ {
-			interfaceValue = rObject.Field(i).Interface()
-			fieldName = strcase.ToLowerCamel(rObject.Type().Field(i).Name)
-			hasElement := rObject.Field(i)
-
-			if hasElement.Kind() == reflect.Ptr && !hasElement.IsNil() {
-				hasElement = hasElement.Elem()
-				interfaceValue = hasElement.Interface()
-			}
-
-			if hasElement.Kind() == reflect.Struct {
-				continue
-			}
-
-			mappedObj[fieldName] = interfaceValue
-		}
+		mappedObj = ov.mappingObj(rObject, mappedObj)
 	}
 
 	for i := 0; i < vReflector.NumField(); i++ {
@@ -88,6 +73,42 @@ func (ov *ObjectValidator) autoValidating(validator interface{}, objects ...inte
 	}
 
 	return nil
+}
+
+func (ov *ObjectValidator) mappingObj(rObject reflect.Value, mappedObj map[string]interface{}) map[string]interface{} {
+	var hasElement reflect.Value
+	var interfaceValue interface{}
+	var fieldName string
+
+	obj := map[string]interface{}{}
+
+	for i := 0; i < rObject.NumField(); i++ {
+		hasElement = rObject.Field(i)
+		interfaceValue = hasElement.Interface()
+		fieldName = strcase.ToLowerCamel(rObject.Type().Field(i).Name)
+
+		if contains(ov.SkippedValidator, fieldName) {
+			continue
+		}
+
+		if hasElement.Kind() == reflect.Ptr && !hasElement.IsNil() {
+			hasElement = hasElement.Elem()
+			interfaceValue = hasElement.Interface()
+		}
+
+		if hasElement.Kind() == reflect.Struct {
+			obj = ov.mappingObj(hasElement, obj)
+			continue
+		}
+
+		obj[fieldName] = interfaceValue
+	}
+
+	for k, v := range obj {
+		mappedObj[k] = v
+	}
+
+	return mappedObj
 }
 
 func (ov *ObjectValidator) isError(stateError bool, fieldName string) bool {

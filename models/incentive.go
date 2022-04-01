@@ -1,65 +1,59 @@
 package models
 
-type Incentive struct {
-	MaxTransaction *float64     `json:"maxTransaction"`
-	MaxPerDay      *float64     `json:"maxPerDay"`
-	MaxPerMonth    *float64     `json:"maxPerMonth"`
-	Validator      *[]Validator `json:"validator"`
+type DetailIncentive struct {
+	PerDay        float64 `json:"perDay"`
+	PerMonth      float64 `json:"perMonth"`
+	ValidPerDay   bool    `json:"validPerDay"`
+	ValidPerMonth bool    `json:"validPerMonth"`
+	IsValid       bool    `json:"isValid"`
 }
 
-func (i *Incentive) ValidateMaxIncentive(sumIncentive *SumIncentive) {
+type ObjIncentive struct {
+	DetailIncentive
+
+	PerTransaction   float64 `json:"perTransaction"`
+	ValidTransaction bool    `json:"validTransaction"`
+}
+
+type Incentive struct {
+	MaxPerTransaction     *float64     `json:"maxPerTransaction,omitempty"`
+	MaxPerDay             *float64     `json:"maxPerDay,omitempty"`
+	MaxPerMonth           *float64     `json:"maxPerMonth,omitempty"`
+	OslInactiveValidation bool         `json:"oslInactiveValidation,omitempty"`
+	Validator             *[]Validator `json:"validator,omitempty"`
+}
+
+func (i *Incentive) Validate(obj *ObjIncentive) {
 	ov := ObjectValidator{
-		SkippedValidator: []string{"validator", "maxTransaction", "reward", "isValid"},
-		SkippedError:     []string{"maxPerDay", "maxPerMonth"},
+		SkippedValidator: []string{"validator", "reward"},
+		SkippedError:     []string{"maxPerDay", "maxPerMonth", "maxPerTransaction"},
 		CompareEqual:     []string{},
 		TightenValidator: map[string]string{
-			"maxPerDay":   "perDay",
-			"maxPerMonth": "perMonth",
+			"maxPerDay":         "perDay",
+			"maxPerMonth":       "perMonth",
+			"maxPerTransaction": "perTransaction",
 		},
 		StatusField: map[string]bool{
-			"maxPerDay":   true,
-			"maxPerMonth": true,
+			"maxPerDay":         true,
+			"maxPerMonth":       true,
+			"maxPerTransaction": true,
 		},
 	}
 
-	_ = ov.autoValidating(i, sumIncentive)
-	sumIncentive.ValidPerMonth = ov.StatusField["maxPerMonth"]
-	sumIncentive.ValidPerDay = ov.StatusField["maxPerDay"]
+	_ = ov.autoValidating(i, obj)
+	obj.ValidPerMonth = ov.StatusField["maxPerMonth"]
+	obj.ValidPerDay = ov.StatusField["maxPerDay"]
+	obj.ValidTransaction = ov.StatusField["maxPerTransaction"]
 
 	if !ov.StatusField["maxPerMonth"] {
-		sumIncentive.PerMonth = *i.MaxPerMonth
+		obj.PerMonth = *i.MaxPerMonth
 	}
 
 	if !ov.StatusField["maxPerDay"] {
-		sumIncentive.PerDay = *i.MaxPerDay
+		obj.PerDay = *i.MaxPerDay
 	}
 
-	if sumIncentive.ValidPerDay || sumIncentive.ValidPerMonth {
-		sumIncentive.IsValid = true
+	if obj.ValidPerDay && obj.ValidPerMonth && obj.ValidTransaction {
+		obj.IsValid = true
 	}
-}
-
-func (i *Incentive) ValidateMaxTransaction(amount float64) float64 {
-	ov := ObjectValidator{
-		SkippedValidator: []string{"validator", "maxPerDay", "maxPerMonth"},
-		SkippedError:     []string{"maxTransaction"},
-		TightenValidator: map[string]string{
-			"maxTransaction": "transactionAmount",
-		},
-		StatusField: map[string]bool{
-			"maxTransaction": true,
-		},
-	}
-
-	obj := PayloadValidator{
-		TransactionAmount: &amount,
-	}
-
-	_ = ov.autoValidating(i, &obj)
-
-	if !ov.StatusField["maxTransaction"] {
-		return *i.MaxTransaction
-	}
-
-	return amount
 }

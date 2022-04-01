@@ -94,10 +94,10 @@ func Validator() models.Validator {
 
 func Incentive(validators ...models.Validator) models.Incentive {
 	incentive := models.Incentive{
-		MaxTransaction: helper.CreateFloat64(gofakeit.Float64Range(50000, 1000000)),
-		MaxPerDay:      helper.CreateFloat64(gofakeit.Float64Range(50000, 1000000)),
-		MaxPerMonth:    helper.CreateFloat64(gofakeit.Float64Range(50000, 1000000)),
-		Validator:      &validators,
+		MaxPerTransaction: helper.CreateFloat64(gofakeit.Float64Range(50000, 1000000)),
+		MaxPerDay:         helper.CreateFloat64(gofakeit.Float64Range(50000, 1000000)),
+		MaxPerMonth:       helper.CreateFloat64(gofakeit.Float64Range(50000, 1000000)),
+		Validator:         &validators,
 	}
 
 	return incentive

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gade/srv-gade-point/database"
+	gcdb "gade/srv-gade-point/database"
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/quotas"
@@ -428,4 +429,32 @@ func (rwdRepo *psqlRewardRepository) RGetRewardDetail(c echo.Context, rewardId i
 	}
 
 	return result, nil
+}
+
+func (rwdRepo *psqlRewardRepository) RPostCoreTrx(c echo.Context, coreTrx []models.CoreTrxPayload) error {
+	var nilFilters []string
+	createdAt := time.Now()
+	stmts := []*gcdb.PipelineStmt{}
+	for _, trx := range coreTrx {
+
+		stmts = append(stmts, gcdb.NewPipelineStmt(`INSERT INTO core_transactions 
+		(created_at, transaction_amount, loan_amount, interest_amount, product_code, 
+		transaction_date, transaction_id, marketing_code, transaction_type,
+		inq_status, root_ref_trx) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+			nilFilters, createdAt, trx.TrxAmount, trx.LoanAmount,
+			trx.InterestAmount, trx.ProductCode, trx.TrxDate, trx.TrxID,
+			trx.MarketingCode, trx.TrxType, trx.InqStatus, trx.RefTrx))
+	}
+
+	err := gcdb.WithTransaction(rwdRepo.Conn, func(tx gcdb.Transaction) error {
+		return gcdb.RunPipelineQueryRow(tx, stmts...)
+	})
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+		return err
+	}
+
+	return nil
 }

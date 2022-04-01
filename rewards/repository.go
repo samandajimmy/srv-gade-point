@@ -19,4 +19,5 @@ type RRepository interface {
 	GetRewardPromotions(echo.Context, models.RewardPromotionLists) ([]*models.RewardPromotions, error)
 	RGetRandomId(length int) string
 	RGetRewardDetail(c echo.Context, rewardId int64) (models.Reward, error)
+	RPostCoreTrx(echo.Context, []models.CoreTrxPayload) error
 }

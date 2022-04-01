@@ -23,35 +23,6 @@ func NewPsqlReferralRepository(Conn *sql.DB, Bun *gcdb.DbBun) referrals.RefRepos
 	return &psqlReferralsRepository{Conn, Bun}
 }
 
-func (refRepo *psqlReferralsRepository) RPostCoreTrx(c echo.Context, coreTrx []models.CoreTrxPayload) error {
-	var nilFilters []string
-	createdAt := time.Now()
-	trxType := 1
-	totalReward := 0
-	stmts := []*gcdb.PipelineStmt{}
-	for _, trx := range coreTrx {
-
-		stmts = append(stmts, gcdb.NewPipelineStmt(`INSERT INTO core_transactions 
-		(created_at, transaction_amount, loan_amount, interest_amount, product_code, 
-		transaction_date, total_reward, transaction_id, marketing_code, transaction_type) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-			nilFilters, createdAt, trx.TrxAmount, trx.LoanAmount,
-			trx.InterestAmount, trx.ProductCode, trx.TrxDate, totalReward, trx.TrxID,
-			trx.MarketingCode, trxType))
-	}
-
-	err := gcdb.WithTransaction(refRepo.Conn, func(tx gcdb.Transaction) error {
-		return gcdb.RunPipelineQueryRow(tx, stmts...)
-	})
-
-	if err != nil {
-		logger.Make(c, nil).Debug(err)
-		return err
-	}
-
-	return nil
-}
-
 func (m *psqlReferralsRepository) RCreateReferral(c echo.Context, refcodes models.ReferralCodes) (models.ReferralCodes, error) {
 	now := time.Now()
 	query := `INSERT INTO referral_codes (cif, referral_code, campaign_id, created_at) 
@@ -190,30 +161,55 @@ func (m *psqlReferralsRepository) RGetReferralCampaignMetadata(c echo.Context, p
 	return response, nil
 }
 
-func (m *psqlReferralsRepository) RGetHistoryIncentive(c echo.Context, refCif string) ([]models.ResponseHistoryIncentive, error) {
-	var historyIncentives []models.ResponseHistoryIncentive
+func (m *psqlReferralsRepository) RGetHistoryIncentive(c echo.Context, pl models.RequestHistoryIncentive) (models.ResponseHistoryIncentive, error) {
+	var historyIncentives models.ResponseHistoryIncentive
+	var historyData []models.ResponseHistoryIncentiveData
+	var totalData int64
 
 	query := `select
 		(rtrx.request_data->>'validators')::json->>'transactionType' as transaction_type, 
 		(rtrx.request_data->>'validators')::json->>'product' as product_code,
 		rtrx.request_data->>'customerName' as customer_name,
 		rt.reward_referral,
-		rt.created_at
+		EXTRACT(EPOCH FROM rt.created_at::timestamp) as created_at
 			from referral_transactions rt 
  			left join reward_transactions rtrx on rtrx.ref_id = rt.ref_id 
  			where rtrx.status = '1'
 			and rtrx.request_data->>'referrer' = ?0
  			and rt.reward_type = ?1
- 			order by rt.created_at desc;`
+ 			order by rt.created_at desc limit ?2`
 
-	err := m.Bun.QueryThenScan(c, &historyIncentives, query, refCif,
-		models.CodeTypeIncentive)
+	if pl.Page > 0 {
+		paging := fmt.Sprintf(" OFFSET %d", ((pl.Page - 1) * pl.Limit))
+		query += paging
+	}
+
+	err := m.Bun.QueryThenScan(c, &historyData, query, pl.RefCif,
+		models.CodeTypeIncentive, pl.Limit)
 
 	if err != nil {
 		logger.Make(c, nil).Debug(err)
 
-		return []models.ResponseHistoryIncentive{}, err
+		return models.ResponseHistoryIncentive{}, err
 	}
+
+	query = `select count(rt.id) as total_data
+			from referral_transactions rt 
+ 			left join reward_transactions rtrx on rtrx.ref_id = rt.ref_id 
+ 				where rtrx.request_data->>'referrer' = ? 
+ 				and rtrx.status = '1'
+ 				and rt.reward_type = 'incentive';`
+
+	err = m.Bun.QueryThenScan(c, &totalData, query, pl.RefCif)
+
+	if err != nil {
+		logger.Make(c, nil).Debug(err)
+
+		return models.ResponseHistoryIncentive{}, err
+	}
+
+	historyIncentives.TotalData = totalData
+	historyIncentives.HistoryIncentiveData = &historyData
 
 	return historyIncentives, nil
 }
@@ -249,11 +245,10 @@ func (m *psqlReferralsRepository) RFriendsReferral(c echo.Context, pl models.Pay
 
 	var refMembers []models.Friends
 
-	query := `SELECT rt.request_data ->>'customerName' as customer_name
+	query := `SELECT distinct(rt.request_data ->>'customerName') as customer_name
 	FROM reward_transactions rt
 	LEFT JOIN referral_codes rc ON rt.used_promo_code = rc.referral_code 
-	where rc.cif = ?
-	order by rt.created_at desc LIMIT ?`
+	where rc.cif = ? LIMIT ?`
 
 	paging := ""
 

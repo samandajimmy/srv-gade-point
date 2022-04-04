@@ -66,9 +66,9 @@ func NewDbConn() (*database.DbConfig, *migrate.Migrate) {
 	}
 
 	db := database.NewDbConn(dbConfig)
-	migrate := db.Migrate(db.Sql)
+	migrator := db.Migrate(db.Sql)
 
-	return db, migrate
+	return db, migrator
 }
 
 func LoadRealRepoUsecase(db *database.DbConfig) (config.Repositories, config.Usecases) {

@@ -28,4 +28,4 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.3
 COPY . .
 
 # Run test
-CMD [ "ginkgo", "-r" ]
+CMD [ "ginkgo", "-r", "--randomize-all", "--randomize-suites", "--fail-on-pending", "--cover" ]

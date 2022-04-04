@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"gade/srv-gade-point/logger"
+	"gade/srv-gade-point/models"
 	"os"
 	"reflect"
 
@@ -97,11 +98,11 @@ func (dbc *DbConfig) Migrate(dbConn *sql.DB) *migrate.Migrate {
 		dbc.Username, driver)
 
 	if err != nil {
-		logger.Make(nil, nil).Error(err)
+		logger.Make(nil, nil).Fatal(err)
 	}
 
-	if err := migrations.Up(); err != nil {
-		logger.Make(nil, nil).Error(err)
+	if err := migrations.Up(); err != nil && err.Error() != models.ErrMigrateNoChange.Error() {
+		logger.Make(nil, nil).Fatal(err)
 	}
 
 	return migrations

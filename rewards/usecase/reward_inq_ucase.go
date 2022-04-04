@@ -3,6 +3,7 @@ package usecase
 import (
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
+	"strconv"
 
 	"time"
 
@@ -42,6 +43,7 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 	// fresh or new reward trx start from here
 	// get rewards availables
+	idxStr := ""
 	packRewards, err := rwd.getAvailableRewards(c, *plValidator, &cp)
 
 	if err != nil {
@@ -50,12 +52,10 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		return rwdInquiry, &respErrors
 	}
 
-	for _, reward := range packRewards {
+	for idx, reward := range packRewards {
+		idxStr = strconv.Itoa(idx)
 		// validate promo code
-
 		if err = rwd.validatePromoCode(*reward.Tags, reward, plValidator.PromoCode); err != nil {
-			logger.Make(c, nil).Debug(err)
-
 			continue
 		}
 
@@ -63,7 +63,8 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		available, err := rwd.quotaUC.CheckQuota(c, reward, plValidator)
 
 		if !available {
-			respErrors.AddError(err.Error())
+			respErrors.AddError(
+				models.DynamicErr(models.ErrDynRewardValidation, idxStr, err.Error()).Error())
 
 			continue
 		}
@@ -72,7 +73,8 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 		rwdResp, err := rwd.responseReward(c, reward, plValidator)
 
 		if err != nil {
-			respErrors.SetTitle(err.Error())
+			respErrors.AddError(
+				models.DynamicErr(models.ErrDynRewardValidation, idxStr, err.Error()).Error())
 
 			continue
 		}
@@ -92,7 +94,6 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 
 	// if no reward found
 	if len(rwdResponse) == 0 {
-		logger.Make(c, nil).Debug(models.ErrMessageNoRewards)
 		respErrors.SetTitle(models.ErrMessageNoRewards.Error())
 
 		return rwdInquiry, &respErrors
@@ -111,7 +112,6 @@ func (rwd *rewardUseCase) Inquiry(c echo.Context, plValidator *models.PayloadVal
 	_, err = rwd.createRewardTrx(c, *plValidator, rwdInquiry)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
 		respErrors.SetTitle(err.Error())
 
 		return rwdInquiry, &respErrors

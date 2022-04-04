@@ -87,15 +87,21 @@ var _ = Describe("Validator", func() {
 	})
 
 	Describe("GetFormulaResult", func() {
-		var validator = models.Validator{
-			Multiplier: helper.CreateFloat64(10000),
-			Value:      helper.CreateFloat64(100),
-			Formula:    "(transactionAmount/multiplier)*value",
-		}
-
-		var plValidator = models.PayloadValidator{TransactionAmount: helper.CreateFloat64(500000)}
+		var validator models.Validator
+		var plValidator models.PayloadValidator
 		var value float64
 		var err error
+
+		BeforeEach(func() {
+			plValidator = models.PayloadValidator{TransactionAmount: helper.CreateFloat64(500000)}
+			validator = models.Validator{
+				Multiplier: helper.CreateFloat64(10000),
+				Value:      helper.CreateFloat64(100),
+				Formula:    "(transactionAmount/multiplier)*value",
+			}
+			value = 0
+			err = nil
+		})
 
 		JustBeforeEach(func() {
 			value, err = validator.GetFormulaResult(&plValidator)

@@ -18,6 +18,9 @@ var (
 	// ErrSetVar to store setting variable error message
 	ErrSetVar = errors.New("Setting variable error")
 
+	// ErrMigrateNoChange to store migration no change error message
+	ErrMigrateNoChange = errors.New("no change")
+
 	// ErrBadParamInput to store bad parameter error message
 	ErrBadParamInput = errors.New("Parameter yang diberikan tidak valid")
 
@@ -319,9 +322,13 @@ var (
 
 	// ErrXpoinAPIRequest to store xpoin api request error message
 	ErrXpoinAPIRequest = "XPOIN API: RC-%s - %s"
+
+	// ErrDynRewardValidation to store dynamic error message of rewards validation
+	ErrDynRewardValidation = "RewardIdx #%s: %s"
 )
 
 // DynamicErr to return parameterize errors
-func DynamicErr(message string, args ...string) error {
-	return fmt.Errorf(message, args[0])
+func DynamicErr(message string, args ...interface{}) error {
+
+	return fmt.Errorf(message, args...)
 }

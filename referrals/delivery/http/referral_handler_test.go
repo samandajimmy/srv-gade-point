@@ -45,6 +45,20 @@ var (
 		db.Sql.Close()
 		migrator.Close()
 	})
+
+	_ = BeforeEach(func() {
+		handler = refhttp.ReferralHandler{}
+		e = test.DummyEcho{}
+		response = models.Response{}
+		expectResp = models.Response{}
+		pl = nil
+		campaign = models.Campaign{}
+		usecases = config.Usecases{}
+		usedCif = gofakeit.Regex("[1234567890]{10}")
+		refCode = models.RespReferral{}
+		plInquiry = models.PayloadValidator{}
+		plPayment = models.RewardPayment{}
+	})
 )
 
 var _ = Describe("ReferralHandler", func() {
@@ -71,7 +85,7 @@ var _ = Describe("ReferralHandler", func() {
 			campaign := fakedata.CampaignReferral()
 			campaign.Rewards = &[]models.Reward{fakedata.Reward(withPromoCode), fakedata.Reward(withPromoCode)}
 			_ = usecases.CampaignUseCase.CreateCampaign(e.Context, &campaign)
-			reqpl = models.RequestCreateReferral{CIF: "1122334455", Prefix: campaign.Metadata.Prefix}
+			reqpl = models.RequestCreateReferral{CIF: usedCif, Prefix: campaign.Metadata.Prefix}
 		})
 
 		Context("create referral code succeeded", func() {
@@ -87,7 +101,7 @@ var _ = Describe("ReferralHandler", func() {
 					Status:  "Success",
 					Message: "Data Berhasil Dikirim",
 					Data: map[string]interface{}{
-						"cif":          "1122334455",
+						"cif":          usedCif,
 						"referralCode": "",
 					},
 				}

@@ -84,6 +84,7 @@ var _ = Describe("Handler", func() {
 			respData = models.AccountToken{}
 			mockResp = models.Response{}
 			errInput = nil
+			errors = models.ResponseErrors{}
 		})
 
 		Context("error input is nil", func() {

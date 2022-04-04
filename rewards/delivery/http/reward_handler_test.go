@@ -52,13 +52,32 @@ var (
 		db.Sql.Close()
 		migrator.Close()
 	})
+
+	_ = BeforeEach(func() {
+		pl = nil
+		response = models.Response{}
+		responseData = map[string]interface{}{}
+		expectResp = models.Response{}
+		handler = rwdhttp.RewardHandler{}
+		campaign = models.Campaign{}
+		reward = models.Reward{}
+		rewards = []models.Reward{}
+		voucher = models.Voucher{}
+		refCode = models.RespReferral{}
+		createReferral = models.RequestCreateReferral{}
+		usecases = config.Usecases{}
+		repos = config.Repositories{}
+		e = test.DummyEcho{}
+		withEcho = true
+		expectedValue = 0
+	})
 )
 
 var _ = Describe("Reward", func() {
 
 	BeforeEach(func() {
 		response, expectResp, response.Data = models.Response{}, models.Response{}, map[string]interface{}{}
-		handler, reward, voucher = rwdhttp.RewardHandler{}, models.Reward{}, models.Voucher{}
+		e, handler, reward, voucher = test.DummyEcho{}, rwdhttp.RewardHandler{}, models.Reward{}, models.Voucher{}
 		rewards = []models.Reward{}
 		withEcho = true
 
@@ -171,7 +190,8 @@ var _ = Describe("Reward", func() {
 			Context("inquiry reward voucher", func() {
 				BeforeEach(func() {
 					voucher = fakedata.VoucherDirectDisc()
-					_ = usecases.VoucherUseCase.CreateVoucher(e.Context, &voucher)
+					tempEcho := test.NewDummyEcho(http.MethodPost, "/", nil)
+					_ = usecases.VoucherUseCase.CreateVoucher(tempEcho.Context, &voucher)
 
 					reward = fakedata.RewardVoucher(true, voucher.ID)
 				})
@@ -223,38 +243,104 @@ var _ = Describe("Reward", func() {
 			})
 
 			Context("voucher", func() {
+				var tempEcho test.DummyEcho
+
 				BeforeEach(func() {
+					tempEcho = test.NewDummyEcho(http.MethodPost, "/", nil)
 					voucher = fakedata.VoucherDirectDisc()
-					_ = usecases.VoucherUseCase.CreateVoucher(e.Context, &voucher)
+					_ = usecases.VoucherUseCase.CreateVoucher(tempEcho.Context, &voucher)
 					payload := map[string]interface{}{
 						"voucherId": strconv.FormatInt(voucher.ID, 10),
 						"page":      0,
 						"limit":     0,
 					}
-					voucherCodes, _, _ := usecases.VoucherCodeUseCase.GetVoucherCodes(e.Context, payload)
-					voucher.PromoCode = &voucherCodes[0].PromoCode
 
+					voucherCodes, _, _ := usecases.VoucherCodeUseCase.GetVoucherCodes(tempEcho.Context, payload)
+					voucher.PromoCode = &voucherCodes[0].PromoCode
 					expectedValue = models.RoundDown(*voucher.Validators.Value, 0)
 				})
 
-				JustBeforeEach(func() {
-					expectResp.Data = map[string]interface{}{
-						"refTrx": responseData["refTrx"],
-						"rewards": []interface{}{
-							map[string]interface{}{
-								"product":        voucher.Validators.Product,
-								"refTrx":         responseData["refTrx"],
-								"type":           models.RewardTypeStr[*voucher.Type],
-								"journalAccount": voucher.JournalAccount,
-								"value":          expectedValue,
-								"cif":            reqpl.CIF,
+				Context("inquiry succeeded", func() {
+					JustBeforeEach(func() {
+						expectResp.Data = map[string]interface{}{
+							"refTrx": responseData["refTrx"],
+							"rewards": []interface{}{
+								map[string]interface{}{
+									"product":        voucher.Validators.Product,
+									"refTrx":         responseData["refTrx"],
+									"type":           models.RewardTypeStr[*voucher.Type],
+									"journalAccount": voucher.JournalAccount,
+									"value":          expectedValue,
+									"cif":            reqpl.CIF,
+								},
 							},
-						},
-					}
+						}
+					})
+
+					It("expect response to return as expected", func() {
+						Expect(response).To(Equal(expectResp))
+					})
 				})
 
-				It("expect response to return as expected", func() {
-					Expect(response).To(Equal(expectResp))
+				Context("inquiry error", func() {
+					Context("voucher codes has been used", func() {
+						var usedCif string
+
+						JustBeforeEach(func() {
+							response = models.Response{}
+							reqpl.CIF = usedCif
+
+							pl = reqpl
+							e = test.NewDummyEcho(http.MethodPost, "/", pl)
+							_ = handler.MultiRewardInquiry(e.Context)
+							_ = json.Unmarshal(e.Response.Body.Bytes(), &response)
+							newExpectedResp(reqpl.CIF, true)
+						})
+
+						Context("with the same cif", func() {
+							BeforeEach(func() {
+								usedCif = reqpl.CIF
+							})
+
+							JustBeforeEach(func() {
+								expectResp.Message = "Kode voucher sedang diproses"
+							})
+
+							It("expect response to return as expected", func() {
+								Expect(response).To(Equal(expectResp))
+							})
+						})
+
+						Context("with any other cif", func() {
+							BeforeEach(func() {
+								usedCif = "1122334455"
+							})
+
+							JustBeforeEach(func() {
+								expectResp.Message = "Maaf, tidak ada reward yang tersedia"
+							})
+
+							It("expect response to return as expected", func() {
+								Expect(response).To(Equal(expectResp))
+							})
+						})
+					})
+
+					Context("wrong voucher code", func() {
+						BeforeEach(func() {
+							usedCode := "something"
+							voucher.PromoCode = &usedCode
+						})
+
+						JustBeforeEach(func() {
+							newExpectedResp(reqpl.CIF, true)
+							expectResp.Message = "Maaf, tidak ada reward yang tersedia"
+						})
+
+						It("expect response to return as expected", func() {
+							Expect(response).To(Equal(expectResp))
+						})
+					})
 				})
 			})
 
@@ -335,6 +421,7 @@ var _ = Describe("Reward", func() {
 
 				Context("inquiry succeeded", func() {
 					JustBeforeEach(func() {
+						newExpectedResp(reqpl.CIF)
 						rwds := responseData["rewards"].([]interface{})
 						refTrx1 := rwds[0].(map[string]interface{})["refTrx"].(string)
 						refTrx2 := rwds[1].(map[string]interface{})["refTrx"].(string)
@@ -391,6 +478,90 @@ var _ = Describe("Reward", func() {
 
 			It("expect response to return as expected", func() {
 				Expect(responseData["rewards"]).To(ConsistOf([]interface{}{rwd, rwd1, rwd2}))
+			})
+		})
+
+		Context("error min transaction amount", func() {
+			BeforeEach(func() {
+				reward = fakedata.RewardDirectDisc(true)
+				reward.Validators.MinTransactionAmount = helper.CreateFloat64(100000)
+				reqpl.TransactionAmount = helper.CreateFloat64(50000)
+				expectedValue = models.RoundDown(*reward.Validators.Value, 0)
+			})
+
+			JustBeforeEach(func() {
+				newExpectedResp(reqpl.CIF, true)
+				expectResp.Message = "Maaf, tidak ada reward yang tersedia"
+				expectResp.Description = "RewardIdx #0: transactionAmount untuk transaksi ini tidak valid untuk mendapatkan benefit"
+			})
+
+			It("expect to return expected error", func() {
+				Expect(response).To(Equal(expectResp))
+			})
+		})
+
+		Context("multiple errors happened", func() {
+			BeforeEach(func() {
+				reward = fakedata.RewardDirectDisc(true)
+				reward1 := fakedata.RewardDirectDisc(true)
+				reward.Validators.MinTransactionAmount = helper.CreateFloat64(100000)
+				reward1.Validators.Channel = reward.Validators.Channel
+				reward1.Validators.TransactionType = "something"
+				reward1.Validators.Product = reward.Validators.Product
+				reward1.PromoCode = reward.PromoCode
+
+				rewards = append(rewards, reward1)
+
+				reqpl.TransactionAmount = helper.CreateFloat64(50000)
+				expectedValue = models.RoundDown(*reward.Validators.Value, 0)
+			})
+
+			JustBeforeEach(func() {
+				newExpectedResp(reqpl.CIF, true)
+				expectResp.Message = "Maaf, tidak ada reward yang tersedia"
+				expectResp.Description = "RewardIdx #0: transactionType untuk transaksi ini tidak valid untuk mendapatkan benefit"
+				expectResp.Description += ", RewardIdx #1: transactionAmount untuk transaksi ini tidak valid untuk mendapatkan benefit"
+			})
+
+			It("expect to return expected error", func() {
+				Expect(response).To(Equal(expectResp))
+			})
+		})
+
+		Context("inquiry an existing reward transaction", func() {
+			BeforeEach(func() {
+				reward = fakedata.RewardDirectDisc(true)
+				expectedValue = models.RoundDown(*reward.Validators.Value, 0)
+			})
+
+			Context("using refTrx", func() {
+				JustBeforeEach(func() {
+					reqpl.RefTrx = responseData["refTrx"].(string)
+					pl = reqpl
+					response = models.Response{}
+					e = test.NewDummyEcho(http.MethodPost, "/", pl)
+					_ = handler.MultiRewardInquiry(e.Context)
+					_ = json.Unmarshal(e.Response.Body.Bytes(), &response)
+					newExpectedResp(reqpl.CIF)
+				})
+
+				It("expect response to return as expected", func() {
+					Expect(response).To(Equal(expectResp))
+				})
+			})
+
+			Context("using same payload", func() {
+				JustBeforeEach(func() {
+					response = models.Response{}
+					e = test.NewDummyEcho(http.MethodPost, "/", pl)
+					_ = handler.MultiRewardInquiry(e.Context)
+					_ = json.Unmarshal(e.Response.Body.Bytes(), &response)
+					newExpectedResp(reqpl.CIF)
+				})
+
+				It("expect response to return as expected", func() {
+					Expect(response).To(Equal(expectResp))
+				})
 			})
 		})
 	})
@@ -458,6 +629,10 @@ func mapReqpl(reqpl models.PayloadValidator, reward models.Reward, voucher model
 }
 
 func createCampaign(campaign *models.Campaign, createReferral models.RequestCreateReferral) models.RespReferral {
+	if reward == (models.Reward{}) {
+		return models.RespReferral{}
+	}
+
 	e := test.NewDummyEcho(http.MethodPost, "/", nil)
 	repos := config.NewRepositories(db.Sql, db.Bun)
 	usecases := config.NewUsecases(repos)
@@ -478,7 +653,6 @@ func newExpectedResp(cif string, isError ...bool) {
 		isError = append(isError, false)
 	}
 
-	responseData = response.Data.(map[string]interface{})
 	expectResp = models.Response{
 		Code:    "00",
 		Status:  "Success",
@@ -486,9 +660,16 @@ func newExpectedResp(cif string, isError ...bool) {
 	}
 
 	if isError[0] {
+		response.Data = nil
 		expectResp.Code = "99"
 		expectResp.Status = "Error"
 		expectResp.Message = ""
+
+		return
+	}
+
+	if response.Data != nil {
+		responseData = response.Data.(map[string]interface{})
 	}
 
 	expectResp.Data = inqResponse(responseData, reward, expectedValue, cif)

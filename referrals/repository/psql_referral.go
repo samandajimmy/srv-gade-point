@@ -221,11 +221,12 @@ func (m *psqlReferralsRepository) RTotalFriends(c echo.Context, cif string) (mod
 	query := `SELECT
 			DISTINCT customer_name
 			FROM (
-			SELECT rt.request_data ->>'customerName' as customer_name
-				FROM reward_transactions rt
-				LEFT JOIN referral_codes rc ON rt.used_promo_code = rc.referral_code 
-				where rc.cif = ?
-				order by rt.created_at desc
+				SELECT rtrx.request_data ->>'customerName' as customer_name
+				from referral_transactions rt 
+				left join reward_transactions rtrx on rtrx.ref_id = rt.ref_id 
+				where rtrx.request_data->>'referrer' = ? 
+				and rtrx.status = '1'
+				and rt.reward_type = 'incentive'
 			) AS subquery;`
 
 	err := m.Bun.QueryThenScan(c, &friends, query, cif)
@@ -245,10 +246,13 @@ func (m *psqlReferralsRepository) RFriendsReferral(c echo.Context, pl models.Pay
 
 	var refMembers []models.Friends
 
-	query := `SELECT distinct(rt.request_data ->>'customerName') as customer_name
-	FROM reward_transactions rt
-	LEFT JOIN referral_codes rc ON rt.used_promo_code = rc.referral_code 
-	where rc.cif = ? LIMIT ?`
+	query := `SELECT rtrx.request_data ->>'customerName' as customer_name
+	from referral_transactions rt 
+	left join reward_transactions rtrx on rtrx.ref_id = rt.ref_id 
+	where rtrx.request_data->>'referrer' = ? 
+	and rtrx.status = '1'
+	and rt.reward_type = 'incentive'
+	LIMIT ?`
 
 	paging := ""
 

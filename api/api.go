@@ -71,6 +71,8 @@ func (api *API) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	resp, err := api.HTTPClient.Do(req)
 
 	if err != nil {
+		logger.Make(api.ctx, nil).Debug(err)
+
 		return resp, err
 	}
 

@@ -155,7 +155,7 @@ func (psqlRepo *psqlVoucherCodeRepository) GetVoucherCodes(c echo.Context, paylo
 	rows, err := psqlRepo.Conn.Query(query)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func (psqlRepo *psqlVoucherCodeRepository) GetVoucherCodes(c echo.Context, paylo
 		)
 
 		if err != nil {
-			logger.Make(c, nil).Debug(err)
+			logger.Make(c).Debug(err)
 
 			return nil, err
 		}

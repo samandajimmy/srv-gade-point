@@ -61,7 +61,7 @@ func (vchrCodeUs *voucherCodeUseCase) GetVoucherCodes(c echo.Context, payload ma
 	counter, err := vchrCodeUs.voucherCodeRepo.CountVoucherCodeByVoucherID(c, payload)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(models.ErrUsersNA)
+		logger.Make(c).Debug(models.ErrUsersNA)
 
 		return nil, "", models.ErrUsersNA
 	}
@@ -70,7 +70,7 @@ func (vchrCodeUs *voucherCodeUseCase) GetVoucherCodes(c echo.Context, payload ma
 	data, err := vchrCodeUs.voucherCodeRepo.GetVoucherCodes(c, payload)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(models.ErrGetVoucherCodes)
+		logger.Make(c).Debug(models.ErrGetVoucherCodes)
 
 		return nil, "", models.ErrGetVoucherCodes
 	}

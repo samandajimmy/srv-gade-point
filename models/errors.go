@@ -21,6 +21,9 @@ var (
 	// ErrMigrateNoChange to store migration no change error message
 	ErrMigrateNoChange = errors.New("no change")
 
+	// ErrEnvFileNF to store error env file not found error message
+	ErrEnvFileNF = errors.New("env file not found! expected we have set system variable")
+
 	// ErrBadParamInput to store bad parameter error message
 	ErrBadParamInput = errors.New("Parameter yang diberikan tidak valid")
 

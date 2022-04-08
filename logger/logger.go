@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/fatih/structs"
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
 )
@@ -24,8 +23,8 @@ var (
 )
 
 type requestLogger struct {
-	RequestID string      `json:"requestID,omitempty"`
-	Payload   interface{} `json:"payload,omitempty"`
+	RequestID string                 `json:"requestID,omitempty"`
+	Data      map[string]interface{} `json:"data,omitempty"`
 }
 
 // Init function to make an initial logger
@@ -45,40 +44,32 @@ func Init() {
 }
 
 // Make is to get a log parameter
-func Make(c echo.Context, payload interface{}) *logrus.Entry {
+func Make(c echo.Context, data ...map[string]interface{}) *logrus.Entry {
 	var rl requestLogger
-	var pl []byte
+	dataMap := map[string]interface{}{}
+
 	logrus.SetReportCaller(true)
 
 	if c != nil {
 		rl.RequestID = c.Response().Header().Get(echo.HeaderXRequestID)
 	}
 
-	pl, bytesOk := payload.([]byte)
-
-	if !bytesOk {
-		plTemp, err := json.Marshal(payload)
-
-		if err != nil {
-			logrus.WithFields(logrus.Fields{"requestID": rl.RequestID}).Debug(err)
-
-			return logrus.WithFields(logrus.Fields{})
-		}
-
-		pl = plTemp
+	if len(data) > 0 {
+		dataMap = data[0]
 	}
 
-	if payload != nil {
-		payloadExcluder(&pl)
-		rl.Payload = string(pl)
-	}
+	payloadExcluder(&dataMap)
+	rl.Data = dataMap
 
-	return logrus.WithFields(logrus.Fields{"params": structs.Map(rl)})
+	return logrus.WithFields(logrus.Fields{
+		"_requestID": rl.RequestID,
+		"data":       rl.Data,
+	})
 }
 
 // MakeWithoutReportCaller to get a log without report caller
-func MakeWithoutReportCaller(c echo.Context, payload interface{}) *logrus.Entry {
-	log := Make(c, payload)
+func MakeWithoutReportCaller(c echo.Context, data ...map[string]interface{}) *logrus.Entry {
+	log := Make(c, data...)
 	logrus.SetReportCaller(false)
 
 	return log
@@ -121,43 +112,21 @@ func DumpJson(args ...interface{}) {
 }
 
 func reExcludePayload(pl interface{}) (map[string]interface{}, bool) {
-	var vBytes []byte
 	vMap, ok := pl.(map[string]interface{})
 
 	if !ok {
 		return map[string]interface{}{}, ok
 	}
 
-	vBytes, err := json.Marshal(vMap)
-
-	if err != nil {
-		Make(nil, nil).Error(err)
-
-		return map[string]interface{}{}, false
-	}
-
-	payloadExcluder(&vBytes)
-	err = json.Unmarshal(vBytes, &vMap)
-
-	if err != nil {
-		Make(nil, nil).Error(err)
-
-		return map[string]interface{}{}, false
-	}
+	payloadExcluder(&vMap)
 
 	return vMap, true
 }
 
-func payloadExcluder(pl *[]byte) {
+func payloadExcluder(pl *map[string]interface{}) {
 	var ok bool
-	var plMap, vMap map[string]interface{}
-	err := json.Unmarshal(*pl, &plMap)
-
-	if err != nil {
-		Make(nil, nil).Error(err)
-
-		return
-	}
+	var vMap map[string]interface{}
+	plMap := *pl
 
 	for k, v := range plMap {
 		vMap, ok = reExcludePayload(v)
@@ -174,13 +143,7 @@ func payloadExcluder(pl *[]byte) {
 		plMap[k] = v
 	}
 
-	*pl, err = json.Marshal(plMap)
-
-	if err != nil {
-		Make(nil, nil).Error(err)
-
-		return
-	}
+	*pl = plMap
 }
 
 func contains(strIncluder []string, str string) bool {

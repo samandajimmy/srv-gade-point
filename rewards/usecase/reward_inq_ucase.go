@@ -194,7 +194,7 @@ func (rwd *rewardUseCase) getVoucherReward(c echo.Context, plValidator *models.P
 }
 
 func (rwd *rewardUseCase) timeoutTrxJob(c echo.Context, rewardTrx models.RewardTrx) {
-	requestLogger := logger.Make(c, nil)
+	requestLogger := logger.Make(c)
 	diff := rewardTrx.TimeoutDate.Sub(*rewardTrx.InquiredDate)
 	delay := time.Duration(diff.Seconds())
 
@@ -307,7 +307,7 @@ func (rwd *rewardUseCase) getInquiredTrxByRefTrx(c echo.Context, plValidator *mo
 	rwdInquiry, err := rwd.rwdTrxRepo.GetByRefID(c, plValidator.RefTrx)
 
 	if (err != nil || rwdInquiry == models.RewardsInquiry{}) {
-		logger.Make(c, nil).Debug(models.ErrRefTrxNotFound)
+		logger.Make(c).Debug(models.ErrRefTrxNotFound)
 
 		return nil
 	}
@@ -329,7 +329,7 @@ func (rwd *rewardUseCase) getInquiredTrxByPayload(c echo.Context, plValidator *m
 		return nil
 	}
 
-	logger.Make(c, nil).Debug(models.ErrMessageRewardTrxAlreadyExists)
+	logger.Make(c).Debug(models.ErrMessageRewardTrxAlreadyExists)
 
 	for _, reward := range rwrds {
 		// get response reward

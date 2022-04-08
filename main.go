@@ -91,7 +91,7 @@ func main() {
 func updateStatusBasedOnStartDate(cmp campaigns.UseCase, vcr vouchers.VUsecase) {
 	_, _ = scheduler.Every().Day().At(os.Getenv(`STATUS_UPDATE_TIME`)).Run(func() {
 		t := time.Now()
-		logger.Make(nil, nil).Debug("Run Scheduler! @", t)
+		logger.Make(nil).Debug("Run Scheduler! @", t)
 
 		// CAMPAIGN
 		_ = cmp.UpdateStatusBasedOnStartDate()

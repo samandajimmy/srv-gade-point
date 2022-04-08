@@ -945,7 +945,7 @@ func (m *psqlVoucherRepository) GetVoucherCodeData(c echo.Context, pv *models.Pa
 	}
 
 	if err != nil {
-		log.Make(c, err)
+		log.Make(c).Debug(err)
 
 		return nil, "", err
 	}

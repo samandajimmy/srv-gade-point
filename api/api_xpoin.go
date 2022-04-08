@@ -44,7 +44,7 @@ func NewXpoinAPI() IApiXpoin {
 	url, err := url.Parse(os.Getenv(`XPOIN_HOST`))
 
 	if err != nil {
-		logger.Make(nil, nil).Debug(err)
+		logger.Make(nil).Debug(err)
 
 		return &apiXpoin
 	}
@@ -80,7 +80,7 @@ func (xpoin *APIXpoin) XpoinPost(c echo.Context, body interface{}, path string) 
 	_, err = xpoin.do(req, &resp)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return XpoinResponse{}, err
 	}

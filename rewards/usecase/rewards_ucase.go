@@ -171,7 +171,7 @@ func (rwd *rewardUseCase) responseInquiry(c echo.Context, reward models.Reward,
 			voucherCode, err = rwd.voucherUC.VoucherGive(c, plVoucherBuy)
 
 			if err != nil {
-				logger.Make(c, nil).Debug(models.ErrVoucherUnavailable)
+				logger.Make(c).Debug(models.ErrVoucherUnavailable)
 				return nil, err
 			}
 
@@ -215,7 +215,7 @@ func (rwd *rewardUseCase) Payment(c echo.Context, rwdPayment *models.RewardPayme
 		rwdTrx, err = rwd.rwdTrxRepo.CheckRefID(c, rwdPayment.RefTrx)
 
 		if err != nil {
-			logger.Make(c, nil).Debug(err)
+			logger.Make(c).Debug(err)
 			errorAppend = append(errorAppend, models.ErrRefTrxNotFound)
 			continue
 		}

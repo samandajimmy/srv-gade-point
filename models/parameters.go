@@ -82,6 +82,8 @@ var (
 
 	// MessageDataFound to store a message response of data found
 	MessageDataFound = "Data ditemukan"
+
+	ApiLogMessage = "API request to %s with endpoint %s"
 )
 
 // EchoGroup to store routes group

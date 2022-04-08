@@ -127,7 +127,7 @@ func (v *Validator) Validate(payloadValidator *PayloadValidator) error {
 	err := ov.autoValidating(v, payloadValidator, payloadValidator.Validators)
 
 	if err != nil {
-		logger.Make(nil, nil).Debug(err)
+		logger.Make(nil).Debug(err)
 
 		return err
 	}
@@ -146,7 +146,7 @@ func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float6
 	expression, err := govaluate.NewEvaluableExpressionWithFunctions(v.Formula, goValuateFunc())
 
 	if err != nil {
-		logger.Make(nil, nil).Debug(err)
+		logger.Make(nil).Debug(err)
 
 		return 0, err
 	}
@@ -155,7 +155,7 @@ func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float6
 	regex, err := regexp.Compile("[^a-zA-Z0-9]+")
 
 	if err != nil {
-		logger.Make(nil, nil).Debug(err)
+		logger.Make(nil).Debug(err)
 
 		return 0, nil
 	}
@@ -191,7 +191,7 @@ func (v *Validator) GetFormulaResult(payloadValidator *PayloadValidator) (float6
 	result, err := expression.Evaluate(parameters)
 
 	if err != nil {
-		logger.Make(nil, nil).Debug(err)
+		logger.Make(nil).Debug(err)
 
 		return 0, err
 	}

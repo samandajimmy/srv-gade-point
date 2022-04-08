@@ -23,7 +23,7 @@ func (rr *RestReferall) RRGetOslStatus(c echo.Context, pl models.ReqOslStatus) (
 	resp, err := rr.Xpoin.XpoinPost(c, pl, "/xpoin/cgc/inactivecif")
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return false, models.ErrXpoinApi
 	}

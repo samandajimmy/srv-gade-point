@@ -35,7 +35,7 @@ func (m *psqlCampaignRepository) CreateCampaign(c echo.Context, campaign *models
 	_, err := m.dbBun.NewInsert().Model(campaign).Exec(c.Request().Context())
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return err
 	}
@@ -170,7 +170,7 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 	rows, err := m.dbBun.QueryContext(c.Request().Context(), query)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return nil, err
 	}
@@ -180,7 +180,7 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 	for rows.Next() {
 		campaign = models.Campaign{}
 		if err := m.dbBun.ScanRow(c.Request().Context(), rows, &campaign); err != nil {
-			logger.Make(c, nil).Debug(err)
+			logger.Make(c).Debug(err)
 
 			return nil, err
 		}
@@ -189,7 +189,7 @@ func (m *psqlCampaignRepository) getCampaign(c echo.Context, query string) ([]*m
 		rewards, err = m.rwdRepo.GetRewardByCampaign(c, campaign.ID)
 
 		if err != nil {
-			logger.Make(c, nil).Debug(err)
+			logger.Make(c).Debug(err)
 
 			return nil, err
 		}
@@ -217,7 +217,7 @@ func (m *psqlCampaignRepository) GetReferralCampaign(c echo.Context, pv models.P
 		models.IsPromoCodeFalse, pv.TransactionDate, strings.ToLower(pv.PromoCode))
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return nil
 	}
@@ -226,7 +226,7 @@ func (m *psqlCampaignRepository) GetReferralCampaign(c echo.Context, pv models.P
 	err = m.dbBun.ScanRows(c.Request().Context(), rows, &campaign)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return nil
 	}
@@ -238,7 +238,7 @@ func (m *psqlCampaignRepository) GetReferralCampaign(c echo.Context, pv models.P
 	rewards, err := m.rwdRepo.GetRewardByCampaign(c, campaign.ID)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return nil
 	}
@@ -253,7 +253,7 @@ func (m *psqlCampaignRepository) GetReferralCampaign(c echo.Context, pv models.P
 	err = m.dbBun.QueryThenScan(c, &cif, query, strings.ToLower(pv.PromoCode), campaign.ID)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return nil
 	}
@@ -267,7 +267,7 @@ func (m *psqlCampaignRepository) GetRewardIncentiveByCampaign(c echo.Context, ca
 	rewards, err := m.rwdRepo.GetRewardByCampaign(c, campaignId)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return models.Reward{}, err
 	}
@@ -314,7 +314,7 @@ func (m *psqlCampaignRepository) GetCampaignAvailable(c echo.Context, pv models.
 	res, err := m.getCampaign(c, query)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return nil, err
 	}

@@ -2,6 +2,7 @@ package config
 
 import (
 	"gade/srv-gade-point/logger"
+	"gade/srv-gade-point/models"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -22,7 +23,7 @@ func LoadEnv() {
 	_, err := os.Stat(envPath)
 
 	if os.IsNotExist(err) {
-		logger.Make(nil, nil).Debug("env file not found! expected we have set system variable")
+		logger.Make(nil).Debug(models.ErrEnvFileNF)
 		return
 	}
 
@@ -34,7 +35,7 @@ func LoadTestData() {
 	items, err := ioutil.ReadDir(mockDataPath)
 
 	if err != nil {
-		logger.Make(nil, nil).Fatal(err)
+		logger.Make(nil).Fatal(err)
 	}
 
 	viper.AddConfigPath(mockDataPath)
@@ -54,7 +55,7 @@ func LoadTestData() {
 		err = viper.MergeInConfig()
 
 		if err != nil {
-			logger.Make(nil, nil).Fatal(err)
+			logger.Make(nil).Fatal(err)
 		}
 	}
 }

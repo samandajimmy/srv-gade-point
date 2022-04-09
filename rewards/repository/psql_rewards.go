@@ -423,7 +423,7 @@ func (rwdRepo *psqlRewardRepository) RGetRewardDetail(c echo.Context, rewardId i
 	err := rwdRepo.dbBun.QueryThenScan(c, &result, query, rewardId)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return result, err
 	}
@@ -452,7 +452,7 @@ func (rwdRepo *psqlRewardRepository) RPostCoreTrx(c echo.Context, coreTrx []mode
 	})
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 		return err
 	}
 

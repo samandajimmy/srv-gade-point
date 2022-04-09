@@ -31,7 +31,7 @@ func (m *psqlReferralsRepository) RCreateReferral(c echo.Context, refcodes model
 	_, err := m.Bun.QueryContext(c.Request().Context(), query, refcodes.CIF, refcodes.ReferralCode, refcodes.CampaignId, now)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return models.ReferralCodes{}, err
 	}
@@ -51,7 +51,7 @@ func (m *psqlReferralsRepository) RGetReferralByCif(c echo.Context, cif string) 
 	rows, err := m.Bun.QueryContext(c.Request().Context(), query, cif)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return models.ReferralCodes{}, err
 	}
@@ -59,7 +59,7 @@ func (m *psqlReferralsRepository) RGetReferralByCif(c echo.Context, cif string) 
 	err = m.Bun.ScanRows(c.Request().Context(), rows, &result)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return models.ReferralCodes{}, err
 	}
@@ -78,7 +78,7 @@ func (m *psqlReferralsRepository) RGetCampaignId(c echo.Context, prefix string) 
 	rows, err := m.Bun.QueryContext(c.Request().Context(), query, prefix, now)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return 0, err
 	}
@@ -86,7 +86,7 @@ func (m *psqlReferralsRepository) RGetCampaignId(c echo.Context, prefix string) 
 	err = m.Bun.ScanRows(c.Request().Context(), rows, &code)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return 0, err
 	}
@@ -119,7 +119,7 @@ func (m *psqlReferralsRepository) RSumRefIncentive(c echo.Context, promoCode str
 	err := m.Bun.QueryThenScan(c, &sums, query, promoCode, time.Now().Format(models.DateFormat))
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return objIncentive, err
 	}
@@ -147,13 +147,13 @@ func (m *psqlReferralsRepository) RGetReferralCampaignMetadata(c echo.Context, p
 		models.IsPromoCodeFalse, pv.TransactionDate)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return models.PrefixResponse{}, err
 	}
 
 	if response.Prefix == "" {
-		logger.Make(c, nil).Debug(models.ErrRefPrefixNF)
+		logger.Make(c).Debug(models.ErrRefPrefixNF)
 
 		return models.PrefixResponse{}, models.ErrRefPrefixNF
 	}
@@ -188,7 +188,7 @@ func (m *psqlReferralsRepository) RGetHistoryIncentive(c echo.Context, pl models
 		models.CodeTypeIncentive, pl.Limit)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return models.ResponseHistoryIncentive{}, err
 	}
@@ -203,7 +203,7 @@ func (m *psqlReferralsRepository) RGetHistoryIncentive(c echo.Context, pl models
 	err = m.Bun.QueryThenScan(c, &totalData, query, pl.RefCif)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return models.ResponseHistoryIncentive{}, err
 	}
@@ -232,7 +232,7 @@ func (m *psqlReferralsRepository) RTotalFriends(c echo.Context, cif string) (mod
 	err := m.Bun.QueryThenScan(c, &friends, query, cif)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return models.RespTotalFriends{}, err
 	}
@@ -265,7 +265,7 @@ func (m *psqlReferralsRepository) RFriendsReferral(c echo.Context, pl models.Pay
 	err := m.Bun.QueryThenScan(c, &refMembers, query, pl.CIF, pl.Limit)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 		return nil, err
 	}
 

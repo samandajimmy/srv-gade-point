@@ -28,7 +28,7 @@ func ToJson(obj interface{}) string {
 	b, err := json.Marshal(obj)
 
 	if err != nil {
-		logger.Make(nil, nil).Fatal(err)
+		logger.Make(nil).Fatal(err)
 	}
 
 	return string(b)
@@ -68,11 +68,11 @@ func InterfaceToMap(obj interface{}) map[string]interface{} {
 	byteObj, err := json.Marshal(obj)
 
 	if err != nil {
-		logger.Make(nil, nil).Error(err)
+		logger.Make(nil).Error(err)
 	}
 
 	if err := json.Unmarshal(byteObj, &mappedObj); err != nil {
-		logger.Make(nil, nil).Error(err)
+		logger.Make(nil).Error(err)
 	}
 
 	return mappedObj

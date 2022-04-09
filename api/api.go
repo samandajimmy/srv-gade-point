@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"net/http"
@@ -20,6 +21,7 @@ type API struct {
 	ContentType string
 	Method      string
 	Endpoint    string
+	requestBody interface{}
 	ctx         echo.Context
 }
 
@@ -53,6 +55,7 @@ func NewAPI(c echo.Context, baseURL string, contentType string) (API, error) {
 
 // Request represent global API Request
 func (api *API) Request(pathName string, method string, body interface{}) (*http.Request, error) {
+	api.requestBody = body
 	api.Method = method
 	api.Endpoint = pathName
 	api.Host.Path += pathName
@@ -82,6 +85,11 @@ func (api *API) Do(req *http.Request, v interface{}) (*http.Response, error) {
 		return resp, err
 	}
 
+	logger.MakeWithoutReportCaller(api.ctx, map[string]interface{}{
+		"requestBody":  api.requestBody,
+		"responseBody": v,
+	}).Debug(fmt.Sprintf(models.ApiLogMessage, api.Host.Host, api.Endpoint))
+
 	return resp, nil
 }
 
@@ -104,7 +112,7 @@ func (api *API) requestURLEncoded(method string, body interface{}) (*http.Reques
 
 	for key, value := range mapData {
 		if _, ok := value.(string); !ok {
-			logger.Make(nil, nil).Debug(models.ErrSetVar)
+			logger.Make(nil).Debug(models.ErrSetVar)
 			continue
 		}
 

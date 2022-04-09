@@ -52,13 +52,13 @@ func NewDbConn(dbConfig DbConfig) *DbConfig {
 	dbConfig.Sql, err = sql.Open(`postgres`, connection)
 
 	if err != nil {
-		logger.Make(nil, nil).Fatal(err)
+		logger.Make(nil).Fatal(err)
 	}
 
 	err = dbConfig.Sql.Ping()
 
 	if err != nil {
-		logger.Make(nil, nil).Fatal(err)
+		logger.Make(nil).Fatal(err)
 	}
 
 	// bun connection init
@@ -77,7 +77,7 @@ func (dbc *DbConfig) Migrate(dbConn *sql.DB) *migrate.Migrate {
 	driver, err := postgres.WithInstance(dbConn, &postgres.Config{})
 
 	if err != nil {
-		logger.Make(nil, nil).Fatal(err)
+		logger.Make(nil).Fatal(err)
 	}
 
 	migrationPath := "migrations"
@@ -98,11 +98,11 @@ func (dbc *DbConfig) Migrate(dbConn *sql.DB) *migrate.Migrate {
 		dbc.Username, driver)
 
 	if err != nil {
-		logger.Make(nil, nil).Fatal(err)
+		logger.Make(nil).Fatal(err)
 	}
 
 	if err := migrations.Up(); err != nil && err.Error() != models.ErrMigrateNoChange.Error() {
-		logger.Make(nil, nil).Fatal(err)
+		logger.Make(nil).Fatal(err)
 	}
 
 	return migrations

@@ -28,7 +28,7 @@ type TxFn func(Transaction) error
 func WithTransaction(db *sql.DB, fn TxFn) (err error) {
 	tx, err := db.Begin()
 	if err != nil {
-		logger.Make(nil, nil).Debug(err)
+		logger.Make(nil).Debug(err)
 		return
 	}
 
@@ -36,19 +36,19 @@ func WithTransaction(db *sql.DB, fn TxFn) (err error) {
 		if p := recover(); p != nil {
 			// a panic occurred, rollback and repanic
 			_ = tx.Rollback()
-			logger.Make(nil, nil).Fatal(p)
+			logger.Make(nil).Fatal(p)
 		}
 
 		if err != nil {
 			// something went wrong, rollback
-			logger.Make(nil, nil).Debug(err)
+			logger.Make(nil).Debug(err)
 			_ = tx.Rollback()
 			return
 		}
 
 		// all good, commit
 		if err := tx.Commit(); err != nil {
-			logger.Make(nil, nil).Debug(err)
+			logger.Make(nil).Debug(err)
 		}
 	}()
 

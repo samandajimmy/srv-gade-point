@@ -66,9 +66,13 @@ func (cm *customMiddleware) customBodyDump() {
 		Handler: func(c echo.Context, req, resp []byte) {
 			bodyParser(c, &req)
 			reqBody := c.Request()
+			reqMap, respMap := map[string]interface{}{}, map[string]interface{}{}
 
-			logger.MakeWithoutReportCaller(c, req).Info("Request payload for endpoint " + reqBody.Method + " " + reqBody.URL.Path)
-			logger.MakeWithoutReportCaller(c, resp).Info("Response payload for endpoint " + reqBody.Method + " " + reqBody.URL.Path)
+			_ = json.Unmarshal(req, &reqMap)
+			_ = json.Unmarshal(resp, &respMap)
+
+			logger.MakeWithoutReportCaller(c, reqMap).Info("Request payload for endpoint " + reqBody.Method + " " + reqBody.URL.Path)
+			logger.MakeWithoutReportCaller(c, respMap).Info("Response payload for endpoint " + reqBody.Method + " " + reqBody.URL.Path)
 		},
 	}))
 }
@@ -146,13 +150,13 @@ func bodyParser(c echo.Context, pl *[]byte) {
 		m, err := url.ParseQuery(rawQuery)
 
 		if err != nil {
-			logger.Make(nil, nil).Fatal(err)
+			logger.Make(nil).Fatal(err)
 		}
 
 		*pl, err = json.Marshal(m)
 
 		if err != nil {
-			logger.Make(nil, nil).Fatal(err)
+			logger.Make(nil).Fatal(err)
 		}
 	}
 }

@@ -48,7 +48,7 @@ func (rcUc *referralUseCase) UCreateReferralCodes(c echo.Context, requestReferra
 	campaignId, err := rcUc.getCampaignIdByPrefix(c, requestReferralCodes.Prefix)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		logger.Make(c).Debug(err)
 
 		return models.RespReferral{}, err
 	}
@@ -78,7 +78,7 @@ func (rcUc *referralUseCase) UGetReferralCodes(c echo.Context, requestGetReferra
 
 	// throw empty data if referral codes not found
 	if err != nil {
-		logger.Make(c, nil).Debug(models.ErrRefCodesNF)
+		logger.Make(c).Debug(models.ErrRefCodesNF)
 
 		return result, models.ErrRefCodesNF
 	}
@@ -276,7 +276,7 @@ func (rcUc *referralUseCase) UFriendsReferral(c echo.Context, pl models.PayloadF
 	}
 
 	if len(referral) == 0 {
-		logger.Make(c, nil).Debug(models.ErrFriends)
+		logger.Make(c).Debug(models.ErrFriends)
 		return nil, models.ErrFriends
 	}
 

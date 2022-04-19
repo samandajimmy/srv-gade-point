@@ -246,7 +246,8 @@ func (m *psqlReferralsRepository) RFriendsReferral(c echo.Context, pl models.Pay
 
 	var refMembers []models.Friends
 
-	query := `SELECT rtrx.request_data ->>'customerName' as customer_name
+	query := `select customer_name from (SELECT DISTINCT(rtrx.request_data ->>'customerName') as customer_name,
+	rtrx.transaction_date as transaction_date
 	from referral_transactions rt 
 	left join reward_transactions rtrx on rtrx.ref_id = rt.ref_id 
 	where rtrx.request_data->>'referrer' = ? 
@@ -260,7 +261,8 @@ func (m *psqlReferralsRepository) RFriendsReferral(c echo.Context, pl models.Pay
 		paging = fmt.Sprintf(" OFFSET %d", ((pl.Page - 1) * pl.Limit))
 	}
 
-	query += paging
+	orderQuery := ") s order by transaction_date desc"
+	query += paging + orderQuery
 
 	err := m.Bun.QueryThenScan(c, &refMembers, query, pl.CIF, pl.Limit)
 

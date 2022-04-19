@@ -299,6 +299,9 @@ var (
 	// ErrRefTrxExceeded to store exceeded referral code trx error message
 	ErrRefTrxExceeded = errors.New("Kode referral tidak dapat digunakan")
 
+	// ErrRefTrxIncentive to store max incentive days referral code trx error message
+	ErrRefTrxIncentive = errors.New("Maaf, kode referral telah mencapai maksimal insentif")
+
 	// ErrXpoinApi to store xpoin api error message
 	ErrXpoinApi = errors.New("Terjadi kesalahan pada Xpoin")
 

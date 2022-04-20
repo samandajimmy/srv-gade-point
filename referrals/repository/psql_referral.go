@@ -273,3 +273,21 @@ func (m *psqlReferralsRepository) RFriendsReferral(c echo.Context, pl models.Pay
 
 	return refMembers, nil
 }
+
+func (m *psqlReferralsRepository) RGetReferralCodeByCampaignId(c echo.Context, campaignId int64) ([]string, error) {
+	var arrRef []string
+
+	query := `select referral_code
+	from referral_codes
+ 	where campaign_id = ?0 ;`
+
+	err := m.Bun.QueryThenScan(c, &arrRef, query, campaignId)
+
+	if err != nil {
+		logger.Make(c).Debug(err)
+
+		return arrRef, err
+	}
+
+	return arrRef, nil
+}

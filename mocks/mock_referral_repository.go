@@ -139,18 +139,19 @@ func (mr *MockRefRepositoryMockRecorder) RGetReferralCampaignMetadata(arg0, arg1
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGetReferralCampaignMetadata", reflect.TypeOf((*MockRefRepository)(nil).RGetReferralCampaignMetadata), arg0, arg1)
 }
 
-// RPostCoreTrx mocks base method.
-func (m *MockRefRepository) RPostCoreTrx(arg0 echo.Context, arg1 []models.CoreTrxPayload) error {
+// RGetReferralCodeByCampaignId mocks base method.
+func (m *MockRefRepository) RGetReferralCodeByCampaignId(arg0 echo.Context, arg1 int64) ([]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RPostCoreTrx", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "RGetReferralCodeByCampaignId", arg0, arg1)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// RPostCoreTrx indicates an expected call of RPostCoreTrx.
-func (mr *MockRefRepositoryMockRecorder) RPostCoreTrx(arg0, arg1 interface{}) *gomock.Call {
+// RGetReferralCodeByCampaignId indicates an expected call of RGetReferralCodeByCampaignId.
+func (mr *MockRefRepositoryMockRecorder) RGetReferralCodeByCampaignId(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RPostCoreTrx", reflect.TypeOf((*MockRefRepository)(nil).RPostCoreTrx), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGetReferralCodeByCampaignId", reflect.TypeOf((*MockRefRepository)(nil).RGetReferralCodeByCampaignId), arg0, arg1)
 }
 
 // RSumRefIncentive mocks base method.

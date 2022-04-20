@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gade/srv-gade-point/logger"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -76,4 +77,14 @@ func InterfaceToMap(obj interface{}) map[string]interface{} {
 	}
 
 	return mappedObj
+}
+
+func Contains(strIncluder []string, str string) bool {
+	for _, include := range strIncluder {
+		if strings.Contains(str, include) {
+			return true
+		}
+	}
+
+	return false
 }

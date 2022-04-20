@@ -34,6 +34,7 @@ var (
 	voucher        models.Voucher
 	refCode        models.RespReferral
 	createReferral models.RequestCreateReferral
+	plPayment      models.RewardPayment
 	usecases       config.Usecases
 	repos          config.Repositories
 	e              test.DummyEcho
@@ -433,6 +434,34 @@ var _ = Describe("Reward", func() {
 							"refTrx":  responseData["refTrx"],
 							"rewards": []interface{}{rwd2, rwd1},
 						}
+					})
+
+					It("expect response to return as expected", func() {
+						Expect(response).To(Equal(expectResp))
+					})
+				})
+
+				FContext("error referral code used by same cif in same product", func() {
+					BeforeEach(func() {
+						withOslActive = false
+
+						reward1.Validators.Incentive.OslInactiveValidation = false
+					})
+
+					JustBeforeEach(func() {
+						responseData := response.Data.(map[string]interface{})
+						plPayment.RootRefTrx = responseData["refTrx"].(string)
+						plPayment.CIF = reqpl.CIF
+						plPayment.RefCore = "1122334412"
+						_, _ = usecases.RewardUseCase.Payment(e.Context, &plPayment)
+
+						newExpectedResp(reqpl.CIF, true)
+						usecases = config.NewUsecases(repos)
+						handler.RewardUseCase = usecases.RewardUseCase
+						f := test.NewDummyEcho(http.MethodPost, "/", pl)
+						_ = handler.MultiRewardInquiry(f.Context)
+						_ = json.Unmarshal(f.Response.Body.Bytes(), &response)
+						expectResp.Message = "Kode referral tidak dapat digunakan pada produk yang sama"
 					})
 
 					It("expect response to return as expected", func() {

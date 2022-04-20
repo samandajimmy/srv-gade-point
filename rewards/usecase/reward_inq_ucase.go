@@ -156,6 +156,14 @@ func (rwd *rewardUseCase) validatePromoReferral(c echo.Context, pl *models.Paylo
 		return models.ErrRefTrxExceeded
 	}
 
+	// validate referral code only one CIF per product code
+	isValidRefCode := rwd.referralTrxRepo.RGetCountRefTrxByCIF(c, pl.CIF, pl.Validators.Product, pl.PromoCode)
+
+	// check incentive data valid or not
+	if !isValidRefCode {
+		return models.ErrRefTrxExceededPC
+	}
+
 	return nil
 }
 

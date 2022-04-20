@@ -146,6 +146,11 @@ func (rwd *rewardUseCase) validatePromoReferral(c echo.Context, pl *models.Paylo
 		return err
 	}
 
+	// check incentive data valid (perDay and perMonth) or not
+	if !incentive.ValidPerDay || !incentive.ValidPerMonth {
+		return models.ErrRefTrxIncentive
+	}
+
 	// check incentive data valid or not
 	if !incentive.IsValid {
 		return models.ErrRefTrxExceeded

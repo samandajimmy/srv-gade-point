@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	gcdb "gade/srv-gade-point/database"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referraltrxs"
 	"time"
@@ -12,11 +13,12 @@ import (
 
 type psqlReferralTrxRepository struct {
 	Conn *sql.DB
+	Bun  *gcdb.DbBun
 }
 
 // NewPsqlReferralTrxRepository will create an object that represent the referraltrxs.Repository interface
-func NewPsqlReferralTrxRepository(Conn *sql.DB) referraltrxs.RefTRepository {
-	return &psqlReferralTrxRepository{Conn}
+func NewPsqlReferralTrxRepository(Conn *sql.DB, Bun *gcdb.DbBun) referraltrxs.RefTRepository {
+	return &psqlReferralTrxRepository{Conn, Bun}
 }
 
 func (refTrxRepo *psqlReferralTrxRepository) RPostReferralTrx(c echo.Context, refTrx models.ReferralTrx) error {
@@ -167,4 +169,31 @@ func (refTrxRepo *psqlReferralTrxRepository) RGetRankingByReferralCode(c echo.Co
 	}
 
 	return result, nil
+}
+
+func (refTrxRepo *psqlReferralTrxRepository) RGetCountRefTrxByCIF(c echo.Context, cif string, productCode string, promoCode string) bool {
+	logger := models.RequestLogger{}
+	requestLogger := logger.GetRequestLogger(c, nil)
+	var totalPromo int64
+
+	query := `SELECT COUNT(ref.used_referral_code) 
+	FROM referral_transactions ref	
+	LEFT JOIN reward_transactions rwd ON ref.CIF = rwd.CIF AND rwd.used_promo_code = ?0
+	WHERE ref.CIF = ?1
+	AND rwd.succeeded_date IS NOT NULL
+	AND rwd.request_data->'validators'->>'product' = ?2`
+
+	err := refTrxRepo.Bun.QueryThenScan(c, &totalPromo, query, promoCode, cif, productCode)
+
+	if err != nil {
+		requestLogger.Debug(err)
+
+		return false
+	}
+
+	if totalPromo >= 1 {
+		return false
+	}
+
+	return true
 }

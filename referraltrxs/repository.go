@@ -12,4 +12,5 @@ type RefTRepository interface {
 	RGetMilestone(echo.Context, models.MilestonePayload) (*models.Milestone, error)
 	RGetRanking(echo.Context, models.RankingPayload) ([]*models.Ranking, error)
 	RGetRankingByReferralCode(echo.Context, string) (*models.Ranking, error)
+	RGetCountRefTrxByCIF(c echo.Context, cif string, productCode string, promoCode string) bool
 }

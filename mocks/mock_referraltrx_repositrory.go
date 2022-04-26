@@ -35,6 +35,20 @@ func (m *MockRefTRepository) EXPECT() *MockRefTRepositoryMockRecorder {
 	return m.recorder
 }
 
+// RGetCountRefTrxByCIF mocks base method.
+func (m *MockRefTRepository) RGetCountRefTrxByCIF(arg0 echo.Context, arg1, arg2, arg3 string) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RGetCountRefTrxByCIF", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// RGetCountRefTrxByCIF indicates an expected call of RGetCountRefTrxByCIF.
+func (mr *MockRefTRepositoryMockRecorder) RGetCountRefTrxByCIF(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RGetCountRefTrxByCIF", reflect.TypeOf((*MockRefTRepository)(nil).RGetCountRefTrxByCIF), arg0, arg1, arg2, arg3)
+}
+
 // RGetMilestone mocks base method.
 func (m *MockRefTRepository) RGetMilestone(arg0 echo.Context, arg1 models.MilestonePayload) (*models.Milestone, error) {
 	m.ctrl.T.Helper()

@@ -55,7 +55,7 @@ func NewRepositories(dbConn *sql.DB, dbBun *database.DbBun) Repositories {
 	tagRepository := _tagRepository.NewPsqlTagRepository(dbConn)
 	pHistoryRepository := _pHistoryRepository.NewPsqlPointHistoryRepository(dbConn)
 	rewardTrxRepository := _rewardTrxRepository.NewPsqlRewardTrxRepository(dbConn)
-	referralTrxRepository := _referralTrxRepository.NewPsqlReferralTrxRepository(dbConn)
+	referralTrxRepository := _referralTrxRepository.NewPsqlReferralTrxRepository(dbConn, dbBun)
 	quotaRepository := _quotaRepository.NewPsqlQuotaRepository(dbConn)
 	voucherRepository := _voucherRepository.NewPsqlVoucherRepository(dbConn, dbBun)
 	voucherCodeRepository := _voucherCodeRepository.NewPsqlVoucherCodeRepository(dbConn, dbBun)

@@ -86,6 +86,7 @@ var _ = Describe("RewardInqUcase", func() {
 					mockRepos.MockCRp.EXPECT().GetReferralCampaign(e.Context, pl).Return(&campaignReferral)
 					mockRepos.MockRtRp.EXPECT().GetRewardByPayload(e.Context, pl, nil).Return([]*models.Reward{}, nil)
 					mockUsecases.MockRefUs.EXPECT().UValidateReferrer(e.Context, pl, &campaignReferral).Return(mockObjIncentive, nil)
+					mockRepos.MockRefTRp.EXPECT().RGetCountRefTrxByCIF(e.Context, pl.CIF, pl.Validators.Product, pl.PromoCode).Return(true)
 					mockRepos.MockRRp.EXPECT().GetRewardTags(e.Context, &rewards[0]).Return(nil, nil)
 					mockRepos.MockRRp.EXPECT().GetRewardTags(e.Context, &rewards[1]).Return(nil, nil)
 					mockUsecases.MockQUs.EXPECT().CheckQuota(e.Context, rewards[0], &pl).Return(true, nil)

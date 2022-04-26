@@ -37,6 +37,7 @@ var (
 	usecases       config.Usecases
 	repos          config.Repositories
 	e              test.DummyEcho
+	plPayment      models.RewardPayment
 	withEcho       bool
 	expectedValue  float64
 
@@ -439,6 +440,40 @@ var _ = Describe("Reward", func() {
 						Expect(response).To(Equal(expectResp))
 					})
 				})
+
+				Context("inquiry error max per days / month", func() {
+					BeforeEach(func() {
+						withOslActive = false
+
+						reward1.Validators.Incentive.MaxPerDay = helper.CreateFloat64(1)
+						reward1.Validators.Incentive.MaxPerMonth = helper.CreateFloat64(1000000)
+						reward1.Validators.Incentive.OslInactiveValidation = false
+					})
+
+					JustBeforeEach(func() {
+						// successed inquiry
+						responsData := response.Data.(map[string]interface{})
+						plPayment.RootRefTrx = responsData["refTrx"].(string)
+						plPayment.CIF = reqpl.CIF
+						plPayment.RefCore = "11223344"
+						_, _ = usecases.RewardUseCase.Payment(e.Context, &plPayment)
+
+						// inquery
+						g := test.NewDummyEcho(http.MethodPost, "/", pl)
+						usecases = config.NewUsecases(repos)
+						handler.RewardUseCase = usecases.RewardUseCase
+						_ = handler.MultiRewardInquiry(g.Context)
+						_ = json.Unmarshal(g.Response.Body.Bytes(), &response)
+						newExpectedResp(reqpl.CIF, true)
+
+						expectResp.Message = "Maaf, kode referral telah mencapai maksimal insentif"
+					})
+
+					It("expect response to return error", func() {
+						Expect(response).To(Equal(expectResp))
+					})
+				})
+
 			})
 		})
 

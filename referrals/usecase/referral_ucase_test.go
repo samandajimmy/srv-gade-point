@@ -3,6 +3,7 @@ package usecase_test
 import (
 	"net/http"
 
+	"gade/srv-gade-point/helper"
 	"gade/srv-gade-point/mocks"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referrals"
@@ -49,10 +50,21 @@ var _ = Describe("ReferralUcase", func() {
 					CampaignId: int64(1),
 				}
 				code := "PSE11223"
+				arrCode := []string{
+					"PSE11132",
+					"PSE12312",
+				}
 
 				mockRepos.MockRefRp.EXPECT().RGetReferralByCif(e.Context, pl.CIF).Return(models.ReferralCodes{}, nil)
 				mockRepos.MockRefRp.EXPECT().RGetCampaignId(e.Context, pl.Prefix).Return(int64(1), nil)
-				mockRepos.MockRefRp.EXPECT().RGenerateCode(e.Context, refCode, pl.Prefix).Return(code)
+				mockRepos.MockRefRp.EXPECT().RGetReferralCodeByCampaignId(e.Context, int64(1)).Return(arrCode, nil)
+				for {
+					mockRepos.MockRefRp.EXPECT().RGenerateCode(e.Context, models.ReferralCodes{}, pl.Prefix).Return(code)
+
+					if !helper.Contains(arrCode, code) {
+						break
+					}
+				}
 				refCode.ReferralCode = code
 				mockRepos.MockRefRp.EXPECT().RCreateReferral(e.Context, refCode).Return(mockRefCode, nil)
 				expetedOutput = models.RespReferral{

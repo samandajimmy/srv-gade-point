@@ -17,6 +17,7 @@ type RefRepository interface {
 	RGetHistoryIncentive(c echo.Context, pl models.RequestHistoryIncentive) (models.ResponseHistoryIncentive, error)
 	RTotalFriends(c echo.Context, refCif string) (models.RespTotalFriends, error)
 	RFriendsReferral(echo.Context, models.PayloadFriends) ([]models.Friends, error)
+	RGetReferralCodeByCampaignId(c echo.Context, campaignId int64) ([]string, error)
 }
 
 type RestRefRepository interface {

@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"gade/srv-gade-point/campaigns"
+	"gade/srv-gade-point/helper"
 	"gade/srv-gade-point/logger"
 	"gade/srv-gade-point/models"
 	"gade/srv-gade-point/referrals"
@@ -53,10 +54,28 @@ func (rcUc *referralUseCase) UCreateReferralCodes(c echo.Context, requestReferra
 		return models.RespReferral{}, err
 	}
 
+	// get referalcode based on campaign id
+	arrRefCode, err := rcUc.referralRepo.RGetReferralCodeByCampaignId(c, campaignId)
+
+	if err != nil {
+		logger.Make(c).Debug(err)
+
+		return models.RespReferral{}, err
+	}
+
+	// do checking duplicate referral code, if true recreate referral code
+	for {
+		dummyRefCode := rcUc.referralRepo.RGenerateCode(c, payload, requestReferralCodes.Prefix)
+
+		if !helper.Contains(arrRefCode, dummyRefCode) {
+			payload.ReferralCode = dummyRefCode
+			break
+		}
+	}
+
 	// map campaign id, generate referral code according to requirements (with prefix)
 	payload.CampaignId = campaignId
 	payload.CIF = requestReferralCodes.CIF
-	payload.ReferralCode = rcUc.referralRepo.RGenerateCode(c, payload, requestReferralCodes.Prefix)
 	// create referral code data
 	result, err := rcUc.referralRepo.RCreateReferral(c, payload)
 

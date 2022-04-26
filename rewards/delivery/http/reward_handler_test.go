@@ -474,7 +474,7 @@ var _ = Describe("Reward", func() {
 					})
 				})
 
-				FContext("error referral code used by same cif in same product", func() {
+				Context("error referral code used by same cif in same product", func() {
 					BeforeEach(func() {
 						withOslActive = false
 

@@ -159,7 +159,7 @@ func (rwdRepo *psqlRewardRepository) GetRewardByCampaign(c echo.Context, campaig
 	logger := models.RequestLogger{}
 	requestLogger := logger.GetRequestLogger(c, nil)
 	query := `SELECT id, name, description, terms_and_conditions, how_to_use, journal_account, promo_code, is_promo_code, custom_period, type, validators,
-		campaign_id, created_at, updated_at FROM rewards WHERE campaign_id = $1`
+		campaign_id, created_at, updated_at FROM rewards WHERE campaign_id = $1 order by id ASC`
 	rows, err := rwdRepo.Conn.Query(query, campaignID)
 
 	if err != nil {

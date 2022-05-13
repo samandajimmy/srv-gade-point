@@ -29,7 +29,7 @@ type Validator struct {
 	TransactionType      string     `json:"transactionType,omitempty" validate:"required"`
 	Unit                 string     `json:"unit,omitempty"`
 	Target               string     `json:"target,omitempty"`
-	IsPrivate            string     `json:"isPrivate,omitempty"`
+	IsPrivate            int        `json:"isPrivate"`
 	IsDecimal            bool       `json:"isDecimal"`
 	Value                *float64   `json:"value,omitempty"`
 	ValueVoucherID       *int64     `json:"valueVoucherId,omitempty"`

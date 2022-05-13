@@ -48,7 +48,7 @@ var (
 	})
 
 	_ = AfterSuite(func() {
-		_ = migrator.Drop()
+		// _ = migrator.Drop()
 
 		db.Sql.Close()
 		migrator.Close()
@@ -247,7 +247,7 @@ var _ = Describe("Reward", func() {
 				Context("private promo", func() {
 					Context("isPrivate = 1", func() {
 						BeforeEach(func() {
-							reward.Validators.IsPrivate = "1"
+							reward.Validators.IsPrivate = 1
 						})
 
 						It("expect response to return as expected", func() {
@@ -257,7 +257,7 @@ var _ = Describe("Reward", func() {
 
 					Context("isPrivate = 0", func() {
 						BeforeEach(func() {
-							reward.Validators.IsPrivate = "0"
+							reward.Validators.IsPrivate = 2
 						})
 
 						It("expect response to return as expected", func() {

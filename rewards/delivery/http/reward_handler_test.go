@@ -238,8 +238,32 @@ var _ = Describe("Reward", func() {
 					expectedValue = models.RoundDown(*reward.Validators.Value, 0)
 				})
 
-				It("expect response to return as expected", func() {
-					Expect(response).To(Equal(expectResp))
+				Context("generic promo", func() {
+					It("expect response to return as expected", func() {
+						Expect(response).To(Equal(expectResp))
+					})
+				})
+
+				Context("private promo", func() {
+					Context("isPrivate = 1", func() {
+						BeforeEach(func() {
+							reward.Validators.IsPrivate = "1"
+						})
+
+						It("expect response to return as expected", func() {
+							Expect(response).To(Equal(expectResp))
+						})
+					})
+
+					Context("isPrivate = 0", func() {
+						BeforeEach(func() {
+							reward.Validators.IsPrivate = "0"
+						})
+
+						It("expect response to return as expected", func() {
+							Expect(response).To(Equal(expectResp))
+						})
+					})
 				})
 			})
 
@@ -619,6 +643,90 @@ var _ = Describe("Reward", func() {
 					_ = handler.MultiRewardInquiry(e.Context)
 					_ = json.Unmarshal(e.Response.Body.Bytes(), &response)
 					newExpectedResp(reqpl.CIF)
+				})
+
+				It("expect response to return as expected", func() {
+					Expect(response).To(Equal(expectResp))
+				})
+			})
+		})
+	})
+
+	Describe("GetRewardPromotions", func() {
+		var reqpl models.RewardPromotionLists
+		var rwdPromo map[string]interface{}
+
+		BeforeEach(func() {
+			reqpl = models.RewardPromotionLists{}
+		})
+
+		JustBeforeEach(func() {
+			rewards = append(rewards, reward)
+			campaign.Rewards = &rewards
+			refCode = createCampaign(&campaign, createReferral)
+			pl = reqpl
+			e = test.NewDummyEcho(http.MethodPost, "/", pl)
+			_ = handler.GetRewardPromotions(e.Context)
+			_ = json.Unmarshal(e.Response.Body.Bytes(), &response)
+			rwdPromo = map[string]interface{}{}
+			expectResp = models.Response{
+				Code:    "00",
+				Status:  "Success",
+				Message: "Data Berhasil Dikirim",
+				Data:    []interface{}{},
+			}
+		})
+
+		Context("get list reward promotions", func() {
+
+			Context("not empty", func() {
+				BeforeEach(func() {
+					reward = fakedata.RewardDirectDisc(true)
+					reward.Validators.Product = "unique"
+					reward.Validators.TransactionType = "unique"
+					reward.Validators.Channel = "unique"
+
+					reqpl = models.RewardPromotionLists{
+						Product:         reward.Validators.Product,
+						TransactionType: reward.Validators.TransactionType,
+						Channel:         reward.Validators.Channel,
+					}
+				})
+
+				JustBeforeEach(func() {
+					response.Data.([]interface{})[0].(map[string]interface{})["id"] = 0
+
+					rwdPromo = map[string]interface{}{
+						"id":                 0,
+						"name":               reward.Name,
+						"description":        reward.Description,
+						"termsAndConditions": reward.TermsAndConditions,
+						"howToUse":           reward.HowToUse,
+						"promoCode":          reward.PromoCode,
+						"product":            reward.Validators.Product,
+						"transactionType":    reward.Validators.TransactionType,
+						"isPrivate":          "0",
+					}
+					expectResp = models.Response{
+						Code:    "00",
+						Status:  "Success",
+						Message: "Data Berhasil Dikirim",
+						Data:    []interface{}{rwdPromo},
+					}
+				})
+
+				It("expect response to return as expected", func() {
+					Expect(response.Data).To(ConsistOf(expectResp.Data))
+				})
+			})
+
+			Context("empty", func() {
+				BeforeEach(func() {
+					reqpl = models.RewardPromotionLists{
+						Product:         "unique-1",
+						TransactionType: "unique-1",
+						Channel:         "unique-1",
+					}
 				})
 
 				It("expect response to return as expected", func() {

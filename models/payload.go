@@ -13,9 +13,9 @@ type PayloadList struct {
 
 // RewardPromotionLists a struct to store payload RewardPromotionLists for a list response
 type RewardPromotionLists struct {
-	Product         string `json:"product,omitempty"`
-	TransactionType string `json:"transactionType,omitempty"`
-	Channel         string `json:"channel,omitempty"`
+	Product         string `json:"product"`
+	TransactionType string `json:"transactionType"`
+	Channel         string `json:"channel"`
 }
 
 type RespReferral struct {

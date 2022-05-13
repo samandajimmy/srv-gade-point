@@ -32,7 +32,7 @@ func NewRewardHandler(echoGroup models.EchoGroup, us rewards.UseCase) {
 	echoGroup.API.POST("/rewards/succeeded", handler.rewardPayment)
 	echoGroup.API.POST("/rewards/rejected", handler.rewardPayment)
 	echoGroup.API.POST("/rewards/check-transaction", handler.checkTransaction)
-	echoGroup.API.GET("/reward/promotions", handler.getRewardPromotions)
+	echoGroup.API.GET("/reward/promotions", handler.GetRewardPromotions)
 
 	// Endpoint for
 	echoGroup.API.POST("/rewards/core-trx", handler.hCoreTrx)
@@ -125,12 +125,15 @@ func (rwd *RewardHandler) getRewards(c echo.Context) error {
 }
 
 // getRewardPromotions Get reward promotions by param promoCode, transactionDate and transactionAmount
-func (rwd *RewardHandler) getRewardPromotions(c echo.Context) error {
+func (rwd *RewardHandler) GetRewardPromotions(c echo.Context) error {
 	var pl models.RewardPromotionLists
 	var errors = &models.ResponseErrors{}
-	err := hCtrl.Validate(c, &pl)
 
-	if err != nil {
+	if err := c.Bind(&pl); err != nil {
+		return hCtrl.ShowResponse(c, nil, err, *errors)
+	}
+
+	if err := c.Validate(pl); err != nil {
 		return hCtrl.ShowResponse(c, nil, err, *errors)
 	}
 
